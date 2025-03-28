@@ -1,0 +1,17 @@
+{
+  "name": "countcode",
+  "version": "1.0.0",
+  "description": "A tool to count lines of code and update the README.",
+  "scripts": {
+    "countcode": "node index.js"
+  },
+  "keywords": [
+    "count",
+    "lines",
+    "project"
+  ],
+  "license": "ISC",
+  "author": "Adilet Baimyrza Uulu",
+  "type": "module",
+  "main": "index.js"
+}
