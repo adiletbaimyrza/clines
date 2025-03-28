@@ -4,9 +4,20 @@ import fs from "fs";
 import path from "path";
 
 const configPath = path.join(process.cwd(), "clines.json");
-let config = { ignoreFiles: [], ignoreDirs: [] };
+let config = {
+  ignoreFiles: [".json", ".lock"],
+  ignoreDirs: ["node_modules", "dist"],
+};
 
-if (fs.existsSync(configPath)) {
+if (!fs.existsSync(configPath)) {
+  console.log(`Config file not found, creating a new one at ${configPath}`);
+  try {
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    console.log("Default config file created.");
+  } catch (err) {
+    console.error(`Error creating config file: ${err}`);
+  }
+} else {
   try {
     config = JSON.parse(fs.readFileSync(configPath, "utf8"));
   } catch (err) {
