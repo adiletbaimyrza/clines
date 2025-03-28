@@ -40,7 +40,7 @@ clines path/to/directory
 
 ## Configuration
 
-You can create a `clines.json` file in the root of your project to exclude specific files or directories:
+You can create a `clines.json` file in the root of your project to exclude specific files or directories. If there is no configuration file, it will create config file with default content:
 
 ```json
 {
