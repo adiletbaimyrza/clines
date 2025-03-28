@@ -5,6 +5,9 @@
   "scripts": {
     "clines": "node index.js"
   },
+  "bin": {
+    "clines": "./index.js"
+  },
   "keywords": [
     "count",
     "lines",
