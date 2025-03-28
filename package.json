@@ -1,9 +1,9 @@
 {
-  "name": "countcode",
+  "name": "clines",
   "version": "1.0.0",
   "description": "A tool to count lines of code and update the README.",
   "scripts": {
-    "countcode": "node index.js"
+    "clines": "node index.js"
   },
   "keywords": [
     "count",

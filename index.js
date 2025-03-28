@@ -3,7 +3,7 @@
 import fs from "fs";
 import path from "path";
 
-const configPath = path.join(process.cwd(), "countcode.json");
+const configPath = path.join(process.cwd(), "clines.json");
 let config = { ignoreFiles: [], ignoreDirs: [] };
 
 if (fs.existsSync(configPath)) {
