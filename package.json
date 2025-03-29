@@ -1,6 +1,6 @@
 {
   "name": "clines",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A tool to count lines of code and update the README.",
   "scripts": {
     "clines": "node index.js"
