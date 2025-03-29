@@ -75,7 +75,7 @@ function getProjectSizeLabel(lineCount) {
 function updateReadme(totalLines) {
   const readmePath = path.join(process.cwd(), "README.md");
   if (!fs.existsSync(readmePath)) {
-    console.log("README.md not found, skipping update.");
+    console.log("README.md not found in the root folder, skipping update.");
     return;
   }
 
@@ -100,7 +100,7 @@ function updateReadme(totalLines) {
   } else {
     readmeContent += `\n\n${placeholder1}\n${newLineCountInfo}\n${placeholder2}`;
     console.log(
-      "Added placeholders with new line count information at the end."
+      "Added placeholders with new line count information at the end of README.md file."
     );
   }
 
