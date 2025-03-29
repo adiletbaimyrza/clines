@@ -2,6 +2,10 @@
   "name": "clines",
   "version": "1.2.2",
   "description": "A tool to count lines of code and update the README.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adiletbaimyrza/clines"
+  },
   "scripts": {
     "clines": "node index.js"
   },
