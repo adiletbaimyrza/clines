@@ -37,6 +37,21 @@ let config = {
   ],
 };
 
+const nonCodeExtensions = [
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".mp3",
+  ".mp4",
+  ".avi",
+  ".mpg",
+  ".mov",
+  ".svg",
+  ".webp",
+  ".ico",
+];
+
 if (!fs.existsSync(configPath)) {
   console.log(`Config file not found, creating a new one at ${configPath}`);
   try {
@@ -123,7 +138,10 @@ async function traverseAndCountLines(directory) {
     if (file.isDirectory()) {
       totalLines += await traverseAndCountLines(fullPath);
     } else {
-      if (config.ignoreFiles.some((ext) => file.name.endsWith(ext))) {
+      if (
+        config.ignoreFiles.some((ext) => file.name.endsWith(ext)) ||
+        nonCodeExtensions.some((ext) => file.name.endsWith(ext))
+      ) {
         continue;
       }
       totalLines += await countLines(fullPath);
