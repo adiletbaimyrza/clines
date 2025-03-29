@@ -13,7 +13,7 @@
     "lines",
     "project"
   ],
-  "license": "ISC",
+  "license": "MIT Licence",
   "author": "Adilet Baimyrza Uulu",
   "type": "module",
   "main": "index.js"
