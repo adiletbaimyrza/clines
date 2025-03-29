@@ -1,6 +1,6 @@
 {
   "name": "clines",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "A tool to count lines of code and update the README.",
   "repository": {
     "type": "git",
