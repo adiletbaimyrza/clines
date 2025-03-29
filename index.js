@@ -5,8 +5,36 @@ import path from "path";
 
 const configPath = path.join(process.cwd(), "clines.json");
 let config = {
-  ignoreFiles: [".json", ".lock"],
-  ignoreDirs: ["node_modules", "dist"],
+  ignoreFiles: [
+    ".json",
+    ".lock",
+    ".md",
+    ".txt",
+    ".log",
+    ".gitignore",
+    ".csv",
+    ".xml",
+    ".yml",
+    ".yaml",
+    ".ini",
+    ".env",
+    ".LICENSE",
+    ".gitmodules",
+  ],
+  ignoreDirs: [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    "logs",
+    ".git",
+    ".idea",
+    ".vscode",
+    "tmp",
+    "out",
+    "public",
+    "static",
+  ],
 };
 
 if (!fs.existsSync(configPath)) {
