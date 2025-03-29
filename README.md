@@ -4,15 +4,20 @@
 
 **clines** is a simple CLI tool that counts the number of lines of code in your project and updates your `README.md` with the results. It also categorizes your project based on its size.
 
+Ever wondered if your project is small or big? Curious about how many lines of code your project currently has? `clines` provides an easy way to measure your codebase and keep track of its growth.
+
+### Example Output in `README.md`
+
+After running `clines`, your `README.md` might look like this:
+
+  
+  > Lines of Code: **6999**  
+  > Project Size: **<span style="color: magenta;">Well-structured project ⚙️</span>**
+  
+
 ## Installation
 
-Install globally via npm:
-
-```sh
-npm install -g clines
-```
-
-Or use it locally in a project:
+Install locally as a development dependency:
 
 ```sh
 npm install --save-dev clines
@@ -26,33 +31,34 @@ Run the command in your project's root directory:
 npx clines
 ```
 
-Or if installed globally:
-
-```sh
-clines
-```
-
 You can also specify a directory:
 
 ```sh
-clines path/to/directory
+npx clines path/to/directory
 ```
 
 ## Configuration
 
-You can create a `clines.json` file in the root of your project to exclude specific files or directories. If there is no configuration file, it will create config file with default content:
+To customize which files and directories should be excluded from the line count, create a `clines.json` file in the root of your project. If this file does not exist, `clines` will generate one with the following default settings:
 
 ```json
 {
-  "ignoreFiles": [".json", ".lock"],
-  "ignoreDirs": ["node_modules", "dist"]
+  "ignoreFiles": [
+    ".json", ".lock", ".md", ".txt", ".log", ".gitignore", ".csv", ".xml", ".yml", ".yaml", ".ini", ".env", ".LICENSE", ".gitmodules"
+  ],
+  "ignoreDirs": [
+    "node_modules", "dist", "build", "coverage", "logs", ".git", ".idea", ".vscode", "tmp", "out", "public", "static"
+  ]
 }
 ```
+
+- `ignoreFiles`: Specifies file extensions that should be ignored.
+- `ignoreDirs`: Defines directories that should be excluded from the count.
 
 ## How It Works
 
 - Recursively counts lines of code in the specified directory.
-- Ignores files and directories defined in `clines.json`.
+- Ignores files and directories based on `clines.json` settings.
 - Updates `README.md` with the total line count inside the placeholders:
 
   ```md
@@ -63,6 +69,9 @@ You can create a `clines.json` file in the root of your project to exclude speci
 
   <!-- LINE_COUNT_PLACEHOLDER_2 -->
   ```
+
+- You can place `<!-- LINE_COUNT_PLACEHOLDER_1 -->` and `<!-- LINE_COUNT_PLACEHOLDER_2 -->` anywhere in your `README.md`, and `clines` will update the content inside them.
+- If no placeholders are provided, `clines` will append the line count information at the end of `README.md`.
 
 ## Project Size Labels
 
@@ -78,4 +87,4 @@ You can create a `clines.json` file in the root of your project to exclude speci
 
 ## License
 
-MIT License © 2025 Adilet
+MIT License © 2025 Adilet Baimyrza Uulu
