@@ -151,20 +151,73 @@ async function traverseAndCountLines(directory) {
 }
 
 async function countLines(filePath) {
-  return new Promise((resolve, reject) => {
-    let lineCount = 0;
-    const stream = fs.createReadStream(filePath);
-    stream.on("data", (chunk) => {
-      lineCount += chunk.toString().split("\n").length;
-    });
-    stream.on("end", () => {
-      resolve(lineCount);
-    });
-    stream.on("error", (err) => {
-      console.error(`Error reading file: ${filePath}`, err);
-      reject(err);
-    });
-  });
+  try {
+    const content = await fs.promises.readFile(filePath, "utf8");
+    const ext = path.extname(filePath);
+    const lines = content.split(/\r?\n/);
+    const lang = getFileLanguage(ext);
+
+    let inBlockComment = false;
+    let relevantLines = 0;
+
+    for (let line of lines) {
+      line = line.trim();
+      if (!line) continue;
+
+      if (lang.blockCommentStart && line.includes(lang.blockCommentStart)) {
+        inBlockComment = true;
+      }
+      if (inBlockComment) {
+        if (line.includes(lang.blockCommentEnd)) {
+          inBlockComment = false;
+        }
+        continue;
+      }
+
+      if (lang.singleComment && line.startsWith(lang.singleComment)) continue;
+
+      relevantLines++;
+    }
+
+    return relevantLines;
+  } catch (err) {
+    console.error(`Error processing file: ${filePath}`, err);
+    return 0;
+  }
+}
+
+function getFileLanguage(ext) {
+  const commentStyles = {
+    ".js": {
+      singleComment: "//",
+      blockCommentStart: "/*",
+      blockCommentEnd: "*/",
+    },
+    ".ts": {
+      singleComment: "//",
+      blockCommentStart: "/*",
+      blockCommentEnd: "*/",
+    },
+    ".jsx": {
+      singleComment: "//",
+      blockCommentStart: "/*",
+      blockCommentEnd: "*/",
+    },
+    ".tsx": {
+      singleComment: "//",
+      blockCommentStart: "/*",
+      blockCommentEnd: "*/",
+    },
+    ".py": { singleComment: "#" },
+    ".sh": { singleComment: "#" },
+    ".html": { blockCommentStart: "<!--", blockCommentEnd: "-->" },
+    ".css": { blockCommentStart: "/*", blockCommentEnd: "*/" },
+    ".json": {},
+    ".yml": { singleComment: "#" },
+    ".yaml": { singleComment: "#" },
+  };
+
+  return commentStyles[ext] || {};
 }
 
 (async () => {
