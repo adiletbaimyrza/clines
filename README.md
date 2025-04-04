@@ -13,6 +13,14 @@ After running `clines`, your `README.md` might look like this:
   
   > Lines of Code: **6999**  
   > Project Size: **<span style="color: magenta;">Well-structured project ⚙️</span>**
+  >
+  >| Extension | Files | Effective LOC |
+  >|-----------|--------|----------------:|
+  >| `.ts`     | 62     | 3210           |
+  >| `.tsx`    | 41     | 2212           |
+  >| `.js`     | 18     | 935            |
+  >| `.css`    | 6      | 542            |
+
   
 
 ## Installation
@@ -44,7 +52,7 @@ To customize which files and directories should be excluded from the line count,
 ```json
 {
   "ignoreFiles": [
-    ".json", ".lock", ".md", ".txt", ".log", ".gitignore", ".csv", ".xml", ".yml", ".yaml", ".ini", ".env", ".LICENSE", ".gitmodules"
+    ".log", ".gitignore", ".csv", ".ini", ".env", ".LICENSE", ".gitmodules"
   ],
   "ignoreDirs": [
     "node_modules", "dist", "build", "coverage", "logs", ".git", ".idea", ".vscode", "tmp", "out", "public", "static"
@@ -61,14 +69,22 @@ To customize which files and directories should be excluded from the line count,
 - Ignores files and directories based on `clines.json` settings.
 - Updates `README.md` with the total line count inside the placeholders:
 
-  ```md
-  <!-- LINE_COUNT_PLACEHOLDER_1 -->
+```md
+<!-- LINE_COUNT_PLACEHOLDER_1 -->
 
-  Lines of Code: **12345**  
-  Project Size: **Well-structured project ⚙️**
+**Total Files:** `147`  
+**Lines of Code:** `6999`  
+**Project Size:** Well-structured project ⚙️
 
-  <!-- LINE_COUNT_PLACEHOLDER_2 -->
-  ```
+| Extension | Files | Effective LOC |
+|-----------|--------|----------------:|
+| `.ts`     | 62     | 3210           |
+| `.tsx`    | 41     | 2212           |
+| `.js`     | 18     | 935            |
+| `.css`    | 6      | 542            |
+
+<!-- LINE_COUNT_PLACEHOLDER_2 -->
+```
 
 - You can place `<!-- LINE_COUNT_PLACEHOLDER_1 -->` and `<!-- LINE_COUNT_PLACEHOLDER_2 -->` anywhere in your `README.md`, and `clines` will update the content inside them.
 - If no placeholders are provided, `clines` will append the line count information at the end of `README.md`.
