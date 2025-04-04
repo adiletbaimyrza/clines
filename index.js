@@ -3,21 +3,15 @@
 import fs from "fs";
 import path from "path";
 
+const extensionStats = {};
+
 const configPath = path.join(process.cwd(), "clines.json");
 let config = {
   ignoreFiles: [
-    ".json",
-    ".lock",
-    ".md",
-    ".txt",
     ".log",
     ".gitignore",
     ".csv",
-    ".xml",
-    ".yml",
-    ".yaml",
     ".ini",
-    ".env",
     ".LICENSE",
     ".gitmodules",
   ],
@@ -98,10 +92,36 @@ function updateReadme(totalLines) {
   const placeholder2 = "<!-- LINE_COUNT_PLACEHOLDER_2 -->";
   let readmeContent = fs.readFileSync(readmePath, "utf8");
 
-  const newLineCountInfo = `
-  Lines of Code: **${totalLines}**  
-  Project Size: **${getProjectSizeLabel(totalLines)}**
-  `;
+  const projectSize = getProjectSizeLabel(totalLines).replace(/<[^>]+>/g, "");
+
+  const totalFiles = Object.values(extensionStats).reduce(
+    (sum, stat) => sum + stat.files,
+    0
+  );
+
+  const totalLOC = Object.values(extensionStats).reduce(
+    (sum, stat) => sum + stat.lines,
+    0
+  );
+
+  const tableHeader = `| Extension | Files | Effective LOC |
+|-----------|--------|----------------:|`;
+
+  const tableBody = Object.entries(extensionStats)
+    .sort((a, b) => b[1].lines - a[1].lines)
+    .map(([ext, { files, lines }]) => `| \`${ext}\` | ${files} | ${lines} |`)
+    .join("\n");
+
+  const totalRow = `| **Total** | **${totalFiles}** | **${totalLOC}** |`;
+
+  const fullTable = `
+**Lines of Code:** \`${totalLines}\`  
+**Project Size:** ${projectSize}
+
+${tableHeader}
+${tableBody}
+${totalRow}
+`;
 
   if (
     readmeContent.includes(placeholder1) &&
@@ -109,18 +129,16 @@ function updateReadme(totalLines) {
   ) {
     readmeContent = readmeContent.replace(
       new RegExp(`${placeholder1}.*?${placeholder2}`, "s"),
-      `${placeholder1}\n${newLineCountInfo}\n${placeholder2}`
+      `${placeholder1}\n${fullTable}\n${placeholder2}`
     );
-    console.log("Updated placeholders with new line count information.");
+    console.log("Updated README.md with new line count and extension table.");
   } else {
-    readmeContent += `\n\n${placeholder1}\n${newLineCountInfo}\n${placeholder2}`;
-    console.log(
-      "Added placeholders with new line count information at the end of README.md file."
-    );
+    readmeContent += `\n\n${placeholder1}\n${fullTable}\n${placeholder2}`;
+    console.log("Added line count section with table to README.md.");
   }
 
   fs.writeFileSync(readmePath, readmeContent);
-  console.log("README.md updated.");
+  console.log("README.md written successfully.");
 }
 
 async function traverseAndCountLines(directory) {
@@ -144,7 +162,15 @@ async function traverseAndCountLines(directory) {
       ) {
         continue;
       }
-      totalLines += await countLines(fullPath);
+      const lineCount = await countLines(fullPath);
+      totalLines += lineCount;
+
+      const ext = path.extname(file.name) || "no_ext";
+      if (!extensionStats[ext]) {
+        extensionStats[ext] = { files: 0, lines: 0 };
+      }
+      extensionStats[ext].files++;
+      extensionStats[ext].lines += lineCount;
     }
   }
   return totalLines;
