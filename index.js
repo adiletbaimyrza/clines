@@ -14,6 +14,10 @@ let config = {
     ".ini",
     ".LICENSE",
     ".gitmodules",
+    "clines.json",
+    "tsconfig.json",
+    "package.json",
+    "package-lock.json",
   ],
   ignoreDirs: [
     "node_modules",
