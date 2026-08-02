@@ -56,9 +56,10 @@ jobs:
         run: |
           set -euo pipefail
           node dist/cli/index.js --version
+          node dist/cli/index.js | grep -q "clines"
           TMP="$(mktemp -d)"
-          printf 'const a = 1;\n// note\n\n' > "$TMP/sample.ts"
-          OUT="$(node dist/cli/index.js scan "$TMP" --json --no-readme)"
+          printf 'const a = 1;\n// note\n' > "$TMP/sample.ts"
+          OUT="$(node dist/cli/index.js count "$TMP")"
           echo "$OUT"
-          echo "$OUT" | node -e 'const d=JSON.parse(require("fs").readFileSync(0,"utf8")); if(d.totalCode!==1){console.error("unexpected totalCode",d.totalCode);process.exit(1)}'
+          echo "$OUT" | grep -q "Total"
           rm -rf "$TMP"

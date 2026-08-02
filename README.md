@@ -14,33 +14,38 @@ npm install --save-dev clines
 
 ## Usage
 
-Scan the current directory:
+Count the current directory and print the report to the terminal:
 
 ```sh
-npx clines
+npx clines count
 ```
 
-Scan a specific directory:
+Count a specific directory:
 
 ```sh
-npx clines scan path/to/directory
+npx clines count path/to/directory
 ```
 
-### Options
+Running `clines` on its own prints a banner with the version and available commands.
+
+### `count` options
+
+`clines count` is **read-only by default** — it prints the report and touches nothing.
 
 | Flag              | Description                                          |
 | ----------------- | ---------------------------------------------------- |
-| `--json`          | Print a machine-readable JSON report to stdout.      |
-| `--no-readme`     | Do not update `README.md` (report to the terminal).  |
+| `--readme`        | Also write the report into `README.md` (see below).  |
 | `--config <path>` | Use a specific config file instead of `clines.json`. |
-| `--version`       | Print the version.                                   |
 | `--help`          | Show help.                                           |
+
+Global: `clines --version`, `clines --help`.
 
 Examples:
 
 ```sh
-npx clines scan . --json --no-readme      # JSON to stdout, README untouched
-npx clines scan src --config clines.json  # scan src/ with an explicit config
+npx clines count                      # report to the terminal
+npx clines count src --config c.json  # count src/ with an explicit config
+npx clines count --readme             # report + update README.md
 ```
 
 ## Example output
@@ -109,7 +114,7 @@ Every field is optional. The file is validated on load; unknown keys or wrong ty
 
 ## How it works
 
-`clines` runs a small pipeline: **collect** files (honoring the default ignores, your `clines.json`, and `.gitignore`) → **tokenize** each file with a language-aware lexer that separates code, comments, and blanks → **analyze** into per-language and project totals → **report** to the console, JSON, or your README. The tokenizer and analyzers are pure and independently unit-tested.
+`clines` runs a small pipeline: **collect** files (honoring the default ignores, your `clines.json`, and `.gitignore`) → **tokenize** each file with a language-aware lexer that separates code, comments, and blanks → **analyze** into per-language and project totals → **report** to the console (and optionally your README). The tokenizer and analyzers are pure and independently unit-tested.
 
 ## Project size labels
 
