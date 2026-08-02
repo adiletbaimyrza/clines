@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildProgram } from "../src/cli/program.js";
+import { runCli } from "../src/cli/program.js";
 import type { RunOptions } from "../src/cli/run.js";
 import { captureIO, TempProject } from "./helpers/tmp.js";
 
@@ -12,13 +12,12 @@ afterEach(() => {
   project.cleanup();
 });
 
-describe("buildProgram", () => {
+describe("runCli", () => {
   it("runs count read-only by default", async () => {
     const runner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();
-    const program = buildProgram(io, { runner });
 
-    await program.parseAsync(["node", "clines", "count", project.root]);
+    await runCli(["node", "clines", "count", project.root], io, { runner });
 
     const options = runner.mock.calls[0]![0] as RunOptions;
     expect(options).toEqual({ dir: project.root, readme: false });
@@ -27,17 +26,12 @@ describe("buildProgram", () => {
   it("passes --readme and --config through", async () => {
     const runner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();
-    const program = buildProgram(io, { runner });
 
-    await program.parseAsync([
-      "node",
-      "clines",
-      "count",
-      project.root,
-      "--readme",
-      "--config",
-      "cfg.json",
-    ]);
+    await runCli(
+      ["node", "clines", "count", project.root, "--readme", "--config", "cfg.json"],
+      io,
+      { runner },
+    );
 
     const options = runner.mock.calls[0]![0] as RunOptions;
     expect(options).toMatchObject({ readme: true, config: "cfg.json" });
@@ -46,9 +40,8 @@ describe("buildProgram", () => {
   it("defaults the directory to '.'", async () => {
     const runner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();
-    const program = buildProgram(io, { runner });
 
-    await program.parseAsync(["node", "clines", "count"]);
+    await runCli(["node", "clines", "count"], io, { runner });
 
     expect((runner.mock.calls[0]![0] as RunOptions).dir).toBe(".");
   });
@@ -56,9 +49,8 @@ describe("buildProgram", () => {
   it("prints the banner for the bare command", async () => {
     const runner = vi.fn(async (): Promise<number> => 0);
     const { io, out } = captureIO();
-    const program = buildProgram(io, { runner, version: "9.9.9" });
 
-    await program.parseAsync(["node", "clines"]);
+    await runCli(["node", "clines"], io, { runner, version: "9.9.9" });
 
     expect(runner).not.toHaveBeenCalled();
     expect(out.join("\n")).toContain("clines");
@@ -68,9 +60,8 @@ describe("buildProgram", () => {
   it("wires the real run pipeline by default", async () => {
     project.file("a.ts", "const a = 1;\n");
     const { io, out } = captureIO();
-    const program = buildProgram(io);
 
-    await program.parseAsync(["node", "clines", "count", project.root]);
+    await runCli(["node", "clines", "count", project.root], io);
 
     expect(out.join("\n")).toContain("Total");
   });
