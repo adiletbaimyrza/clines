@@ -3,6 +3,7 @@ import { loadConfig, loadGitignoreGlobs } from "../config/load.js";
 import type { Report } from "../core/model.js";
 import { analyze, analyzeDuplication } from "../core/pipeline.js";
 import { renderDuplication } from "../report/format/duplication.js";
+import { renderDuplicationHtml } from "../report/format/duplication-html.js";
 import { consoleReporter } from "../report/reporters/console.js";
 import { injectReadme } from "../report/reporters/readme.js";
 import { ClinesError } from "../util/errors.js";
@@ -19,6 +20,7 @@ export interface DupOptions {
   dir: string;
   minLines: number;
   config?: string;
+  html?: string;
 }
 
 async function prepare(dir: string, configPath?: string) {
@@ -48,6 +50,13 @@ export async function runDup(options: DupOptions, io: IO): Promise<number> {
   const { rootDir, config, globs } = await prepare(options.dir, options.config);
   const result = await analyzeDuplication(rootDir, config, globs, options.minLines);
   io.out(renderDuplication(result));
+
+  if (options.html !== undefined) {
+    const htmlPath = path.resolve(options.html);
+    await writeText(htmlPath, renderDuplicationHtml(result));
+    io.err(`Wrote duplication report to ${htmlPath}`);
+  }
+
   return 0;
 }
 

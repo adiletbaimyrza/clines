@@ -2,6 +2,10 @@
 
 All notable changes to **clines**. Each entry links to the pull request that shipped it.
 
+## 3.5.0
+
+- `clines dup` redesign: readable terminal summary (most-duplicated-files table) plus a browsable **HTML report** (`--html <file>`) with headline stats and a searchable list of clones showing the duplicated code snippets and every location. ([#13](https://github.com/adiletbaimyrza/clines/pull/13))
+
 ## 3.4.0
 
 - New `clines dup` command: line-based duplicate-code detection reporting the duplication percentage and the largest clone blocks with `file:line` locations. ([#12](https://github.com/adiletbaimyrza/clines/pull/12))

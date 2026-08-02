@@ -59,7 +59,7 @@ describe("run", () => {
 });
 
 describe("runDup", () => {
-  it("prints a duplication report", async () => {
+  it("prints a duplication summary", async () => {
     const block = "a1();\na2();\na3();\na4();\na5();\n";
     project.file("a.ts", block);
     project.file("b.ts", block);
@@ -69,7 +69,20 @@ describe("runDup", () => {
 
     expect(code).toBe(0);
     expect(out.join("\n")).toContain("Duplication:");
-    expect(out.join("\n")).toContain("lines × 2");
+    expect(out.join("\n")).toContain("Most duplicated files");
+  });
+
+  it("writes an HTML report when --html is given", async () => {
+    const block = "a1();\na2();\na3();\na4();\na5();\n";
+    project.file("a.ts", block);
+    project.file("b.ts", block);
+    const htmlPath = project.path("dup.html");
+    const { io, err } = captureIO();
+
+    await runDup({ dir: project.root, minLines: 5, html: htmlPath }, io);
+
+    expect(err.join("\n")).toContain("Wrote duplication report");
+    expect(readFileSync(htmlPath, "utf8")).toContain("<!doctype html>");
   });
 
   it("throws for a missing directory", async () => {

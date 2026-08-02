@@ -39,6 +39,7 @@ describe("detectDuplication", () => {
       duplicatedLines: 0,
       percentage: 0,
       clones: [],
+      perFile: [],
     });
   });
 
@@ -60,13 +61,18 @@ describe("detectDuplication", () => {
     expect(result.duplicatedLines).toBe(12);
     expect(result.percentage).toBe(100);
     expect(result.clones).toHaveLength(1);
-    expect(result.clones[0]).toEqual({
+    expect(result.clones[0]).toMatchObject({
       lineCount: 6,
       fragments: [
         { path: "a.ts", startLine: 1, endLine: 6 },
         { path: "b.ts", startLine: 1, endLine: 6 },
       ],
+      code: ["l1", "l2", "l3", "l4", "l5", "l6"],
     });
+    expect(result.perFile).toEqual([
+      { path: "a.ts", totalLines: 6, duplicatedLines: 6, percentage: 100 },
+      { path: "b.ts", totalLines: 6, duplicatedLines: 6, percentage: 100 },
+    ]);
   });
 
   it("does not detect blocks shorter than minLines", () => {

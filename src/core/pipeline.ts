@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { Config } from "../config/schema.js";
 import { readText } from "../util/fs.js";
 import { linesAnalyzer } from "./analyzers/lines.js";
@@ -24,7 +25,7 @@ export async function analyzeDuplication(
 ): Promise<DuplicationResult> {
   const files = await collectFiles(rootDir, config, extraGlobs);
   const dupFiles = await Promise.all(
-    files.map(async (file) => toDupFile(file, await readText(file))),
+    files.map(async (file) => toDupFile(path.relative(rootDir, file), await readText(file))),
   );
   return detectDuplication(dupFiles, minLines);
 }

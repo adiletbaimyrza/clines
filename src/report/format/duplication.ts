@@ -1,36 +1,38 @@
 import type { DuplicationResult } from "../../core/analyzers/duplication.js";
 
-const DEFAULT_TOP = 20;
-
-export function renderDuplication(result: DuplicationResult, topN: number = DEFAULT_TOP): string {
-  const pct = result.percentage.toFixed(1);
-  const lines: string[] = [
-    `Duplication: ${pct}%  ·  ${num(result.duplicatedLines)} of ${num(result.totalLines)} code lines duplicated  ·  ${num(result.clones.length)} clones`,
-    "",
+export function renderDuplication(result: DuplicationResult, topFiles: number = 10): string {
+  const out: string[] = [
+    `Duplication: ${result.percentage.toFixed(1)}%   ${num(result.duplicatedLines)} of ${num(result.totalLines)} code lines   ·   ${num(result.clones.length)} clones`,
   ];
 
   if (result.clones.length === 0) {
-    lines.push(`No duplicate blocks of ${result.minLines}+ lines found.`);
-    return lines.join("\n");
+    out.push("", `No duplicate blocks of ${result.minLines}+ lines found.`);
+    return out.join("\n");
   }
 
-  const shown = result.clones.slice(0, topN);
-  for (const clone of shown) {
-    lines.push(`  ${num(clone.lineCount)} lines × ${clone.fragments.length}`);
-    for (const fragment of clone.fragments) {
-      lines.push(`    ${fragment.path}:${fragment.startLine}-${fragment.endLine}`);
-    }
-    lines.push("");
+  const files = result.perFile.slice(0, topFiles).map((f) => ({ ...f, path: shorten(f.path) }));
+  const width = Math.max(...files.map((f) => f.path.length), "File".length);
+
+  out.push("", "Most duplicated files", `  ${"File".padEnd(width)}   Dup lines   % of file`);
+  for (const file of files) {
+    out.push(
+      `  ${file.path.padEnd(width)}   ${num(file.duplicatedLines).padStart(9)}   ${`${file.percentage.toFixed(0)}%`.padStart(9)}`,
+    );
   }
 
-  const hidden = result.clones.length - shown.length;
+  const hidden = result.perFile.length - files.length;
   if (hidden > 0) {
-    lines.push(`  … and ${num(hidden)} more clones.`);
+    out.push(`  … and ${num(hidden)} more files.`);
   }
 
-  return lines.join("\n").trimEnd();
+  out.push("", "Run with `--html <file>` for a full browsable report with code snippets.");
+  return out.join("\n");
 }
 
 function num(value: number): string {
   return value.toLocaleString("en-US");
+}
+
+function shorten(filePath: string, max: number = 68): string {
+  return filePath.length <= max ? filePath : `…${filePath.slice(filePath.length - max + 1)}`;
 }
