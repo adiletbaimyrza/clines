@@ -28,6 +28,7 @@ const LANGUAGES: Record<string, LanguageSyntax> = {
   ".less": cStyle(),
   ".py": hashStyle(),
   ".rb": hashStyle(),
+  ".coffee": hashStyle(),
   ".sh": hashStyle(),
   ".bash": hashStyle(),
   ".zsh": hashStyle(),
@@ -80,6 +81,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ".less": "Less",
   ".py": "Python",
   ".rb": "Ruby",
+  ".coffee": "CoffeeScript",
   ".sh": "Bash",
   ".bash": "Bash",
   ".zsh": "Zsh",
@@ -104,8 +106,5 @@ export function getLanguageSyntax(ext: string): LanguageSyntax {
 }
 
 export function getLanguageName(ext: string): string {
-  if (ext === "no_ext") {
-    return "Other";
-  }
-  return LANGUAGE_NAMES[ext.toLowerCase()] ?? ext;
+  return LANGUAGE_NAMES[ext.toLowerCase()] ?? "Other";
 }

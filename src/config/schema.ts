@@ -20,6 +20,7 @@ export const DEFAULT_IGNORE_FILES = [
   "tsconfig.json",
   "package.json",
   "package-lock.json",
+  "pnpm-lock.yaml",
   "LICENSE",
   ".gitignore",
   ".gitmodules",
@@ -41,6 +42,13 @@ export const DEFAULT_IGNORE_EXTENSIONS = [
   ".svg",
   ".webp",
   ".ico",
+  ".lock",
+  ".lockb",
+  ".map",
+  ".snap",
+  ".snapshot",
+  ".tsbuildinfo",
+  ".code-workspace",
 ];
 
 const patterns = z.array(z.string());

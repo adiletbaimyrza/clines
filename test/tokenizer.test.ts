@@ -75,13 +75,12 @@ describe("getLanguageName", () => {
     expect(getLanguageName(".TSX")).toBe("TypeScript");
     expect(getLanguageName(".py")).toBe("Python");
     expect(getLanguageName(".sh")).toBe("Bash");
+    expect(getLanguageName(".coffee")).toBe("CoffeeScript");
   });
 
-  it("labels files without an extension as Other", () => {
+  it("folds unknown extensions and extensionless files into Other", () => {
     expect(getLanguageName("no_ext")).toBe("Other");
-  });
-
-  it("falls back to the raw extension when unknown", () => {
-    expect(getLanguageName(".xyz")).toBe(".xyz");
+    expect(getLanguageName(".xyz")).toBe("Other");
+    expect(getLanguageName(".invalid-rules-of-hooks-f6f37b63b2d4")).toBe("Other");
   });
 });
