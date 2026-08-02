@@ -4,7 +4,7 @@ import type { FileTokens } from "../src/core/model.js";
 
 const files: FileTokens[] = [
   { path: "a.ts", ext: ".ts", lineKinds: ["code", "comment", "blank", "code"] },
-  { path: "b.tsx", ext: ".tsx", lineKinds: ["code"] },
+  { path: "b.mts", ext: ".mts", lineKinds: ["code"] },
   { path: "c.py", ext: ".py", lineKinds: ["comment", "comment"] },
 ];
 

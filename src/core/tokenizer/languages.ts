@@ -55,11 +55,11 @@ function hashStyle(): LanguageSyntax {
 
 const LANGUAGE_NAMES: Record<string, string> = {
   ".js": "JavaScript",
-  ".jsx": "JavaScript",
+  ".jsx": "JSX",
   ".mjs": "JavaScript",
   ".cjs": "JavaScript",
   ".ts": "TypeScript",
-  ".tsx": "TypeScript",
+  ".tsx": "TSX",
   ".mts": "TypeScript",
   ".cts": "TypeScript",
   ".java": "Java",
