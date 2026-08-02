@@ -171,6 +171,21 @@ describe("detectDuplication", () => {
     expect(result.duplicatedLines).toBe(12);
   });
 
+  it("filters clones below minCopies", () => {
+    const trio = ["t1", "t2", "t3", "t4", "t5"];
+    const pair = ["q1", "q2", "q3", "q4", "q5"];
+    const files = [
+      file("a.ts", [...trio, "x", ...pair]),
+      file("b.ts", [...trio, "y", ...pair]),
+      file("c.ts", trio),
+    ];
+    // trio appears 3×, pair appears 2×.
+    expect(detectDuplication(files, 5, 2).clones).toHaveLength(2);
+    const filtered = detectDuplication(files, 5, 3).clones;
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0]!.fragments).toHaveLength(3);
+  });
+
   it("ranks larger clones first", () => {
     const big = ["b1", "b2", "b3", "b4", "b5", "b6"];
     const small = ["s1", "s2", "s3", "s4", "s5"];

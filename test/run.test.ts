@@ -65,7 +65,7 @@ describe("runDup", () => {
     project.file("b.ts", block);
     const { io, out } = captureIO();
 
-    const code = await runDup({ dir: project.root, minLines: 5 }, io);
+    const code = await runDup({ dir: project.root, minLines: 5, minCopies: 2 }, io);
 
     expect(code).toBe(0);
     expect(out.join("\n")).toContain("Duplication:");
@@ -79,7 +79,7 @@ describe("runDup", () => {
     const htmlPath = project.path("dup.html");
     const { io, err } = captureIO();
 
-    await runDup({ dir: project.root, minLines: 5, html: htmlPath }, io);
+    await runDup({ dir: project.root, minLines: 5, minCopies: 2, html: htmlPath }, io);
 
     expect(err.join("\n")).toContain("Wrote duplication report");
     expect(readFileSync(htmlPath, "utf8")).toContain("<!doctype html>");
@@ -87,8 +87,8 @@ describe("runDup", () => {
 
   it("throws for a missing directory", async () => {
     const { io } = captureIO();
-    await expect(runDup({ dir: project.path("nope"), minLines: 5 }, io)).rejects.toBeInstanceOf(
-      ClinesError,
-    );
+    await expect(
+      runDup({ dir: project.path("nope"), minLines: 5, minCopies: 2 }, io),
+    ).rejects.toBeInstanceOf(ClinesError);
   });
 });

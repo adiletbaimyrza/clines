@@ -2,6 +2,10 @@
 
 All notable changes to **clines**. Each entry links to the pull request that shipped it.
 
+## 3.7.0
+
+- `dup --min-copies <n>`: only report blocks duplicated at least n times. Also: HTML snippets now preserve blank lines, gained a copy button, and highlight reliably (3.6.1). ([#17](https://github.com/adiletbaimyrza/clines/pull/17))
+
 ## 3.6.0
 
 - `dup`: collapse sliding-window noise — overlapping shifted fragments in the same file are merged into one span, and pure self-overlapping regions are no longer reported as clones. HTML clone cards are now collapsible (expand for exact lines). Snippets keep their indentation and are syntax-highlighted with highlight.js. ([#15](https://github.com/adiletbaimyrza/clines/pull/15))

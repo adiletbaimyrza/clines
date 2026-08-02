@@ -19,6 +19,7 @@ export interface RunOptions {
 export interface DupOptions {
   dir: string;
   minLines: number;
+  minCopies: number;
   config?: string;
   html?: string;
 }
@@ -48,7 +49,13 @@ export async function run(options: RunOptions, io: IO): Promise<number> {
 
 export async function runDup(options: DupOptions, io: IO): Promise<number> {
   const { rootDir, config, globs } = await prepare(options.dir, options.config);
-  const result = await analyzeDuplication(rootDir, config, globs, options.minLines);
+  const result = await analyzeDuplication(
+    rootDir,
+    config,
+    globs,
+    options.minLines,
+    options.minCopies,
+  );
   io.out(renderDuplication(result));
 
   if (options.html !== undefined) {

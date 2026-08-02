@@ -33,7 +33,7 @@ describe("analyzeDuplication", () => {
     project.file("a.ts", block);
     project.file("b.ts", block);
 
-    const result = await analyzeDuplication(project.root, defaultConfig(), [], 5);
+    const result = await analyzeDuplication(project.root, defaultConfig(), [], 5, 2);
 
     expect(result.percentage).toBeGreaterThan(0);
     expect(result.clones).toHaveLength(1);
