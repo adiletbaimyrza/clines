@@ -65,7 +65,7 @@ Project size: Asteroid ☄️
 When README updating is enabled, the section between the placeholders is refreshed:
 
 ```md
-<!-- LINE_COUNT_PLACEHOLDER_1 -->
+<!-- clines · code metrics · auto-generated, do not edit ─────────────────── -->
 
 **Lines of Code:** `707`  
 **Project Size:** <span style="color: green;">Meteoroid 🪨</span>
@@ -75,10 +75,10 @@ When README updating is enabled, the section between the placeholders is refresh
 | TypeScript |    23 |  707 |      165 |   124 |   996 |
 | **Total**  |    23 |  707 |      165 |   124 |   996 |
 
-<!-- LINE_COUNT_PLACEHOLDER_2 -->
+<!-- clines · end ────────────────────────────────────────────────────────── -->
 ```
 
-Place `<!-- LINE_COUNT_PLACEHOLDER_1 -->` and `<!-- LINE_COUNT_PLACEHOLDER_2 -->` anywhere in your `README.md` and `clines` will update the content between them. If the placeholders are absent, the section is appended to the end of the file.
+Place the `clines · code metrics` and `clines · end` marker comments anywhere in your `README.md` and `clines count --readme` will update the content between them. If the markers are absent, the section is appended to the end of the file.
 
 ## Configuration
 

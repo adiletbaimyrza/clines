@@ -1,8 +1,10 @@
 import type { Report } from "../../core/model.js";
 import { buildReadmeSection } from "../format/table.js";
 
-export const PLACEHOLDER_START = "<!-- LINE_COUNT_PLACEHOLDER_1 -->";
-export const PLACEHOLDER_END = "<!-- LINE_COUNT_PLACEHOLDER_2 -->";
+export const PLACEHOLDER_START =
+  "<!-- clines · code metrics · auto-generated, do not edit ─────────────────── -->";
+export const PLACEHOLDER_END =
+  "<!-- clines · end ────────────────────────────────────────────────────────── -->";
 
 export function injectReadme(content: string, report: Report): string {
   const section = buildReadmeSection(report);
