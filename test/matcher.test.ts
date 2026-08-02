@@ -43,6 +43,14 @@ describe("isIgnoredFile", () => {
     expect(isIgnoredFile("data.csv", config)).toBe(true);
   });
 
+  it("ignores lockfiles, source maps and generated artifacts", () => {
+    expect(isIgnoredFile("yarn.lock", config)).toBe(true);
+    expect(isIgnoredFile("Cargo.lock", config)).toBe(true);
+    expect(isIgnoredFile("pnpm-lock.yaml", config)).toBe(true);
+    expect(isIgnoredFile("bundle.js.map", config)).toBe(true);
+    expect(isIgnoredFile("Button.test.tsx.snap", config)).toBe(true);
+  });
+
   it("does not ignore source files", () => {
     expect(isIgnoredFile("src/index.ts", config)).toBe(false);
   });

@@ -12,6 +12,8 @@ describe("config schema", () => {
     expect(config.ignoreDirs).toContain("node_modules");
     expect(config.ignoreFiles).toContain("LICENSE");
     expect(config.ignoreExtensions).toContain(".png");
+    expect(config.ignoreExtensions).toContain(".lock");
+    expect(config.ignoreExtensions).toContain(".map");
     expect(config.ignoreGlobs).toEqual([]);
     expect(config.respectGitignore).toBe(true);
   });
