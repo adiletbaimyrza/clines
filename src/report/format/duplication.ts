@@ -2,7 +2,7 @@ import type { DuplicationResult } from "../../core/analyzers/duplication.js";
 
 export function renderDuplication(result: DuplicationResult, topFiles: number = 10): string {
   const out: string[] = [
-    `Duplication: ${result.percentage.toFixed(1)}%   ${num(result.duplicatedLines)} of ${num(result.totalLines)} code lines   ·   ${num(result.clones.length)} clones`,
+    `Duplication: ${result.percentage.toFixed(1)}%   ${num(result.duplicatedLines)} duplicated lines   ·   ${num(result.clones.length)} clones`,
   ];
 
   if (result.clones.length === 0) {

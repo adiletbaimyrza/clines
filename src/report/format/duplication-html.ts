@@ -38,7 +38,6 @@ export function renderDuplicationHtml(
 <div class="stats">
 ${stat(`${result.percentage.toFixed(1)}%`, "duplicated")}
 ${stat(fmt(result.duplicatedLines), "duplicated lines")}
-${stat(fmt(result.totalLines), "code lines")}
 ${stat(fmt(result.clones.length), "clones")}
 ${stat(fmt(filesAffected), "files affected")}
 </div>
