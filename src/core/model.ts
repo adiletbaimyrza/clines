@@ -26,6 +26,8 @@ export interface LanguageStat extends LineCounts {
 
 export interface Report {
   totalCode: number;
+  totalComment: number;
+  totalBlank: number;
   totalLines: number;
   totalFiles: number;
   languages: LanguageStat[];

@@ -7,6 +7,8 @@ export const linesAnalyzer: Analyzer<Report> = {
   analyze(files: FileTokens[]): Report {
     const byLanguage = new Map<string, LanguageStat>();
     let totalCode = 0;
+    let totalComment = 0;
+    let totalBlank = 0;
     let totalLines = 0;
 
     for (const file of files) {
@@ -22,8 +24,10 @@ export const linesAnalyzer: Analyzer<Report> = {
           totalCode += 1;
         } else if (kind === "comment") {
           stat.comment += 1;
+          totalComment += 1;
         } else {
           stat.blank += 1;
+          totalBlank += 1;
         }
       }
 
@@ -32,6 +36,8 @@ export const linesAnalyzer: Analyzer<Report> = {
 
     return {
       totalCode,
+      totalComment,
+      totalBlank,
       totalLines,
       totalFiles: files.length,
       languages: [...byLanguage.values()],

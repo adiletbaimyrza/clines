@@ -23,7 +23,8 @@ describe("run", () => {
     const code = await run({ dir: project.root, json: false, readme: true }, io);
 
     expect(code).toBe(0);
-    expect(out.join("\n")).toContain("Lines of Code: 2");
+    expect(out.join("\n")).toContain("Project size:");
+    expect(out.join("\n")).toContain("Total");
     expect(err.join("\n")).toContain("Updated");
     expect(readFileSync(project.path("README.md"), "utf8")).toContain("**Lines of Code:** `2`");
   });

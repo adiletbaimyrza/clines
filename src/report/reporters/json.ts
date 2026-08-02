@@ -9,6 +9,8 @@ export const jsonReporter: Reporter = {
     return JSON.stringify(
       {
         totalCode: report.totalCode,
+        totalComment: report.totalComment,
+        totalBlank: report.totalBlank,
         totalLines: report.totalLines,
         totalFiles: report.totalFiles,
         projectSize: size.text,

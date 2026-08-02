@@ -3,26 +3,80 @@ import type { Reporter } from "../reporter.js";
 import { getProjectSize } from "../format/size-label.js";
 import { sortedLanguages } from "../format/table.js";
 
+type Align = "left" | "right";
+
+interface RowSource {
+  label: string;
+  files: number;
+  total: number;
+  code: number;
+  comment: number;
+  blank: number;
+}
+
 export const consoleReporter: Reporter = {
   name: "console",
   render(report: Report): string {
+    const columns: { header: string; align: Align; pick: (r: RowSource) => string }[] = [
+      { header: "Language", align: "left", pick: (r) => r.label },
+      { header: "Files", align: "right", pick: (r) => num(r.files) },
+      { header: "Lines", align: "right", pick: (r) => num(r.total) },
+      { header: "Code", align: "right", pick: (r) => num(r.code) },
+      { header: "Comments", align: "right", pick: (r) => num(r.comment) },
+      { header: "Blank", align: "right", pick: (r) => num(r.blank) },
+      { header: "%", align: "right", pick: (r) => percent(r.code, report.totalCode) },
+    ];
+
+    const rows: RowSource[] = sortedLanguages(report).map((l) => ({
+      label: l.language,
+      files: l.files,
+      total: l.total,
+      code: l.code,
+      comment: l.comment,
+      blank: l.blank,
+    }));
+
+    const totalRow: RowSource = {
+      label: "Total",
+      files: report.totalFiles,
+      total: report.totalLines,
+      code: report.totalCode,
+      comment: report.totalComment,
+      blank: report.totalBlank,
+    };
+
+    const sized = columns.map((col) => ({
+      ...col,
+      width: Math.max(col.header.length, ...[...rows, totalRow].map((r) => col.pick(r).length)),
+    }));
+
+    const renderCells = (cells: (col: (typeof sized)[number]) => string): string =>
+      sized
+        .map((col) => {
+          const value = cells(col);
+          return col.align === "left" ? value.padEnd(col.width) : value.padStart(col.width);
+        })
+        .join("  ");
+
+    const divider = "─".repeat(sized.reduce((sum, c) => sum + c.width, 0) + 2 * (sized.length - 1));
     const size = getProjectSize(report.totalCode);
-    const lines: string[] = [];
 
-    lines.push(`Lines of Code: ${report.totalCode}`);
-    lines.push(`Files:         ${report.totalFiles}`);
-    lines.push(`Total lines:   ${report.totalLines}`);
-    lines.push(`Project size:  ${size.text}`);
-
-    const languages = sortedLanguages(report);
-    if (languages.length > 0) {
-      const nameWidth = Math.max(...languages.map((l) => l.language.length));
-      lines.push("");
-      for (const l of languages) {
-        lines.push(`  ${l.language.padEnd(nameWidth)}  ${String(l.code).padStart(7)} code`);
-      }
-    }
-
-    return lines.join("\n");
+    return [
+      renderCells((col) => col.header),
+      divider,
+      ...rows.map((row) => renderCells((col) => col.pick(row))),
+      divider,
+      renderCells((col) => col.pick(totalRow)),
+      "",
+      `Project size: ${size.text}`,
+    ].join("\n");
   },
 };
+
+function num(value: number): string {
+  return value.toLocaleString("en-US");
+}
+
+function percent(part: number, whole: number): string {
+  return whole === 0 ? "0.0%" : `${((part / whole) * 100).toFixed(1)}%`;
+}
