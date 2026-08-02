@@ -1,10 +1,11 @@
-import { Command } from "commander";
+import { Command, InvalidArgumentError } from "commander";
 import { renderBanner } from "./banner.js";
 import type { IO } from "./io.js";
-import { run, type RunOptions } from "./run.js";
+import { run, runDup, type DupOptions, type RunOptions } from "./run.js";
 
 export interface ProgramDeps {
   runner?: (options: RunOptions, io: IO) => Promise<number>;
+  dupRunner?: (options: DupOptions, io: IO) => Promise<number>;
   version?: string;
 }
 
@@ -13,13 +14,27 @@ interface CountFlags {
   config?: string;
 }
 
+interface DupFlags {
+  minLines: number;
+  config?: string;
+}
+
 const EXAMPLES = `
 Examples:
   $ clines                   show this banner
   $ clines count             report the current directory
-  $ clines count src         report a specific directory
   $ clines count --readme    report and update README.md
+  $ clines dup               find duplicated code blocks
+  $ clines dup --min-lines 8 raise the clone threshold
 `;
+
+function parsePositiveInt(value: string): number {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new InvalidArgumentError("must be a positive integer");
+  }
+  return parsed;
+}
 
 export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
   const runner = deps.runner ?? run;
@@ -46,6 +61,22 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
         ...(flags.config !== undefined ? { config: flags.config } : {}),
       };
       await runner(options, io);
+    });
+
+  const dupRunner = deps.dupRunner ?? runDup;
+  program
+    .command("dup")
+    .description("Find duplicated code blocks and report the duplication percentage.")
+    .argument("[dir]", "directory to scan", ".")
+    .option("--min-lines <n>", "minimum block size to flag as a clone", parsePositiveInt, 5)
+    .option("--config <path>", "path to a config file")
+    .action(async (dir: string, flags: DupFlags) => {
+      const options: DupOptions = {
+        dir,
+        minLines: flags.minLines,
+        ...(flags.config !== undefined ? { config: flags.config } : {}),
+      };
+      await dupRunner(options, io);
     });
 
   return program;

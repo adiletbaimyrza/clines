@@ -1,7 +1,8 @@
 import path from "node:path";
 import { loadConfig, loadGitignoreGlobs } from "../config/load.js";
 import type { Report } from "../core/model.js";
-import { analyze } from "../core/pipeline.js";
+import { analyze, analyzeDuplication } from "../core/pipeline.js";
+import { renderDuplication } from "../report/format/duplication.js";
 import { consoleReporter } from "../report/reporters/console.js";
 import { injectReadme } from "../report/reporters/readme.js";
 import { ClinesError } from "../util/errors.js";
@@ -14,15 +15,25 @@ export interface RunOptions {
   config?: string;
 }
 
-export async function run(options: RunOptions, io: IO): Promise<number> {
-  const rootDir = path.resolve(options.dir);
+export interface DupOptions {
+  dir: string;
+  minLines: number;
+  config?: string;
+}
+
+async function prepare(dir: string, configPath?: string) {
+  const rootDir = path.resolve(dir);
   if (!(await pathExists(rootDir))) {
     throw new ClinesError(`Directory not found: ${rootDir}`);
   }
+  const config = await loadConfig(rootDir, configPath);
+  const globs = await loadGitignoreGlobs(rootDir, config.respectGitignore);
+  return { rootDir, config, globs };
+}
 
-  const config = await loadConfig(rootDir, options.config);
-  const gitignoreGlobs = await loadGitignoreGlobs(rootDir, config.respectGitignore);
-  const report = await analyze(rootDir, config, gitignoreGlobs);
+export async function run(options: RunOptions, io: IO): Promise<number> {
+  const { rootDir, config, globs } = await prepare(options.dir, options.config);
+  const report = await analyze(rootDir, config, globs);
 
   io.out(consoleReporter.render(report));
 
@@ -30,6 +41,13 @@ export async function run(options: RunOptions, io: IO): Promise<number> {
     await updateReadme(rootDir, report, io);
   }
 
+  return 0;
+}
+
+export async function runDup(options: DupOptions, io: IO): Promise<number> {
+  const { rootDir, config, globs } = await prepare(options.dir, options.config);
+  const result = await analyzeDuplication(rootDir, config, globs, options.minLines);
+  io.out(renderDuplication(result));
   return 0;
 }
 

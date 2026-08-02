@@ -439,6 +439,14 @@ Project size: <span class="size">Solar System ☀️</span></pre>
             </p>
           </div>
           <div class="card">
+            <div class="ico">👯</div>
+            <h3>Duplicate detection</h3>
+            <p>
+              <span class="cmd">clines dup</span> finds copy-pasted blocks and reports a duplication
+              percentage with <code>file:line</code> locations.
+            </p>
+          </div>
+          <div class="card">
             <div class="ico">✅</div>
             <h3>100% tested</h3>
             <p>A layered, fully-covered TypeScript core, published tokenlessly with provenance.</p>
@@ -461,6 +469,9 @@ $ npx clines count src
 
 <span style="color: var(--muted)"># also write the report into README.md</span>
 $ npx clines count --readme
+
+<span style="color: var(--muted)"># find duplicated code blocks</span>
+$ npx clines dup
 
 <span style="color: var(--muted)"># the bare command prints a banner + version</span>
 $ npx clines</pre>

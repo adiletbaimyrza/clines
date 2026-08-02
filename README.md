@@ -50,6 +50,23 @@ npx clines count src --config c.json  # count src/ with an explicit config
 npx clines count --readme             # report + update README.md
 ```
 
+### Finding duplicate code
+
+`clines dup` reports the duplication percentage and the largest duplicated blocks (`file:line` ranges), using line-based clone detection over your code lines.
+
+```sh
+npx clines dup                 # find duplicate blocks (default: 5+ lines)
+npx clines dup --min-lines 8   # only flag larger clones
+```
+
+```text
+Duplication: 4.2%  ·  1,240 of 29,500 code lines duplicated  ·  12 clones
+
+  38 lines × 2
+    src/a.ts:10-47
+    src/b.ts:80-117
+```
+
 ## Example output
 
 ```text
