@@ -11,21 +11,22 @@ interface Tier {
 }
 
 const TIERS: Tier[] = [
-  { maxExclusive: 500, text: "Tiny scriptlet 💡", color: "green" },
-  { maxExclusive: 2000, text: "Compact utility 🛠️", color: "goldenrod" },
-  { maxExclusive: 5000, text: "Growing codebase 🏗️", color: "blue" },
-  { maxExclusive: 10000, text: "Well-structured project ⚙️", color: "magenta" },
-  { maxExclusive: 20000, text: "Robust system 🔬", color: "teal" },
-  { maxExclusive: 50000, text: "Complex software 🏢", color: "red" },
+  { maxExclusive: 1_000, text: "Meteoroid 🪨", color: "green" },
+  { maxExclusive: 10_000, text: "Asteroid ☄️", color: "seagreen" },
+  { maxExclusive: 50_000, text: "Moon 🌑", color: "teal" },
+  { maxExclusive: 100_000, text: "Planet 🪐", color: "steelblue" },
+  { maxExclusive: 500_000, text: "Star ⭐", color: "blueviolet" },
+  { maxExclusive: 1_000_000, text: "Solar System ☀️", color: "darkorange" },
+  { maxExclusive: 5_000_000, text: "Galaxy 🌌", color: "orangered" },
 ];
 
-const MASSIVE: Omit<Tier, "maxExclusive"> = {
-  text: "Massive code empire 🌌",
-  color: "red",
+const UNIVERSE: Omit<Tier, "maxExclusive"> = {
+  text: "Universe 🌠",
+  color: "crimson",
 };
 
 export function getProjectSize(effectiveLines: number): ProjectSize {
-  const tier = TIERS.find((t) => effectiveLines < t.maxExclusive) ?? MASSIVE;
+  const tier = TIERS.find((t) => effectiveLines < t.maxExclusive) ?? UNIVERSE;
   return {
     text: tier.text,
     color: tier.color,

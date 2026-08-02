@@ -51,7 +51,7 @@ describe("buildReadmeSection", () => {
   it("includes the summary, size label and per-language rows", () => {
     const section = buildReadmeSection(report);
     expect(section).toContain("**Lines of Code:** `30`");
-    expect(section).toContain('<span style="color: green;">Tiny scriptlet 💡</span>');
+    expect(section).toContain('<span style="color: green;">Meteoroid 🪨</span>');
     expect(section).toContain("| Language | Files | Code | Comments | Blank | Total |");
     expect(section).toContain("| TypeScript | 2 | 25 | 8 | 7 | 40 |");
     expect(section).toContain("| **Total** | **3** | **30** | 10 | 10 | **50** |");
@@ -66,8 +66,7 @@ describe("consoleReporter", () => {
     expect(output).toContain("TypeScript");
     expect(output).toContain("CSS");
     expect(output).toContain("Total");
-    expect(output).toContain("Project size: Tiny scriptlet 💡");
-    // Per-language share of code is shown.
+    expect(output).toContain("Project size: Meteoroid 🪨");
     expect(output).toMatch(/83\.3%/);
   });
 
@@ -88,7 +87,7 @@ describe("jsonReporter", () => {
       totalBlank: 10,
       totalLines: 50,
       totalFiles: 3,
-      projectSize: "Tiny scriptlet 💡",
+      projectSize: "Meteoroid 🪨",
     });
     expect(parsed.languages).toHaveLength(2);
   });
