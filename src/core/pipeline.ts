@@ -22,10 +22,11 @@ export async function analyzeDuplication(
   config: Config,
   extraGlobs: string[],
   minLines: number,
+  minCopies: number,
 ): Promise<DuplicationResult> {
   const files = await collectFiles(rootDir, config, extraGlobs);
   const dupFiles = await Promise.all(
     files.map(async (file) => toDupFile(path.relative(rootDir, file), await readText(file))),
   );
-  return detectDuplication(dupFiles, minLines);
+  return detectDuplication(dupFiles, minLines, minCopies);
 }

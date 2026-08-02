@@ -66,30 +66,40 @@ describe("runCli", () => {
     expect(out.join("\n")).toContain("Total");
   });
 
-  it("runs dup with a default min-lines of 5", async () => {
+  it("runs dup with default min-lines 5 and min-copies 2", async () => {
     const dupRunner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();
 
     await runCli(["node", "clines", "dup", project.root], io, { dupRunner });
 
-    expect(dupRunner.mock.calls[0]![0]).toEqual({ dir: project.root, minLines: 5 });
+    expect(dupRunner.mock.calls[0]![0]).toEqual({ dir: project.root, minLines: 5, minCopies: 2 });
   });
 
-  it("parses --min-lines and --config for dup", async () => {
+  it("parses --min-lines, --min-copies and --config for dup", async () => {
     const dupRunner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();
 
     await runCli(
-      ["node", "clines", "dup", project.root, "--min-lines", "8", "--config", "c.json"],
+      [
+        "node",
+        "clines",
+        "dup",
+        project.root,
+        "--min-lines",
+        "8",
+        "--min-copies",
+        "3",
+        "--config",
+        "c.json",
+      ],
       io,
-      {
-        dupRunner,
-      },
+      { dupRunner },
     );
 
     expect(dupRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
       minLines: 8,
+      minCopies: 3,
       config: "c.json",
     });
   });
@@ -105,6 +115,7 @@ describe("runCli", () => {
     expect(dupRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
       minLines: 5,
+      minCopies: 2,
       html: "report.html",
     });
   });

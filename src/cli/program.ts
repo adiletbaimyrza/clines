@@ -16,6 +16,7 @@ interface CountFlags {
 
 interface DupFlags {
   minLines: number;
+  minCopies: number;
   config?: string;
   html?: string;
 }
@@ -70,12 +71,19 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .description("Find duplicated code blocks and report the duplication percentage.")
     .argument("[dir]", "directory to scan", ".")
     .option("--min-lines <n>", "minimum block size to flag as a clone", parsePositiveInt, 5)
+    .option(
+      "--min-copies <n>",
+      "only report blocks duplicated at least n times",
+      parsePositiveInt,
+      2,
+    )
     .option("--html <file>", "write a browsable HTML report to this path")
     .option("--config <path>", "path to a config file")
     .action(async (dir: string, flags: DupFlags) => {
       const options: DupOptions = {
         dir,
         minLines: flags.minLines,
+        minCopies: flags.minCopies,
         ...(flags.config !== undefined ? { config: flags.config } : {}),
         ...(flags.html !== undefined ? { html: flags.html } : {}),
       };
