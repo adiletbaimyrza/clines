@@ -40,9 +40,17 @@ describe("linesAnalyzer", () => {
   it("returns an empty report for no files", () => {
     expect(linesAnalyzer.analyze([])).toEqual({
       totalCode: 0,
+      totalComment: 0,
+      totalBlank: 0,
       totalLines: 0,
       totalFiles: 0,
       languages: [],
     });
+  });
+
+  it("accumulates comment and blank totals", () => {
+    const report = linesAnalyzer.analyze(files);
+    expect(report.totalComment).toBe(3);
+    expect(report.totalBlank).toBe(1);
   });
 });

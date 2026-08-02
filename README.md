@@ -46,12 +46,15 @@ npx clines scan src --config clines.json  # scan src/ with an explicit config
 ## Example output
 
 ```text
-Lines of Code: 707
-Files:         23
-Total lines:   996
-Project size:  Compact utility 🛠️
+Language      Files   Lines   Code   Comments   Blank        %
+──────────────────────────────────────────────────────────────
+TypeScript       62   3,210  2,510        420     280    78.2%
+JavaScript       18     935    720         90     125    22.4%
+CSS               6     542    410         40      92    12.8%
+──────────────────────────────────────────────────────────────
+Total            86   4,687  3,208        550     497   100.0%
 
-  TypeScript      707 code
+Project size: Growing codebase 🏗️
 ```
 
 When README updating is enabled, the section between the placeholders is refreshed:

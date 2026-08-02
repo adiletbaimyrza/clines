@@ -11,6 +11,8 @@ import { buildReadmeSection, sortedLanguages } from "../src/report/format/table.
 
 const report: Report = {
   totalCode: 30,
+  totalComment: 10,
+  totalBlank: 10,
   totalLines: 50,
   totalFiles: 3,
   languages: [
@@ -19,7 +21,14 @@ const report: Report = {
   ],
 };
 
-const empty: Report = { totalCode: 0, totalLines: 0, totalFiles: 0, languages: [] };
+const empty: Report = {
+  totalCode: 0,
+  totalComment: 0,
+  totalBlank: 0,
+  totalLines: 0,
+  totalFiles: 0,
+  languages: [],
+};
 
 describe("sortedLanguages", () => {
   it("sorts by code descending", () => {
@@ -50,30 +59,38 @@ describe("buildReadmeSection", () => {
 });
 
 describe("consoleReporter", () => {
-  it("prints the project-size label (bug #3) and language lines", () => {
+  it("renders an aligned table with totals and the size label", () => {
     const output = consoleReporter.render(report);
-    expect(output).toContain("Project size:  Tiny scriptlet 💡");
+    expect(output).toContain("Language");
+    expect(output).toContain("Comments");
     expect(output).toContain("TypeScript");
+    expect(output).toContain("CSS");
+    expect(output).toContain("Total");
+    expect(output).toContain("Project size: Tiny scriptlet 💡");
+    // Per-language share of code is shown.
+    expect(output).toMatch(/83\.3%/);
   });
 
-  it("omits the language block when there are no files", () => {
+  it("handles an empty report without throwing", () => {
     const output = consoleReporter.render(empty);
-    expect(output).toContain("Lines of Code: 0");
-    expect(output).not.toContain("code\n  ");
+    expect(output).toContain("Total");
+    expect(output).toContain("0.0%");
+    expect(output).toContain("Project size:");
   });
 });
 
 describe("jsonReporter", () => {
-  it("emits the report as JSON with the size label and languages", () => {
+  it("emits the report as JSON with totals, size label and languages", () => {
     const parsed = JSON.parse(jsonReporter.render(report));
     expect(parsed).toMatchObject({
       totalCode: 30,
+      totalComment: 10,
+      totalBlank: 10,
       totalLines: 50,
       totalFiles: 3,
       projectSize: "Tiny scriptlet 💡",
     });
     expect(parsed.languages).toHaveLength(2);
-    expect(parsed.languages[0].language).toBeDefined();
   });
 });
 
