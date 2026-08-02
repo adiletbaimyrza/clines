@@ -1,0 +1,95 @@
+name: Publish
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    uses: ./.github/workflows/_quality.yml
+
+  publish:
+    needs: quality
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && 'production' || 'test' }}
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve version and dist-tag
+        id: meta
+        run: |
+          set -euo pipefail
+          BASE="$(node -p "require('./package.json').version")"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if npm view "clines@$BASE" version >/dev/null 2>&1; then
+              echo "::error::clines@$BASE is already published. Bump the version in package.json via a PR before deploying."
+              exit 1
+            fi
+            echo "version=$BASE" >> "$GITHUB_OUTPUT"
+            echo "dist_tag=latest" >> "$GITHUB_OUTPUT"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          else
+            VER="${BASE}-beta.${{ github.run_number }}"
+            npm version "$VER" --no-git-tag-version
+            echo "version=$VER" >> "$GITHUB_OUTPUT"
+            echo "dist_tag=beta" >> "$GITHUB_OUTPUT"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Publishing clines@$(node -p "require('./package.json').version")"
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish
+        run: npm publish --tag ${{ steps.meta.outputs.dist_tag }}
+
+      - name: Tag and create GitHub Release
+        if: steps.meta.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VER="${{ steps.meta.outputs.version }}"
+          git tag "v$VER"
+          git push origin "v$VER"
+          gh release create "v$VER" --title "v$VER" --generate-notes
+
+      - name: Post-publish health check
+        run: |
+          set -euo pipefail
+          VER="${{ steps.meta.outputs.version }}"
+          TMP="$(mktemp -d)"
+          cd "$TMP"
+          npm init -y >/dev/null
+          for i in 1 2 3 4 5; do
+            if npm install "clines@$VER"; then break; fi
+            echo "Install attempt $i failed; retrying in 15s..."; sleep 15
+          done
+          npx clines --version
+          printf 'const a = 1;\n' > sample.ts
+          npx clines scan . --json --no-readme
+          echo "clines@$VER healthy."
