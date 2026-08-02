@@ -3,6 +3,9 @@ name: Stage release
 on:
   push:
     branches: [master]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
 
 permissions:
   contents: read

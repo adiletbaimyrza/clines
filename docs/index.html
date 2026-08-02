@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>clines — measure your codebase</title>
+    <meta
+      name="description"
+      content="clines is a zero-config CLI that measures your codebase — code, comments and blanks per language — with an elegant terminal table and README integration."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A8%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --bg: #0a0e17;
+        --bg-soft: #111726;
+        --panel: #141b2d;
+        --border: #223049;
+        --text: #e6ecf5;
+        --muted: #9aa8bf;
+        --accent: #5ed0ff;
+        --accent-2: #a78bfa;
+        --green: #4ade80;
+        --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        color: var(--text);
+        background:
+          radial-gradient(1200px 600px at 80% -10%, rgba(94, 208, 255, 0.12), transparent 60%),
+          radial-gradient(1000px 500px at 0% 10%, rgba(167, 139, 250, 0.12), transparent 55%),
+          var(--bg);
+        line-height: 1.6;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .wrap {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 0;
+        position: sticky;
+        top: 0;
+        backdrop-filter: blur(8px);
+        background: rgba(10, 14, 23, 0.6);
+        border-bottom: 1px solid var(--border);
+        z-index: 10;
+      }
+      nav .brand {
+        font-family: var(--mono);
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: var(--text);
+      }
+      nav .brand::before {
+        content: "✨ ";
+      }
+      nav .links a {
+        color: var(--muted);
+        margin-left: 20px;
+        font-size: 14px;
+      }
+      nav .links a:hover {
+        color: var(--text);
+        text-decoration: none;
+      }
+      header.hero {
+        text-align: center;
+        padding: 72px 0 48px;
+      }
+      .ascii {
+        font-family: var(--mono);
+        font-size: clamp(6px, 1.7vw, 15px);
+        line-height: 1.05;
+        white-space: pre;
+        display: inline-block;
+        margin: 0 0 8px;
+        background: linear-gradient(120deg, var(--accent), var(--accent-2));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 0 20px rgba(94, 208, 255, 0.25));
+      }
+      .tagline {
+        font-size: clamp(18px, 2.6vw, 24px);
+        color: var(--text);
+        margin: 12px 0 6px;
+        font-weight: 600;
+      }
+      .subtag {
+        color: var(--muted);
+        max-width: 620px;
+        margin: 0 auto 28px;
+      }
+      .cta {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 22px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 15px;
+        border: 1px solid var(--border);
+        color: var(--text);
+        background: var(--panel);
+        transition: 0.15s;
+      }
+      .btn:hover {
+        text-decoration: none;
+        border-color: var(--accent);
+        transform: translateY(-1px);
+      }
+      .btn.primary {
+        background: linear-gradient(120deg, var(--accent), var(--accent-2));
+        color: #08111e;
+        border: none;
+      }
+      .install {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        font-family: var(--mono);
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px 16px;
+        color: var(--text);
+      }
+      .install .prompt {
+        color: var(--accent-2);
+      }
+      .copy {
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--muted);
+        border-radius: 7px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-family: var(--sans);
+      }
+      .copy:hover {
+        color: var(--text);
+        border-color: var(--accent);
+      }
+      section {
+        padding: 40px 0;
+        border-top: 1px solid var(--border);
+      }
+      h2 {
+        font-size: 26px;
+        margin: 0 0 6px;
+      }
+      .section-sub {
+        color: var(--muted);
+        margin: 0 0 24px;
+      }
+      .terminal {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #0b1120;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      }
+      .terminal .bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        background: #0e1526;
+        border-bottom: 1px solid var(--border);
+      }
+      .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+      .dot.r {
+        background: #ff5f56;
+      }
+      .dot.y {
+        background: #ffbd2e;
+      }
+      .dot.g {
+        background: #27c93f;
+      }
+      .terminal .bar span {
+        color: var(--muted);
+        font-size: 12px;
+        margin-left: 8px;
+        font-family: var(--mono);
+      }
+      .terminal pre {
+        margin: 0;
+        padding: 18px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 13px;
+        line-height: 1.5;
+        color: #cdd6e6;
+      }
+      .terminal .muted {
+        color: var(--muted);
+      }
+      .terminal .accent {
+        color: var(--accent);
+      }
+      .terminal .size {
+        color: #ffb454;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+      }
+      .card h3 {
+        margin: 0 0 6px;
+        font-size: 17px;
+      }
+      .card .ico {
+        font-size: 22px;
+      }
+      .card p {
+        color: var(--muted);
+        margin: 6px 0 0;
+        font-size: 14px;
+      }
+      pre.code {
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 13px;
+        color: #cdd6e6;
+      }
+      .cmd {
+        font-family: var(--mono);
+        color: var(--accent);
+      }
+      table.tiers {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      table.tiers td {
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      table.tiers td:first-child {
+        font-family: var(--mono);
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      table.tiers td:last-child {
+        font-weight: 600;
+      }
+      .changelog {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .rel {
+        display: flex;
+        gap: 16px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .rel .ver {
+        font-family: var(--mono);
+        color: var(--accent);
+        font-weight: 700;
+        min-width: 64px;
+      }
+      .rel .desc {
+        color: var(--text);
+      }
+      .rel .desc .pr {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      footer {
+        text-align: center;
+        color: var(--muted);
+        padding: 40px 0;
+        border-top: 1px solid var(--border);
+        font-size: 14px;
+      }
+      footer a {
+        color: var(--muted);
+      }
+      .note {
+        background: rgba(167, 139, 250, 0.08);
+        border: 1px solid rgba(167, 139, 250, 0.35);
+        border-radius: 10px;
+        padding: 12px 16px;
+        color: var(--muted);
+        font-size: 14px;
+        margin-top: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <span class="brand">clines</span>
+        <span class="links">
+          <a href="#features">Features</a>
+          <a href="#usage">Usage</a>
+          <a href="#config">Config</a>
+          <a href="#releases">Releases</a>
+          <a href="https://github.com/adiletbaimyrza/clines">GitHub</a>
+        </span>
+      </nav>
+    </div>
+
+    <header class="hero">
+      <div class="wrap">
+        <pre class="ascii">
+ ██████╗██╗     ██╗███╗   ██╗███████╗███████╗
+██╔════╝██║     ██║████╗  ██║██╔════╝██╔════╝
+██║     ██║     ██║██╔██╗ ██║█████╗  ███████╗
+██║     ██║     ██║██║╚██╗██║██╔══╝  ╚════██║
+╚██████╗███████╗██║██║ ╚████║███████╗███████║
+ ╚═════╝╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝╚══════╝</pre>
+        <div class="tagline">Measure your codebase. Zero config.</div>
+        <p class="subtag">
+          A fast CLI that counts code, comments and blanks per language, labels your project on a
+          cosmic size scale, and can keep the numbers fresh in your README.
+        </p>
+        <div class="cta">
+          <a class="btn primary" href="#usage">Get started</a>
+          <a class="btn" href="https://github.com/adiletbaimyrza/clines">★ GitHub</a>
+          <a class="btn" href="https://www.npmjs.com/package/clines">npm</a>
+        </div>
+        <div class="install">
+          <span><span class="prompt">$</span> npm install --save-dev clines</span>
+          <button class="copy" data-copy="npm install --save-dev clines">Copy</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <section id="demo" style="border-top: none">
+        <div class="terminal">
+          <div class="bar">
+            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+            <span>clines count ~/repos/react</span>
+          </div>
+          <pre>
+Language      Files      Lines     Code  Comments    Blank       %
+──────────────────────────────────────────────────────────────────
+JavaScript    3,954    673,654  546,899    62,317   64,438   66.4%
+Markdown      1,998    157,717  130,135         0   27,582   15.8%
+TypeScript      419     81,509   65,140    11,248    5,121    7.9%
+Rust            120     76,448   64,936     6,531    4,981    7.9%
+CSS             111      5,284    4,525        72      687    0.5%
+TSX             122      4,484    3,417       635      432    0.4%
+<span class="muted">…</span>
+──────────────────────────────────────────────────────────────────
+Total         6,913  1,008,315  823,120    81,280  103,915  100.0%
+
+Project size: <span class="size">Solar System ☀️</span></pre>
+        </div>
+      </section>
+
+      <section id="features">
+        <h2>Why clines</h2>
+        <p class="section-sub">Small, accurate, and built to grow into code-health analysis.</p>
+        <div class="grid">
+          <div class="card">
+            <div class="ico">🚀</div>
+            <h3>Zero config</h3>
+            <p>
+              Run it and go — no config file is ever written to your repo. Sensible defaults, out of
+              the box.
+            </p>
+          </div>
+          <div class="card">
+            <div class="ico">🙈</div>
+            <h3>.gitignore aware</h3>
+            <p>
+              Respects your <code>.gitignore</code> and skips lockfiles, source maps and build junk
+              by default.
+            </p>
+          </div>
+          <div class="card">
+            <div class="ico">📊</div>
+            <h3>Per-language table</h3>
+            <p>
+              Code, comments and blanks per language — verified against <code>cloc</code> to the
+              line.
+            </p>
+          </div>
+          <div class="card">
+            <div class="ico">🌌</div>
+            <h3>Cosmic size scale</h3>
+            <p>From <b>Meteoroid</b> to <b>Universe</b> — an honest, calibrated sense of scale.</p>
+          </div>
+          <div class="card">
+            <div class="ico">📝</div>
+            <h3>README integration</h3>
+            <p>
+              Keep a live metrics section in your README with <span class="cmd">--readme</span>.
+            </p>
+          </div>
+          <div class="card">
+            <div class="ico">✅</div>
+            <h3>100% tested</h3>
+            <p>A layered, fully-covered TypeScript core, published tokenlessly with provenance.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="usage">
+        <h2>Usage</h2>
+        <p class="section-sub">
+          <span class="cmd">count</span> is read-only by default — it never touches your files
+          unless you ask.
+        </p>
+        <pre class="code">
+<span style="color: var(--muted)"># count the current directory, print the table</span>
+$ npx clines count
+
+<span style="color: var(--muted)"># count a specific directory</span>
+$ npx clines count src
+
+<span style="color: var(--muted)"># also write the report into README.md</span>
+$ npx clines count --readme
+
+<span style="color: var(--muted)"># the bare command prints a banner + version</span>
+$ npx clines</pre>
+        <div class="note">
+          <b>README markers.</b> Place the <code>clines · code metrics</code> and
+          <code>clines · end</code> marker comments anywhere in your README and the section between
+          them stays up to date. No markers? The report is appended to the bottom.
+        </div>
+      </section>
+
+      <section id="config">
+        <h2>Configuration</h2>
+        <p class="section-sub">
+          Optional. Add a <code>clines.json</code> to tweak the defaults with a simple add / remove
+          model — for both directories and files.
+        </p>
+        <pre class="code">
+{
+  "ignore": {
+    "dirs": ["fixtures", "vendor"],
+    "files": ["CHANGELOG.md"],
+    "extensions": [".snap"],
+    "globs": ["**/*.min.js"]
+  },
+  "unignore": {
+    "dirs": ["public"],
+    "files": ["package.json"]
+  },
+  "respectGitignore": true
+}</pre>
+      </section>
+
+      <section id="sizes">
+        <h2>Project size scale</h2>
+        <p class="section-sub">
+          Calibrated on real codebases — react is a Solar System, Linux a Universe.
+        </p>
+        <table class="tiers">
+          <tr>
+            <td>&lt; 1,000</td>
+            <td>Meteoroid 🪨</td>
+          </tr>
+          <tr>
+            <td>1k – 10k</td>
+            <td>Asteroid ☄️</td>
+          </tr>
+          <tr>
+            <td>10k – 50k</td>
+            <td>Moon 🌑</td>
+          </tr>
+          <tr>
+            <td>50k – 100k</td>
+            <td>Planet 🪐</td>
+          </tr>
+          <tr>
+            <td>100k – 500k</td>
+            <td>Star ⭐</td>
+          </tr>
+          <tr>
+            <td>500k – 1M</td>
+            <td>Solar System ☀️</td>
+          </tr>
+          <tr>
+            <td>1M – 5M</td>
+            <td>Galaxy 🌌</td>
+          </tr>
+          <tr>
+            <td>5M+</td>
+            <td>Universe 🌠</td>
+          </tr>
+        </table>
+      </section>
+
+      <section id="releases">
+        <h2>Releases</h2>
+        <p class="section-sub">
+          Every change lands through a reviewed PR with 100% test coverage. Full history on
+          <a href="https://github.com/adiletbaimyrza/clines/pulls?q=is%3Apr+is%3Amerged">GitHub</a>.
+        </p>
+        <ul class="changelog">
+          <li class="rel">
+            <span class="ver">3.3.2</span>
+            <span class="desc"
+              >Elegant 80-char README marker comments.
+              <a class="pr" href="https://github.com/adiletbaimyrza/clines/pull/10">#10</a></span
+            >
+          </li>
+          <li class="rel">
+            <span class="ver">3.3.1</span>
+            <span class="desc"
+              >Repair <code>clines help</code> and enrich CLI help output.
+              <a class="pr" href="https://github.com/adiletbaimyrza/clines/pull/9">#9</a></span
+            >
+          </li>
+          <li class="rel">
+            <span class="ver">3.3.0</span>
+            <span class="desc"
+              >CLI restructure — <code>clines count</code>, banner, read-only default.
+              <a class="pr" href="https://github.com/adiletbaimyrza/clines/pull/8">#8</a></span
+            >
+          </li>
+          <li class="rel">
+            <span class="ver">3.2.0</span>
+            <span class="desc"
+              >Recalibrated project-size scale (cosmic-size ladder).
+              <a class="pr" href="https://github.com/adiletbaimyrza/clines/pull/7">#7</a></span
+            >
+          </li>
+          <li class="rel">
+            <span class="ver">3.1.1</span>
+            <span class="desc"
+              >Split JSX/TSX categories and fix trailing-blank overcount (validated vs cloc).
+              <a class="pr" href="https://github.com/adiletbaimyrza/clines/pull/6">#6</a></span
+            >
+          </li>
+          <li class="rel">
+            <span class="ver">3.1.0</span>
+            <span class="desc"
+              >Readable per-language table with code / comment / blank breakdown.
+              <a class="pr" href="https://github.com/adiletbaimyrza/clines/pull/5">#5</a></span
+            >
+          </li>
+          <li class="rel">
+            <span class="ver">3.0.1</span>
+            <span class="desc"
+              >Exclude generated files; fold unknown extensions into “Other”.
+              <a class="pr" href="https://github.com/adiletbaimyrza/clines/pull/4">#4</a></span
+            >
+          </li>
+          <li class="rel">
+            <span class="ver">3.0.0</span>
+            <span class="desc"
+              >TypeScript rewrite, layered architecture, CI/CD, 100% coverage.
+              <a class="pr" href="https://github.com/adiletbaimyrza/clines/pull/2">#2</a></span
+            >
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <p>
+          <a href="https://github.com/adiletbaimyrza/clines">GitHub</a> ·
+          <a href="https://www.npmjs.com/package/clines">npm</a> ·
+          <a href="https://github.com/adiletbaimyrza/clines/blob/master/CHANGELOG.md">Changelog</a>
+        </p>
+        <p>MIT License © Adilet Baimyrza Uulu · Built with ✨ and 100% test coverage</p>
+      </div>
+    </footer>
+
+    <script>
+      document.querySelectorAll(".copy").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(btn.dataset.copy);
+            const t = btn.textContent;
+            btn.textContent = "Copied!";
+            setTimeout(() => (btn.textContent = t), 1200);
+          } catch (e) {
+            /* clipboard unavailable */
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
