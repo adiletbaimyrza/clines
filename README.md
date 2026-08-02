@@ -2,7 +2,7 @@
 
 ![clines](https://img.shields.io/badge/Code%20Lines-Counter-blue)
 
-**clines** is a small, fast CLI that measures your codebase — counting code, comment, and blank lines per language — and can update your `README.md` with the results. It also labels your project by size, from _Tiny scriptlet_ to _Massive code empire_.
+**clines** is a small, fast CLI that measures your codebase — counting code, comment, and blank lines per language — and can update your `README.md` with the results. It also labels your project by size, from _Meteoroid_ to _Universe_.
 
 It is built with a layered, fully-tested architecture (100% coverage) so it can grow into deeper code-health analysis (duplication and complexity) over time.
 
@@ -54,7 +54,7 @@ CSS               6     542    410         40      92    12.8%
 ──────────────────────────────────────────────────────────────
 Total            86   4,687  3,208        550     497   100.0%
 
-Project size: Growing codebase 🏗️
+Project size: Asteroid ☄️
 ```
 
 When README updating is enabled, the section between the placeholders is refreshed:
@@ -63,7 +63,7 @@ When README updating is enabled, the section between the placeholders is refresh
 <!-- LINE_COUNT_PLACEHOLDER_1 -->
 
 **Lines of Code:** `707`  
-**Project Size:** <span style="color: goldenrod;">Compact utility 🛠️</span>
+**Project Size:** <span style="color: green;">Meteoroid 🪨</span>
 
 | Language   | Files | Code | Comments | Blank | Total |
 | ---------- | ----: | ---: | -------: | ----: | ----: |
@@ -113,15 +113,16 @@ Every field is optional. The file is validated on load; unknown keys or wrong ty
 
 ## Project size labels
 
-| Lines of Code | Project Size Label         |
-| ------------- | -------------------------- |
-| < 500         | Tiny scriptlet 💡          |
-| < 2000        | Compact utility 🛠️         |
-| < 5000        | Growing codebase 🏗️        |
-| < 10000       | Well-structured project ⚙️ |
-| < 20000       | Robust system 🔬           |
-| < 50000       | Complex software 🏢        |
-| 50000+        | Massive code empire 🌌     |
+| Lines of Code   | Project Size Label |
+| --------------- | ------------------ |
+| < 1,000         | Meteoroid 🪨       |
+| 1,000–10,000    | Asteroid ☄️        |
+| 10,000–50,000   | Moon 🌑            |
+| 50,000–100,000  | Planet 🪐          |
+| 100,000–500,000 | Star ⭐            |
+| 500,000–1M      | Solar System ☀️    |
+| 1M–5M           | Galaxy 🌌          |
+| 5M+             | Universe 🌠        |
 
 ## Development
 
