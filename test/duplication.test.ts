@@ -142,6 +142,28 @@ describe("detectDuplication", () => {
     expect(result.clones[1]!.lineCount).toBe(4);
   });
 
+  it("merges overlapping shifted fragments in the same file into one span", () => {
+    // Seven identical lines per file: each 5-line window matches shifted
+    // copies of itself, producing many overlapping fragments per file.
+    const repeated = Array(7).fill("same");
+    const result = detectDuplication([file("a.ts", repeated), file("b.ts", repeated)], 5);
+
+    expect(result.clones).toHaveLength(1);
+    // Each file collapses to a single merged span, not three overlapping shifts.
+    expect(result.clones[0]!.fragments).toEqual([
+      { path: "a.ts", startLine: 1, endLine: 7 },
+      { path: "b.ts", startLine: 1, endLine: 7 },
+    ]);
+  });
+
+  it("drops clones that collapse to a single self-overlapping region", () => {
+    // 12 identical lines in one file: every 5-line window matches shifted
+    // copies of itself, but it is not a cross-location clone.
+    const result = detectDuplication([file("a.ts", Array(12).fill("same"))], 5);
+    expect(result.clones).toEqual([]);
+    expect(result.duplicatedLines).toBe(12);
+  });
+
   it("ranks larger clones first", () => {
     const big = ["b1", "b2", "b3", "b4", "b5", "b6"];
     const small = ["s1", "s2", "s3", "s4", "s5"];
