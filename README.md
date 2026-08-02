@@ -6,7 +6,7 @@
 
 It is built with a layered, fully-tested architecture (100% coverage) so it can grow into deeper code-health analysis (duplication and complexity) over time.
 
-**[📖 Website & docs](https://adiletbaimyrza.github.io/clines/)** · **[Changelog](CHANGELOG.md)**
+**[📖 Website & docs](https://adiletbaimyrza.github.io/clines/)**
 
 ## Installation
 
