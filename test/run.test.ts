@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { run } from "../src/cli/run.js";
+import { run, runDup } from "../src/cli/run.js";
 import { ClinesError } from "../src/util/errors.js";
 import { pathExists } from "../src/util/fs.js";
 import { captureIO, TempProject } from "./helpers/tmp.js";
@@ -53,6 +53,28 @@ describe("run", () => {
   it("throws for a missing directory", async () => {
     const { io } = captureIO();
     await expect(run({ dir: project.path("nope"), readme: false }, io)).rejects.toBeInstanceOf(
+      ClinesError,
+    );
+  });
+});
+
+describe("runDup", () => {
+  it("prints a duplication report", async () => {
+    const block = "a1();\na2();\na3();\na4();\na5();\n";
+    project.file("a.ts", block);
+    project.file("b.ts", block);
+    const { io, out } = captureIO();
+
+    const code = await runDup({ dir: project.root, minLines: 5 }, io);
+
+    expect(code).toBe(0);
+    expect(out.join("\n")).toContain("Duplication:");
+    expect(out.join("\n")).toContain("lines × 2");
+  });
+
+  it("throws for a missing directory", async () => {
+    const { io } = captureIO();
+    await expect(runDup({ dir: project.path("nope"), minLines: 5 }, io)).rejects.toBeInstanceOf(
       ClinesError,
     );
   });

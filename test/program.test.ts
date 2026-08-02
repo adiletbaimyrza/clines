@@ -65,4 +65,53 @@ describe("runCli", () => {
 
     expect(out.join("\n")).toContain("Total");
   });
+
+  it("runs dup with a default min-lines of 5", async () => {
+    const dupRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(["node", "clines", "dup", project.root], io, { dupRunner });
+
+    expect(dupRunner.mock.calls[0]![0]).toEqual({ dir: project.root, minLines: 5 });
+  });
+
+  it("parses --min-lines and --config for dup", async () => {
+    const dupRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(
+      ["node", "clines", "dup", project.root, "--min-lines", "8", "--config", "c.json"],
+      io,
+      {
+        dupRunner,
+      },
+    );
+
+    expect(dupRunner.mock.calls[0]![0]).toEqual({
+      dir: project.root,
+      minLines: 8,
+      config: "c.json",
+    });
+  });
+
+  it("rejects a non-positive --min-lines", async () => {
+    const dupRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await expect(
+      runCli(["node", "clines", "dup", project.root, "--min-lines", "0"], io, { dupRunner }),
+    ).rejects.toBeTruthy();
+    expect(dupRunner).not.toHaveBeenCalled();
+  });
+
+  it("wires the real dup pipeline by default", async () => {
+    const block = "a1();\na2();\na3();\na4();\na5();\n";
+    project.file("a.ts", block);
+    project.file("b.ts", block);
+    const { io, out } = captureIO();
+
+    await runCli(["node", "clines", "dup", project.root], io);
+
+    expect(out.join("\n")).toContain("Duplication:");
+  });
 });

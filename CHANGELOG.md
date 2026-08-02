@@ -2,6 +2,10 @@
 
 All notable changes to **clines**. Each entry links to the pull request that shipped it.
 
+## 3.4.0
+
+- New `clines dup` command: line-based duplicate-code detection reporting the duplication percentage and the largest clone blocks with `file:line` locations. ([#12](https://github.com/adiletbaimyrza/clines/pull/12))
+
 ## 3.3.3
 
 - Add a static landing site (GitHub Pages) with docs and release history. ([#11](https://github.com/adiletbaimyrza/clines/pull/11))

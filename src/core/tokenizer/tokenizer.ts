@@ -78,13 +78,17 @@ function isWhitespace(char: string): boolean {
   return char === " " || char === "\t" || char === "\r" || char === "\f" || char === "\v";
 }
 
-export function classifyContent(content: string, syntax: LanguageSyntax): LineKind[] {
+export function splitLines(content: string): string[] {
   const lines = content.split(/\r?\n/);
   if (lines[lines.length - 1] === "") {
     lines.pop();
   }
+  return lines;
+}
+
+export function classifyContent(content: string, syntax: LanguageSyntax): LineKind[] {
   const state: ScanState = { inBlock: false };
-  return lines.map((line) => classifyLine(line, syntax, state));
+  return splitLines(content).map((line) => classifyLine(line, syntax, state));
 }
 
 export function tokenize(filePath: string, content: string): FileTokens {
