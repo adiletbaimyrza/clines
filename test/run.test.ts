@@ -64,31 +64,59 @@ describe("runDup", () => {
     project.file("a.ts", block);
     project.file("b.ts", block);
     const { io, out } = captureIO();
+    const opened: string[] = [];
 
-    const code = await runDup({ dir: project.root, minLines: 5, minCopies: 2 }, io);
+    const code = await runDup(
+      { dir: project.root, minLines: 5, minCopies: 2, open: true },
+      io,
+      (p) => opened.push(p),
+    );
 
     expect(code).toBe(0);
     expect(out.join("\n")).toContain("Duplication:");
     expect(out.join("\n")).toContain("Most duplicated files");
+    expect(opened).toEqual([]); // nothing to open without --html
   });
 
-  it("writes an HTML report when --html is given", async () => {
+  it("writes an HTML report and opens it", async () => {
     const block = "a1();\na2();\na3();\na4();\na5();\n";
     project.file("a.ts", block);
     project.file("b.ts", block);
     const htmlPath = project.path("dup.html");
     const { io, err } = captureIO();
+    const opened: string[] = [];
 
-    await runDup({ dir: project.root, minLines: 5, minCopies: 2, html: htmlPath }, io);
+    await runDup(
+      { dir: project.root, minLines: 5, minCopies: 2, open: true, html: htmlPath },
+      io,
+      (p) => opened.push(p),
+    );
 
     expect(err.join("\n")).toContain("Wrote duplication report");
     expect(readFileSync(htmlPath, "utf8")).toContain("<!doctype html>");
+    expect(opened).toEqual([htmlPath]);
+  });
+
+  it("does not open the report when open is false", async () => {
+    project.file("a.ts", "a1();\na2();\na3();\na4();\na5();\n");
+    project.file("b.ts", "a1();\na2();\na3();\na4();\na5();\n");
+    const htmlPath = project.path("dup.html");
+    const { io } = captureIO();
+    const opened: string[] = [];
+
+    await runDup(
+      { dir: project.root, minLines: 5, minCopies: 2, open: false, html: htmlPath },
+      io,
+      (p) => opened.push(p),
+    );
+
+    expect(opened).toEqual([]);
   });
 
   it("throws for a missing directory", async () => {
     const { io } = captureIO();
     await expect(
-      runDup({ dir: project.path("nope"), minLines: 5, minCopies: 2 }, io),
+      runDup({ dir: project.path("nope"), minLines: 5, minCopies: 2, open: true }, io, () => {}),
     ).rejects.toBeInstanceOf(ClinesError);
   });
 });

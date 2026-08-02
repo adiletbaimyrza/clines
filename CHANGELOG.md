@@ -2,6 +2,10 @@
 
 All notable changes to **clines**. Each entry links to the pull request that shipped it.
 
+## 3.8.0
+
+- `dup --html` now opens the report in your default browser automatically (OS-agnostic: `open`/`start`/`xdg-open`); use `--no-open` to skip. Also: duplication stats now honor `--min-copies`/`--min-lines`, and the whole-codebase "code lines" figure was dropped from the report (3.7.1–3.7.2). ([#20](https://github.com/adiletbaimyrza/clines/pull/20))
+
 ## 3.7.0
 
 - `dup --min-copies <n>`: only report blocks duplicated at least n times. Also: HTML snippets now preserve blank lines, gained a copy button, and highlight reliably (3.6.1). ([#17](https://github.com/adiletbaimyrza/clines/pull/17))

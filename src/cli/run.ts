@@ -8,7 +8,10 @@ import { consoleReporter } from "../report/reporters/console.js";
 import { injectReadme } from "../report/reporters/readme.js";
 import { ClinesError } from "../util/errors.js";
 import { pathExists, readText, writeText } from "../util/fs.js";
+import { openInBrowser } from "../util/open.js";
 import type { IO } from "./io.js";
+
+export type Opener = (target: string) => void;
 
 export interface RunOptions {
   dir: string;
@@ -20,6 +23,7 @@ export interface DupOptions {
   dir: string;
   minLines: number;
   minCopies: number;
+  open: boolean;
   config?: string;
   html?: string;
 }
@@ -47,7 +51,11 @@ export async function run(options: RunOptions, io: IO): Promise<number> {
   return 0;
 }
 
-export async function runDup(options: DupOptions, io: IO): Promise<number> {
+export async function runDup(
+  options: DupOptions,
+  io: IO,
+  opener: Opener = openInBrowser,
+): Promise<number> {
   const { rootDir, config, globs } = await prepare(options.dir, options.config);
   const result = await analyzeDuplication(
     rootDir,
@@ -62,6 +70,9 @@ export async function runDup(options: DupOptions, io: IO): Promise<number> {
     const htmlPath = path.resolve(options.html);
     await writeText(htmlPath, renderDuplicationHtml(result));
     io.err(`Wrote duplication report to ${htmlPath}`);
+    if (options.open) {
+      opener(htmlPath);
+    }
   }
 
   return 0;
