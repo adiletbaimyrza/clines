@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Report } from "../src/core/model.js";
 import { consoleReporter } from "../src/report/reporters/console.js";
-import { jsonReporter } from "../src/report/reporters/json.js";
 import {
   injectReadme,
   PLACEHOLDER_END,
@@ -75,21 +74,6 @@ describe("consoleReporter", () => {
     expect(output).toContain("Total");
     expect(output).toContain("0.0%");
     expect(output).toContain("Project size:");
-  });
-});
-
-describe("jsonReporter", () => {
-  it("emits the report as JSON with totals, size label and languages", () => {
-    const parsed = JSON.parse(jsonReporter.render(report));
-    expect(parsed).toMatchObject({
-      totalCode: 30,
-      totalComment: 10,
-      totalBlank: 10,
-      totalLines: 50,
-      totalFiles: 3,
-      projectSize: "Meteoroid 🪨",
-    });
-    expect(parsed.languages).toHaveLength(2);
   });
 });
 

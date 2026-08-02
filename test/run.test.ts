@@ -15,46 +15,45 @@ afterEach(() => {
 });
 
 describe("run", () => {
-  it("prints a console summary and updates an existing README", async () => {
+  it("prints the table and leaves the README untouched by default", async () => {
     project.file("a.ts", "const a = 1;\n");
     project.file("README.md", "# Demo\n");
     const { io, out, err } = captureIO();
 
-    const code = await run({ dir: project.root, json: false, readme: true }, io);
+    const code = await run({ dir: project.root, readme: false }, io);
 
     expect(code).toBe(0);
-    expect(out.join("\n")).toContain("Project size:");
     expect(out.join("\n")).toContain("Total");
-    expect(err.join("\n")).toContain("Updated");
-    expect(readFileSync(project.path("README.md"), "utf8")).toContain("**Lines of Code:** `2`");
-  });
-
-  it("emits JSON and warns when README is missing (readme enabled)", async () => {
-    project.file("a.ts", "const a = 1;\n");
-    const { io, out, err } = captureIO();
-
-    await run({ dir: project.root, json: true, readme: true }, io);
-
-    expect(JSON.parse(out[0]!).totalCode).toBe(1);
-    expect(err.join("\n")).toContain("README.md not found");
-    expect(await pathExists(project.path("clines.json"))).toBe(false);
-  });
-
-  it("skips README updates when readme is false", async () => {
-    project.file("a.ts", "const a = 1;\n");
-    project.file("README.md", "# Demo\n");
-    const { io, err } = captureIO();
-
-    await run({ dir: project.root, json: false, readme: false }, io);
-
+    expect(out.join("\n")).toContain("Project size:");
     expect(err.join("\n")).not.toContain("Updated");
     expect(readFileSync(project.path("README.md"), "utf8")).toBe("# Demo\n");
   });
 
+  it("updates the README when readme is true", async () => {
+    project.file("a.ts", "const a = 1;\n");
+    project.file("README.md", "# Demo\n");
+    const { io, err } = captureIO();
+
+    await run({ dir: project.root, readme: true }, io);
+
+    expect(err.join("\n")).toContain("Updated");
+    expect(readFileSync(project.path("README.md"), "utf8")).toContain("**Lines of Code:** `2`");
+  });
+
+  it("warns when README is missing and readme is true", async () => {
+    project.file("a.ts", "const a = 1;\n");
+    const { io, err } = captureIO();
+
+    await run({ dir: project.root, readme: true }, io);
+
+    expect(err.join("\n")).toContain("README.md not found");
+    expect(await pathExists(project.path("clines.json"))).toBe(false);
+  });
+
   it("throws for a missing directory", async () => {
     const { io } = captureIO();
-    await expect(
-      run({ dir: project.path("nope"), json: false, readme: false }, io),
-    ).rejects.toBeInstanceOf(ClinesError);
+    await expect(run({ dir: project.path("nope"), readme: false }, io)).rejects.toBeInstanceOf(
+      ClinesError,
+    );
   });
 });
