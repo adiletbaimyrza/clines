@@ -168,22 +168,33 @@ describe("detectDuplication", () => {
     // copies of itself, but it is not a cross-location clone.
     const result = detectDuplication([file("a.ts", Array(12).fill("same"))], 5);
     expect(result.clones).toEqual([]);
-    expect(result.duplicatedLines).toBe(12);
+    // Stats reflect only reported clones, so this self-overlap counts as 0.
+    expect(result.duplicatedLines).toBe(0);
+    expect(result.perFile).toEqual([]);
   });
 
-  it("filters clones below minCopies", () => {
+  it("filters by minCopies and reflects it in every stat", () => {
     const trio = ["t1", "t2", "t3", "t4", "t5"];
     const pair = ["q1", "q2", "q3", "q4", "q5"];
     const files = [
-      file("a.ts", [...trio, "x", ...pair]),
-      file("b.ts", [...trio, "y", ...pair]),
-      file("c.ts", trio),
+      file("t1.ts", trio),
+      file("t2.ts", trio),
+      file("t3.ts", trio),
+      file("p1.ts", pair),
+      file("p2.ts", pair),
     ];
-    // trio appears 3×, pair appears 2×.
-    expect(detectDuplication(files, 5, 2).clones).toHaveLength(2);
-    const filtered = detectDuplication(files, 5, 3).clones;
-    expect(filtered).toHaveLength(1);
-    expect(filtered[0]!.fragments).toHaveLength(3);
+
+    const r2 = detectDuplication(files, 5, 2);
+    expect(r2.clones).toHaveLength(2);
+    expect(r2.duplicatedLines).toBe(25);
+    expect(r2.perFile).toHaveLength(5);
+
+    const r3 = detectDuplication(files, 5, 3);
+    expect(r3.clones).toHaveLength(1);
+    expect(r3.clones[0]!.fragments).toHaveLength(3);
+    // Stats now reflect only the 3× clone: 3 files × 5 lines.
+    expect(r3.duplicatedLines).toBe(15);
+    expect(r3.perFile).toHaveLength(3);
   });
 
   it("ranks larger clones first", () => {
