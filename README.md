@@ -131,6 +131,14 @@ npm run typecheck   # tsc --noEmit
 npm run build       # compile to dist/
 ```
 
+## Releasing
+
+Publishing uses npm **trusted publishing** (OIDC, tokenless) with **staged publishing**:
+
+1. Bump the version in `package.json` and merge to `master`. CI **stages** the version to npm's staging queue — it is not public yet.
+2. Test the exact staged artifact: `npm run stage:list` → `npm stage download <stage-id>` → install the `.tgz` and run it.
+3. Deploy manually (requires your 2FA): approve on npmjs.com, or `npm run deploy -- <stage-id>` (= `npm stage approve`).
+
 ## License
 
 MIT License © 2025 Adilet Baimyrza Uulu
