@@ -13,16 +13,25 @@ interface CountFlags {
   config?: string;
 }
 
+const EXAMPLES = `
+Examples:
+  $ clines                   show this banner
+  $ clines count             report the current directory
+  $ clines count src         report a specific directory
+  $ clines count --readme    report and update README.md
+`;
+
 export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
   const runner = deps.runner ?? run;
   const version = deps.version ?? "0.0.0";
   const program = new Command();
 
-  program.name("clines").description("Measure your codebase.").version(version);
-
-  program.action(() => {
-    io.out(renderBanner(version));
-  });
+  program
+    .name("clines")
+    .description("Measure your codebase — count code, comments and blanks per language.")
+    .version(version)
+    .showHelpAfterError("(run `clines --help` for usage)")
+    .addHelpText("after", EXAMPLES);
 
   program
     .command("count")
@@ -40,4 +49,15 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     });
 
   return program;
+}
+
+export async function runCli(argv: string[], io: IO, deps: ProgramDeps = {}): Promise<void> {
+  const version = deps.version ?? "0.0.0";
+  if (argv.slice(2).length === 0) {
+    io.out(renderBanner(version));
+    return;
+  }
+  const program = buildProgram(io, deps);
+  program.exitOverride();
+  await program.parseAsync(argv);
 }
