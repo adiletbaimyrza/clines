@@ -79,8 +79,12 @@ function isWhitespace(char: string): boolean {
 }
 
 export function classifyContent(content: string, syntax: LanguageSyntax): LineKind[] {
+  const lines = content.split(/\r?\n/);
+  if (lines[lines.length - 1] === "") {
+    lines.pop();
+  }
   const state: ScanState = { inBlock: false };
-  return content.split(/\r?\n/).map((line) => classifyLine(line, syntax, state));
+  return lines.map((line) => classifyLine(line, syntax, state));
 }
 
 export function tokenize(filePath: string, content: string): FileTokens {

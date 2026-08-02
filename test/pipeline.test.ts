@@ -14,7 +14,7 @@ afterEach(() => {
 
 describe("analyze", () => {
   it("tokenizes collected files and aggregates a report", async () => {
-    project.file("a.ts", "const a = 1;\n// note\n");
+    project.file("a.ts", "const a = 1;\n\n// note\n");
     project.file("b.py", "x = 1\n# c\n");
     project.file("skip.log", "ignored");
 

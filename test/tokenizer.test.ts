@@ -9,7 +9,14 @@ const json = getLanguageSyntax(".json");
 describe("classifyContent", () => {
   it("classifies blank, code and single-line comments", () => {
     const kinds = classifyContent("const a = 1;\n\n// note\n", js);
-    expect(kinds).toEqual(["code", "blank", "comment", "blank"]);
+    expect(kinds).toEqual(["code", "blank", "comment"]);
+  });
+
+  it("does not count the trailing newline as an extra blank line", () => {
+    expect(classifyContent("a\n", js)).toEqual(["code"]);
+    expect(classifyContent("a", js)).toEqual(["code"]);
+    expect(classifyContent("", js)).toEqual([]);
+    expect(classifyContent("a\n\n", js)).toEqual(["code", "blank"]);
   });
 
   it("counts code that shares a line with an inline block comment (bug #1)", () => {
@@ -72,7 +79,8 @@ describe("getLanguageSyntax", () => {
 describe("getLanguageName", () => {
   it("maps known extensions to display names (case-insensitive)", () => {
     expect(getLanguageName(".ts")).toBe("TypeScript");
-    expect(getLanguageName(".TSX")).toBe("TypeScript");
+    expect(getLanguageName(".TSX")).toBe("TSX");
+    expect(getLanguageName(".jsx")).toBe("JSX");
     expect(getLanguageName(".py")).toBe("Python");
     expect(getLanguageName(".sh")).toBe("Bash");
     expect(getLanguageName(".coffee")).toBe("CoffeeScript");
