@@ -7,7 +7,7 @@ import {
 } from "../src/core/analyzers/duplication.js";
 
 function file(name: string, texts: string[]): DupFile {
-  return { path: name, codeLines: texts.map((text, i) => ({ line: i + 1, text })) };
+  return { path: name, lines: texts, codeLines: texts.map((text, i) => ({ line: i + 1, text })) };
 }
 
 describe("normalizeLine", () => {
@@ -28,6 +28,13 @@ describe("toDupFile", () => {
   it("handles files without an extension", () => {
     const dup = toDupFile("Makefile", "all:\n\tbuild\n");
     expect(dup.codeLines).toHaveLength(2);
+  });
+
+  it("keeps blank lines inside a duplicated block in the snippet", () => {
+    const content = "x1();\nx2();\n\nx3();\nx4();\nx5();\n";
+    const result = detectDuplication([toDupFile("a.js", content), toDupFile("b.js", content)], 5);
+    expect(result.clones).toHaveLength(1);
+    expect(result.clones[0]!.code).toEqual(["x1();", "x2();", "", "x3();", "x4();", "x5();"]);
   });
 });
 

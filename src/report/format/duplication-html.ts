@@ -88,15 +88,19 @@ function cloneCard(clone: Clone, maxSnippet: number): string {
   const language = hljsLanguage(clone.fragments[0]!.path);
   const search = esc(clone.fragments.map((f) => f.path).join(" "));
   const more = extra > 0 ? `<div class="more">… ${fmt(extra)} more lines</div>` : "";
+  const codeClass = language === "" ? "" : ` class="${language}"`;
   return `<details class="clone" data-search="${search}">
 <summary class="clone-head">${clone.lineCount} lines × ${clone.fragments.length} copies</summary>
 <ul class="locations">${locations}</ul>
-<pre class="snippet"><code class="hljs${language}">${shown.map(esc).join("\n")}</code></pre>${more}
+<div class="snippet-wrap">${COPY_BUTTON}<pre class="snippet"><code${codeClass}>${shown.map(esc).join("\n")}</code></pre></div>${more}
 </details>`;
 }
 
 function dedent(lines: string[]): string[] {
-  const min = Math.min(...lines.map((line) => line.length - line.trimStart().length));
+  const indents = lines
+    .filter((line) => line.trim() !== "")
+    .map((line) => line.length - line.trimStart().length);
+  const min = indents.length > 0 ? Math.min(...indents) : 0;
   return lines.map((line) => line.slice(min));
 }
 
@@ -148,8 +152,13 @@ const LANGUAGES: Record<string, string> = {
 
 function hljsLanguage(filePath: string): string {
   const name = LANGUAGES[path.extname(filePath).toLowerCase()];
-  return name === undefined ? "" : ` language-${name}`;
+  return name === undefined ? "" : `language-${name}`;
 }
+
+const COPY_BUTTON =
+  '<button class="copy" aria-label="Copy snippet" title="Copy snippet">' +
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>';
 
 function stat(value: string, label: string): string {
   return `<div class="stat"><div class="value">${esc(value)}</div><div class="label">${esc(label)}</div></div>`;
@@ -168,7 +177,7 @@ function esc(value: string): string {
 }
 
 const STYLE = `
-:root{--bg:#0a0e17;--panel:#141b2d;--border:#223049;--text:#e6ecf5;--muted:#9aa8bf;--accent:#5ed0ff}
+:root{--bg:#0a0e17;--panel:#141b2d;--border:#223049;--text:#e6ecf5;--muted:#9aa8bf;--accent:#5ed0ff;--green:#4ade80}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.5}
 header,section{max-width:1000px;margin:0 auto;padding:24px 20px}
@@ -187,14 +196,29 @@ td.path{font-family:ui-monospace,Menlo,monospace}
 .clone[open] .clone-head{border-bottom:1px solid var(--border)}
 .locations{margin:0;padding:10px 14px;list-style:none;font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--muted)}
 .locations .range{color:var(--accent)}
-.snippet{margin:0;border-top:1px solid var(--border)}
-.snippet code.hljs{padding:14px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;tab-size:2;background:transparent}
+.snippet-wrap{position:relative;border-top:1px solid var(--border)}
+.snippet{margin:0;overflow-x:auto}
+.snippet code{display:block;padding:14px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;tab-size:2;white-space:pre;background:transparent}
+.copy{position:absolute;top:8px;right:8px;z-index:1;background:var(--panel);border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:5px 7px;cursor:pointer;line-height:0}
+.copy:hover{color:var(--text);border-color:var(--accent)}
+.copy.copied{color:var(--green);border-color:var(--green)}
+.copy svg{width:15px;height:15px;display:block}
 .more{padding:8px 14px;color:var(--muted);font-size:12px;font-style:italic}
 .muted{color:var(--muted)}
 `;
 
 const SCRIPT = `
 if(window.hljs){hljs.highlightAll();}
+document.querySelectorAll(".copy").forEach(btn=>{
+  btn.addEventListener("click",async()=>{
+    const code=btn.parentElement.querySelector("code");
+    try{
+      await navigator.clipboard.writeText(code.innerText);
+      btn.classList.add("copied");
+      setTimeout(()=>btn.classList.remove("copied"),1200);
+    }catch(e){}
+  });
+});
 const input=document.getElementById("filter");
 const clones=[...document.querySelectorAll(".clone")];
 input.addEventListener("input",()=>{
