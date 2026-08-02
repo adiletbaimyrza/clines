@@ -31,6 +31,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "stage:list": "npm stage list clines",
+    "deploy": "npm stage approve",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

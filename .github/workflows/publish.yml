@@ -1,27 +1,26 @@
-name: Publish
+name: Stage release
 
 on:
   push:
     branches: [master]
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: publish-${{ github.event_name }}
+  group: stage-release
   cancel-in-progress: false
 
 jobs:
   quality:
     uses: ./.github/workflows/_quality.yml
 
-  publish:
+  stage:
     needs: quality
     runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'workflow_dispatch' && 'production' || 'test' }}
+    environment: test
     permissions:
-      contents: write
+      contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -33,63 +32,61 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
-      - name: Upgrade npm for trusted publishing
+      - name: Upgrade npm for trusted publishing and staged publishing
         run: npm install -g npm@latest
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Resolve version and dist-tag
+      - name: Resolve version
         id: meta
         run: |
           set -euo pipefail
-          BASE="$(node -p "require('./package.json').version")"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            if npm view "clines@$BASE" version >/dev/null 2>&1; then
-              echo "::error::clines@$BASE is already published. Bump the version in package.json via a PR before deploying."
-              exit 1
-            fi
-            echo "version=$BASE" >> "$GITHUB_OUTPUT"
-            echo "dist_tag=latest" >> "$GITHUB_OUTPUT"
-            echo "release=true" >> "$GITHUB_OUTPUT"
+          VER="$(node -p "require('./package.json').version")"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          if npm view "clines@$VER" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
           else
-            VER="${BASE}-beta.${{ github.run_number }}"
-            npm version "$VER" --no-git-tag-version
-            echo "version=$VER" >> "$GITHUB_OUTPUT"
-            echo "dist_tag=beta" >> "$GITHUB_OUTPUT"
-            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "published=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "Publishing clines@$(node -p "require('./package.json').version")"
+
+      - name: Already published
+        if: steps.meta.outputs.published == 'true'
+        run: |
+          echo "clines@${{ steps.meta.outputs.version }} is already live on npm — nothing to stage."
+          echo "Bump the version in package.json (via a PR) to stage a new release."
 
       - name: Build
+        if: steps.meta.outputs.published == 'false'
         run: npm run build
 
-      - name: Publish
-        run: npm publish --tag ${{ steps.meta.outputs.dist_tag }}
+      - name: Stage publish
+        if: steps.meta.outputs.published == 'false'
+        run: npm stage publish --tag latest
 
-      - name: Tag and create GitHub Release
-        if: steps.meta.outputs.release == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Deploy instructions
+        if: steps.meta.outputs.published == 'false'
         run: |
-          set -euo pipefail
           VER="${{ steps.meta.outputs.version }}"
-          git tag "v$VER"
-          git push origin "v$VER"
-          gh release create "v$VER" --title "v$VER" --generate-notes
-
-      - name: Post-publish health check
-        run: |
-          set -euo pipefail
-          VER="${{ steps.meta.outputs.version }}"
-          TMP="$(mktemp -d)"
-          cd "$TMP"
-          npm init -y >/dev/null
-          for i in 1 2 3 4 5; do
-            if npm install "clines@$VER"; then break; fi
-            echo "Install attempt $i failed; retrying in 15s..."; sleep 15
-          done
-          npx clines --version
-          printf 'const a = 1;\n' > sample.ts
-          npx clines scan . --json --no-readme
-          echo "clines@$VER healthy."
+          {
+            echo "## Staged \`clines@${VER}\` for the \`latest\` tag"
+            echo ""
+            echo "It is in npm's **staging queue** and is **not yet public**."
+            echo ""
+            echo "### 1. Test the exact staged artifact"
+            echo '```sh'
+            echo "npm stage list clines            # find the <stage-id>"
+            echo "npm stage download <stage-id>    # downloads clines-${VER}.tgz"
+            echo "mkdir /tmp/try && cd /tmp/try && npm init -y"
+            echo "npm i /path/to/clines-${VER}.tgz # install & run it"
+            echo "npx clines scan ."
+            echo '```'
+            echo ""
+            echo "### 2. Deploy (manual — requires your 2FA)"
+            echo "- On **npmjs.com** → clines → Staged versions → **Approve** (enter your OTP), or"
+            echo '```sh'
+            echo "npm run deploy -- <stage-id>     # = npm stage approve <stage-id>"
+            echo '```'
+            echo ""
+            echo "To discard instead: \`npm stage reject <stage-id>\`."
+          } >> "$GITHUB_STEP_SUMMARY"
