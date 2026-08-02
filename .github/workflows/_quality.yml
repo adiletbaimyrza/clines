@@ -1,0 +1,64 @@
+name: Quality
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Checks (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test + coverage
+        run: npm run coverage
+
+      - name: Upload coverage report
+        if: matrix.node == 20
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+          if-no-files-found: error
+
+      - name: Security audit
+        run: npm audit --audit-level=high
+
+      - name: Build
+        run: npm run build
+
+      - name: Health check
+        run: |
+          set -euo pipefail
+          node dist/cli/index.js --version
+          TMP="$(mktemp -d)"
+          printf 'const a = 1;\n// note\n\n' > "$TMP/sample.ts"
+          OUT="$(node dist/cli/index.js scan "$TMP" --json --no-readme)"
+          echo "$OUT"
+          echo "$OUT" | node -e 'const d=JSON.parse(require("fs").readFileSync(0,"utf8")); if(d.totalCode!==1){console.error("unexpected totalCode",d.totalCode);process.exit(1)}'
+          rm -rf "$TMP"
