@@ -2,6 +2,10 @@
 
 All notable changes to **clines**. Each entry links to the pull request that shipped it.
 
+## 3.6.0
+
+- `dup`: collapse sliding-window noise — overlapping shifted fragments in the same file are merged into one span, and pure self-overlapping regions are no longer reported as clones. HTML clone cards are now collapsible (expand for exact lines). Snippets keep their indentation and are syntax-highlighted with highlight.js. ([#15](https://github.com/adiletbaimyrza/clines/pull/15))
+
 ## 3.5.0
 
 - `clines dup` redesign: readable terminal summary (most-duplicated-files table) plus a browsable **HTML report** (`--html <file>`) with headline stats and a searchable list of clones showing the duplicated code snippets and every location. ([#13](https://github.com/adiletbaimyrza/clines/pull/13))

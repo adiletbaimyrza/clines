@@ -88,11 +88,11 @@ function cloneCard(clone: Clone, maxSnippet: number): string {
   const language = hljsLanguage(clone.fragments[0]!.path);
   const search = esc(clone.fragments.map((f) => f.path).join(" "));
   const more = extra > 0 ? `<div class="more">… ${fmt(extra)} more lines</div>` : "";
-  return `<div class="clone" data-search="${search}">
-<div class="clone-head">${clone.lineCount} lines × ${clone.fragments.length} copies</div>
+  return `<details class="clone" data-search="${search}">
+<summary class="clone-head">${clone.lineCount} lines × ${clone.fragments.length} copies</summary>
 <ul class="locations">${locations}</ul>
 <pre class="snippet"><code class="hljs${language}">${shown.map(esc).join("\n")}</code></pre>${more}
-</div>`;
+</details>`;
 }
 
 function dedent(lines: string[]): string[] {
@@ -182,8 +182,9 @@ th,td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 td.path{font-family:ui-monospace,Menlo,monospace}
 #filter{width:100%;padding:10px 14px;margin:8px 0 18px;background:var(--panel);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px}
-.clone{background:var(--panel);border:1px solid var(--border);border-radius:10px;margin-bottom:16px;overflow:hidden}
-.clone-head{padding:10px 14px;font-weight:600;background:#0e1526;border-bottom:1px solid var(--border)}
+.clone{background:var(--panel);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.clone-head{padding:10px 14px;font-weight:600;background:#0e1526;cursor:pointer;user-select:none}
+.clone[open] .clone-head{border-bottom:1px solid var(--border)}
 .locations{margin:0;padding:10px 14px;list-style:none;font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--muted)}
 .locations .range{color:var(--accent)}
 .snippet{margin:0;border-top:1px solid var(--border)}
