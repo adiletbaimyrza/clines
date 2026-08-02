@@ -80,10 +80,11 @@ describe("renderDuplicationHtml", () => {
     expect(html).toContain("doThing();");
     expect(html).toContain('id="filter"');
     expect(html).toContain("highlight.min.js");
-    expect(html).toContain('class="hljs language-typescript"');
+    expect(html).toContain('<code class="language-typescript">');
+    expect(html).toContain('class="copy"');
   });
 
-  it("omits a language class for unknown extensions", () => {
+  it("omits the language class for unknown extensions", () => {
     const html = renderDuplicationHtml(
       result({
         clones: [
@@ -98,7 +99,7 @@ describe("renderDuplicationHtml", () => {
         ],
       }),
     );
-    expect(html).toContain('class="hljs"');
+    expect(html).toContain("<code>line one");
     expect(html).not.toContain("language-");
   });
 
@@ -145,6 +146,42 @@ describe("renderDuplicationHtml", () => {
     expect(html).toContain("  run");
     expect(html).not.toContain("    if");
     expect(html).not.toContain("      run");
+  });
+
+  it("preserves blank lines within a snippet and dedents ignoring them", () => {
+    const html = renderDuplicationHtml(
+      result({
+        clones: [
+          {
+            lineCount: 2,
+            fragments: [
+              { path: "x.ts", startLine: 1, endLine: 3 },
+              { path: "y.ts", startLine: 1, endLine: 3 },
+            ],
+            code: ["  a();", "", "  b();"],
+          },
+        ],
+      }),
+    );
+    expect(html).toContain("a();\n\nb();");
+  });
+
+  it("does not crash on an all-blank snippet", () => {
+    const html = renderDuplicationHtml(
+      result({
+        clones: [
+          {
+            lineCount: 2,
+            fragments: [
+              { path: "x.ts", startLine: 1, endLine: 2 },
+              { path: "y.ts", startLine: 1, endLine: 2 },
+            ],
+            code: ["   ", "  "],
+          },
+        ],
+      }),
+    );
+    expect(html).toContain('<pre class="snippet">');
   });
 
   it("shows an empty-state and a truncation note", () => {
