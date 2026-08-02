@@ -31,7 +31,7 @@ describe("renderDuplication (terminal)", () => {
   it("summarizes duplication and lists the most duplicated files", () => {
     const output = renderDuplication(result());
     expect(output).toContain("Duplication: 12.0%");
-    expect(output).toContain("120 of 1,000 code lines");
+    expect(output).toContain("120 duplicated lines");
     expect(output).toContain("Most duplicated files");
     expect(output).toContain("a.ts");
     expect(output).toContain("80%");
