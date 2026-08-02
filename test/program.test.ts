@@ -72,7 +72,12 @@ describe("runCli", () => {
 
     await runCli(["node", "clines", "dup", project.root], io, { dupRunner });
 
-    expect(dupRunner.mock.calls[0]![0]).toEqual({ dir: project.root, minLines: 5, minCopies: 2 });
+    expect(dupRunner.mock.calls[0]![0]).toEqual({
+      dir: project.root,
+      minLines: 5,
+      minCopies: 2,
+      open: true,
+    });
   });
 
   it("parses --min-lines, --min-copies and --config for dup", async () => {
@@ -100,11 +105,12 @@ describe("runCli", () => {
       dir: project.root,
       minLines: 8,
       minCopies: 3,
+      open: true,
       config: "c.json",
     });
   });
 
-  it("passes --html through to dup", async () => {
+  it("passes --html through to dup and opens by default", async () => {
     const dupRunner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();
 
@@ -116,8 +122,24 @@ describe("runCli", () => {
       dir: project.root,
       minLines: 5,
       minCopies: 2,
+      open: true,
       html: "report.html",
     });
+  });
+
+  it("disables opening with --no-open", async () => {
+    const dupRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(
+      ["node", "clines", "dup", project.root, "--html", "report.html", "--no-open"],
+      io,
+      {
+        dupRunner,
+      },
+    );
+
+    expect(dupRunner.mock.calls[0]![0]).toMatchObject({ open: false, html: "report.html" });
   });
 
   it("rejects a non-positive --min-lines", async () => {

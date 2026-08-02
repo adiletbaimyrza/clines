@@ -58,7 +58,8 @@ npx clines count --readme             # report + update README.md
 npx clines dup                          # terminal summary
 npx clines dup --min-lines 8            # only flag larger clones
 npx clines dup --min-copies 3           # only blocks duplicated 3+ times
-npx clines dup --html dup-report.html   # + a browsable HTML report
+npx clines dup --html dup-report.html   # + a browsable HTML report (opens in your browser)
+npx clines dup --html dup-report.html --no-open   # write it without opening
 ```
 
 ```text

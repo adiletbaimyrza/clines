@@ -17,6 +17,7 @@ interface CountFlags {
 interface DupFlags {
   minLines: number;
   minCopies: number;
+  open?: boolean;
   config?: string;
   html?: string;
 }
@@ -78,12 +79,14 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
       2,
     )
     .option("--html <file>", "write a browsable HTML report to this path")
+    .option("--no-open", "do not open the HTML report in a browser")
     .option("--config <path>", "path to a config file")
     .action(async (dir: string, flags: DupFlags) => {
       const options: DupOptions = {
         dir,
         minLines: flags.minLines,
         minCopies: flags.minCopies,
+        open: flags.open !== false,
         ...(flags.config !== undefined ? { config: flags.config } : {}),
         ...(flags.html !== undefined ? { html: flags.html } : {}),
       };
