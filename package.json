@@ -1,6 +1,6 @@
 {
   "name": "clines",
-  "version": "3.5.0",
+  "version": "3.5.1",
   "description": "An industry-grade CLI that measures your codebase (lines, comments, size) and updates your README — built to grow into duplication and complexity analysis.",
   "type": "module",
   "repository": {

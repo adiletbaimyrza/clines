@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { Clone, DuplicationResult } from "../../core/analyzers/duplication.js";
 
 export interface HtmlOptions {
@@ -5,6 +6,10 @@ export interface HtmlOptions {
   maxClones?: number;
   maxSnippet?: number;
 }
+
+const HLJS_VERSION = "11.9.0";
+const HLJS_CSS = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/${HLJS_VERSION}/styles/github-dark.min.css`;
+const HLJS_JS = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/${HLJS_VERSION}/highlight.min.js`;
 
 export function renderDuplicationHtml(
   result: DuplicationResult,
@@ -24,6 +29,7 @@ export function renderDuplicationHtml(
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${esc(title)}</title>
+<link rel="stylesheet" href="${HLJS_CSS}" />
 <style>${STYLE}</style>
 </head>
 <body>
@@ -52,6 +58,7 @@ ${clones.map((clone) => cloneCard(clone, maxSnippet)).join("\n")}
 ${hiddenClones > 0 ? `<p class="muted">… and ${fmt(hiddenClones)} more clones not shown.</p>` : ""}
 </section>
 
+<script src="${HLJS_JS}"></script>
 <script>${SCRIPT}</script>
 </body>
 </html>
@@ -76,15 +83,72 @@ function cloneCard(clone: Clone, maxSnippet: number): string {
   const locations = clone.fragments
     .map((f) => `<li>${esc(f.path)}<span class="range">:${f.startLine}-${f.endLine}</span></li>`)
     .join("");
-  const shown = clone.code.slice(0, maxSnippet);
+  const shown = dedent(clone.code.slice(0, maxSnippet));
   const extra = clone.code.length - shown.length;
-  const snippet = shown.map(esc).join("\n") + (extra > 0 ? `\n… ${fmt(extra)} more lines` : "");
+  const language = hljsLanguage(clone.fragments[0]!.path);
   const search = esc(clone.fragments.map((f) => f.path).join(" "));
+  const more = extra > 0 ? `<div class="more">… ${fmt(extra)} more lines</div>` : "";
   return `<div class="clone" data-search="${search}">
 <div class="clone-head">${clone.lineCount} lines × ${clone.fragments.length} copies</div>
 <ul class="locations">${locations}</ul>
-<pre class="snippet">${snippet}</pre>
+<pre class="snippet"><code class="hljs${language}">${shown.map(esc).join("\n")}</code></pre>${more}
 </div>`;
+}
+
+function dedent(lines: string[]): string[] {
+  const min = Math.min(...lines.map((line) => line.length - line.trimStart().length));
+  return lines.map((line) => line.slice(min));
+}
+
+const LANGUAGES: Record<string, string> = {
+  ".js": "javascript",
+  ".jsx": "javascript",
+  ".mjs": "javascript",
+  ".cjs": "javascript",
+  ".ts": "typescript",
+  ".tsx": "typescript",
+  ".mts": "typescript",
+  ".cts": "typescript",
+  ".py": "python",
+  ".rb": "ruby",
+  ".go": "go",
+  ".rs": "rust",
+  ".java": "java",
+  ".c": "c",
+  ".h": "c",
+  ".cpp": "cpp",
+  ".cc": "cpp",
+  ".hpp": "cpp",
+  ".cs": "csharp",
+  ".php": "php",
+  ".swift": "swift",
+  ".kt": "kotlin",
+  ".kts": "kotlin",
+  ".scala": "scala",
+  ".sh": "bash",
+  ".bash": "bash",
+  ".zsh": "bash",
+  ".sql": "sql",
+  ".lua": "lua",
+  ".css": "css",
+  ".scss": "scss",
+  ".less": "less",
+  ".html": "xml",
+  ".xml": "xml",
+  ".vue": "xml",
+  ".yml": "yaml",
+  ".yaml": "yaml",
+  ".toml": "ini",
+  ".json": "json",
+  ".md": "markdown",
+  ".coffee": "coffeescript",
+  ".pl": "perl",
+  ".r": "r",
+};
+
+function hljsLanguage(filePath: string): string {
+  const name = LANGUAGES[path.extname(filePath).toLowerCase()];
+  return name === undefined ? "" : ` language-${name}`;
 }
 
 function stat(value: string, label: string): string {
@@ -122,11 +186,14 @@ td.path{font-family:ui-monospace,Menlo,monospace}
 .clone-head{padding:10px 14px;font-weight:600;background:#0e1526;border-bottom:1px solid var(--border)}
 .locations{margin:0;padding:10px 14px;list-style:none;font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--muted)}
 .locations .range{color:var(--accent)}
-.snippet{margin:0;padding:14px;overflow-x:auto;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:#cdd6e6;border-top:1px solid var(--border);white-space:pre}
+.snippet{margin:0;border-top:1px solid var(--border)}
+.snippet code.hljs{padding:14px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;tab-size:2;background:transparent}
+.more{padding:8px 14px;color:var(--muted);font-size:12px;font-style:italic}
 .muted{color:var(--muted)}
 `;
 
 const SCRIPT = `
+if(window.hljs){hljs.highlightAll();}
 const input=document.getElementById("filter");
 const clones=[...document.querySelectorAll(".clone")];
 input.addEventListener("input",()=>{
