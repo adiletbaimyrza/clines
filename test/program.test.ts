@@ -94,6 +94,21 @@ describe("runCli", () => {
     });
   });
 
+  it("passes --html through to dup", async () => {
+    const dupRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(["node", "clines", "dup", project.root, "--html", "report.html"], io, {
+      dupRunner,
+    });
+
+    expect(dupRunner.mock.calls[0]![0]).toEqual({
+      dir: project.root,
+      minLines: 5,
+      html: "report.html",
+    });
+  });
+
   it("rejects a non-positive --min-lines", async () => {
     const dupRunner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();

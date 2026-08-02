@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DuplicationResult } from "../src/core/analyzers/duplication.js";
 import { renderDuplication } from "../src/report/format/duplication.js";
+import { renderDuplicationHtml } from "../src/report/format/duplication-html.js";
 
 function result(over: Partial<DuplicationResult> = {}): DuplicationResult {
   return {
@@ -8,50 +9,105 @@ function result(over: Partial<DuplicationResult> = {}): DuplicationResult {
     totalLines: 1000,
     duplicatedLines: 120,
     percentage: 12,
-    clones: [],
+    clones: [
+      {
+        lineCount: 40,
+        fragments: [
+          { path: "a.ts", startLine: 10, endLine: 49 },
+          { path: "b.ts", startLine: 80, endLine: 119 },
+        ],
+        code: ["const x = 1;", "doThing();"],
+      },
+    ],
+    perFile: [
+      { path: "a.ts", totalLines: 100, duplicatedLines: 80, percentage: 80 },
+      { path: "b.ts", totalLines: 100, duplicatedLines: 40, percentage: 40 },
+    ],
     ...over,
   };
 }
 
-describe("renderDuplication", () => {
-  it("summarizes and lists clones with locations", () => {
+describe("renderDuplication (terminal)", () => {
+  it("summarizes duplication and lists the most duplicated files", () => {
+    const output = renderDuplication(result());
+    expect(output).toContain("Duplication: 12.0%");
+    expect(output).toContain("120 of 1,000 code lines");
+    expect(output).toContain("Most duplicated files");
+    expect(output).toContain("a.ts");
+    expect(output).toContain("80%");
+    expect(output).toContain("--html");
+  });
+
+  it("truncates long file paths", () => {
+    const longPath = "a/very/deeply/nested/directory/structure/that/keeps/going/module.ts".padStart(
+      90,
+      "x",
+    );
     const output = renderDuplication(
       result({
-        clones: [
-          {
-            lineCount: 42,
-            fragments: [
-              { path: "a.ts", startLine: 10, endLine: 51 },
-              { path: "b.ts", startLine: 80, endLine: 121 },
-            ],
-          },
-        ],
+        perFile: [{ path: longPath, totalLines: 100, duplicatedLines: 50, percentage: 50 }],
       }),
     );
-    expect(output).toContain("Duplication: 12.0%");
-    expect(output).toContain("120 of 1,000 code lines duplicated");
-    expect(output).toContain("42 lines × 2");
-    expect(output).toContain("a.ts:10-51");
-    expect(output).toContain("b.ts:80-121");
+    expect(output).toContain("…");
+    expect(output).not.toContain(longPath);
+  });
+
+  it("notes when there are more files than shown", () => {
+    const perFile = Array.from({ length: 15 }, (_, i) => ({
+      path: `f${i}.ts`,
+      totalLines: 10,
+      duplicatedLines: 5,
+      percentage: 50,
+    }));
+    expect(renderDuplication(result({ perFile }), 10)).toContain("… and 5 more files.");
   });
 
   it("reports a clean result when there is no duplication", () => {
-    const output = renderDuplication(result({ minLines: 7 }));
-    expect(output).toContain("Duplication: 12.0%");
+    const output = renderDuplication(result({ clones: [], perFile: [], minLines: 7 }));
     expect(output).toContain("No duplicate blocks of 7+ lines found.");
   });
+});
 
-  it("truncates to the top N clones", () => {
-    const clones = Array.from({ length: 5 }, (_, i) => ({
-      lineCount: 10 - i,
-      fragments: [
-        { path: `a${i}.ts`, startLine: 1, endLine: 10 },
-        { path: `b${i}.ts`, startLine: 1, endLine: 10 },
-      ],
-    }));
-    const output = renderDuplication(result({ clones }), 2);
-    expect(output).toContain("a0.ts");
-    expect(output).not.toContain("a3.ts");
-    expect(output).toContain("… and 3 more clones.");
+describe("renderDuplicationHtml", () => {
+  it("builds a self-contained page with stats, files and clone snippets", () => {
+    const html = renderDuplicationHtml(result());
+    expect(html.startsWith("<!doctype html>")).toBe(true);
+    expect(html).toContain("<style>");
+    expect(html).toContain("12.0%");
+    expect(html).toContain("Most duplicated files");
+    expect(html).toContain("40 lines × 2 copies");
+    expect(html).toContain("a.ts");
+    expect(html).toContain("doThing();");
+    expect(html).toContain('id="filter"');
+  });
+
+  it("escapes HTML and truncates long snippets", () => {
+    const html = renderDuplicationHtml(
+      result({
+        clones: [
+          {
+            lineCount: 5,
+            fragments: [
+              { path: "x.ts", startLine: 1, endLine: 5 },
+              { path: "y.ts", startLine: 1, endLine: 5 },
+            ],
+            code: ["const a = b < c && d > e;", "line2", "line3"],
+          },
+        ],
+      }),
+      { maxSnippet: 2 },
+    );
+    expect(html).toContain("&lt;");
+    expect(html).toContain("&gt;");
+    expect(html).toContain("&amp;");
+    expect(html).toContain("… 1 more lines");
+  });
+
+  it("shows an empty-state and a truncation note", () => {
+    const empty = renderDuplicationHtml(result({ clones: [], perFile: [], minLines: 6 }));
+    expect(empty).toContain("No duplicate blocks of 6+ lines found.");
+
+    const many = renderDuplicationHtml(result(), { maxClones: 0 });
+    expect(many).toContain("more clones not shown");
   });
 });

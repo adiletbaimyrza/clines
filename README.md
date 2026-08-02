@@ -52,20 +52,26 @@ npx clines count --readme             # report + update README.md
 
 ### Finding duplicate code
 
-`clines dup` reports the duplication percentage and the largest duplicated blocks (`file:line` ranges), using line-based clone detection over your code lines.
+`clines dup` reports the duplication percentage and the most duplicated files, and can write a **browsable HTML report** with the actual duplicated code snippets. It uses maximal-block clone detection over your code lines (whitespace-insensitive).
 
 ```sh
-npx clines dup                 # find duplicate blocks (default: 5+ lines)
-npx clines dup --min-lines 8   # only flag larger clones
+npx clines dup                          # terminal summary
+npx clines dup --min-lines 8            # only flag larger clones
+npx clines dup --html dup-report.html   # + a browsable HTML report
 ```
 
 ```text
-Duplication: 4.2%  ·  1,240 of 29,500 code lines duplicated  ·  12 clones
+Duplication: 4.2%   1,240 of 29,500 code lines   ·   12 clones
 
-  38 lines × 2
-    src/a.ts:10-47
-    src/b.ts:80-117
+Most duplicated files
+  File                 Dup lines   % of file
+  src/legacy/api.ts          220         64%
+  src/legacy/api.old.ts      220         71%
+
+Run with `--html <file>` for a full browsable report with code snippets.
 ```
+
+The HTML report shows headline stats, a most-duplicated-files table, and a searchable list of clones with their code snippets and every location.
 
 ## Example output
 
