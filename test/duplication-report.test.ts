@@ -79,6 +79,27 @@ describe("renderDuplicationHtml", () => {
     expect(html).toContain("a.ts");
     expect(html).toContain("doThing();");
     expect(html).toContain('id="filter"');
+    expect(html).toContain("highlight.min.js");
+    expect(html).toContain('class="hljs language-typescript"');
+  });
+
+  it("omits a language class for unknown extensions", () => {
+    const html = renderDuplicationHtml(
+      result({
+        clones: [
+          {
+            lineCount: 5,
+            fragments: [
+              { path: "notes.xyz", startLine: 1, endLine: 5 },
+              { path: "other.xyz", startLine: 1, endLine: 5 },
+            ],
+            code: ["line one", "line two"],
+          },
+        ],
+      }),
+    );
+    expect(html).toContain('class="hljs"');
+    expect(html).not.toContain("language-");
   });
 
   it("escapes HTML and truncates long snippets", () => {
@@ -101,6 +122,29 @@ describe("renderDuplicationHtml", () => {
     expect(html).toContain("&gt;");
     expect(html).toContain("&amp;");
     expect(html).toContain("… 1 more lines");
+  });
+
+  it("preserves indentation and dedents the common leading whitespace", () => {
+    const html = renderDuplicationHtml(
+      result({
+        clones: [
+          {
+            lineCount: 2,
+            fragments: [
+              { path: "x.ts", startLine: 1, endLine: 2 },
+              { path: "y.ts", startLine: 1, endLine: 2 },
+            ],
+            code: ["    if (a) {", "      run();"],
+          },
+        ],
+      }),
+    );
+    // The 4-space common indent is stripped; the nested line keeps 2 extra spaces.
+    expect(html).toContain('<pre class="snippet">');
+    expect(html).toContain("if (a) {");
+    expect(html).toContain("  run");
+    expect(html).not.toContain("    if");
+    expect(html).not.toContain("      run");
   });
 
   it("shows an empty-state and a truncation note", () => {
