@@ -2,30 +2,11 @@
 
 ![clines](https://img.shields.io/badge/Code%20Lines-Counter-blue)
 
-**clines** is a simple CLI tool that counts the number of lines of code in your project and updates your `README.md` with the results. It also categorizes your project based on its size.
+**clines** is a small, fast CLI that measures your codebase — counting code, comment, and blank lines per language — and can update your `README.md` with the results. It also labels your project by size, from _Tiny scriptlet_ to _Massive code empire_.
 
-Ever wondered if your project is small or big? Curious about how many lines of code your project currently has? `clines` provides an easy way to measure your codebase and keep track of its growth.
-
-### Example Output in `README.md`
-
-After running `clines`, your `README.md` might look like this:
-
-  
-  > Lines of Code: **6999**  
-  > Project Size: **<span style="color: magenta;">Well-structured project ⚙️</span>**
-  >
-  >| Extension | Files | Effective LOC |
-  >|-----------|--------|----------------:|
-  >| `.ts`     | 62     | 3210           |
-  >| `.tsx`    | 41     | 2212           |
-  >| `.js`     | 18     | 935            |
-  >| `.css`    | 6      | 542            |
-
-  
+It is built with a layered, fully-tested architecture (100% coverage) so it can grow into deeper code-health analysis (duplication and complexity) over time.
 
 ## Installation
-
-Install locally as a development dependency:
 
 ```sh
 npm install --save-dev clines
@@ -33,63 +14,101 @@ npm install --save-dev clines
 
 ## Usage
 
-Run the command in your project's root directory:
+Scan the current directory:
 
 ```sh
 npx clines
 ```
 
-You can also specify a directory:
+Scan a specific directory:
 
 ```sh
-npx clines path/to/directory
+npx clines scan path/to/directory
 ```
 
-## Configuration
+### Options
 
-To customize which files and directories should be excluded from the line count, create a `clines.json` file in the root of your project. If this file does not exist, `clines` will generate one with the following default settings:
+| Flag              | Description                                          |
+| ----------------- | ---------------------------------------------------- |
+| `--json`          | Print a machine-readable JSON report to stdout.      |
+| `--no-readme`     | Do not update `README.md` (report to the terminal).  |
+| `--config <path>` | Use a specific config file instead of `clines.json`. |
+| `--version`       | Print the version.                                   |
+| `--help`          | Show help.                                           |
 
-```json
-{
-  "ignoreFiles": [
-    ".log", ".gitignore", ".csv", ".ini", ".env", ".LICENSE", ".gitmodules"
-  ],
-  "ignoreDirs": [
-    "node_modules", "dist", "build", "coverage", "logs", ".git", ".idea", ".vscode", "tmp", "out", "public", "static"
-  ]
-}
+Examples:
+
+```sh
+npx clines scan . --json --no-readme      # JSON to stdout, README untouched
+npx clines scan src --config clines.json  # scan src/ with an explicit config
 ```
 
-- `ignoreFiles`: Specifies file extensions that should be ignored.
-- `ignoreDirs`: Defines directories that should be excluded from the count.
+## Example output
 
-## How It Works
+```text
+Lines of Code: 707
+Files:         23
+Total lines:   996
+Project size:  Compact utility 🛠️
 
-- Recursively counts lines of code in the specified directory.
-- Ignores files and directories based on `clines.json` settings.
-- Updates `README.md` with the total line count inside the placeholders:
+  TypeScript      707 code
+```
+
+When README updating is enabled, the section between the placeholders is refreshed:
 
 ```md
 <!-- LINE_COUNT_PLACEHOLDER_1 -->
 
-**Total Files:** `147`  
-**Lines of Code:** `6999`  
-**Project Size:** Well-structured project ⚙️
+**Lines of Code:** `707`  
+**Project Size:** <span style="color: goldenrod;">Compact utility 🛠️</span>
 
-| Extension | Files | Effective LOC |
-|-----------|--------|----------------:|
-| `.ts`     | 62     | 3210           |
-| `.tsx`    | 41     | 2212           |
-| `.js`     | 18     | 935            |
-| `.css`    | 6      | 542            |
+| Language   | Files | Code | Comments | Blank | Total |
+| ---------- | ----: | ---: | -------: | ----: | ----: |
+| TypeScript |    23 |  707 |      165 |   124 |   996 |
+| **Total**  |    23 |  707 |      165 |   124 |   996 |
 
 <!-- LINE_COUNT_PLACEHOLDER_2 -->
 ```
 
-- You can place `<!-- LINE_COUNT_PLACEHOLDER_1 -->` and `<!-- LINE_COUNT_PLACEHOLDER_2 -->` anywhere in your `README.md`, and `clines` will update the content inside them.
-- If no placeholders are provided, `clines` will append the line count information at the end of `README.md`.
+Place `<!-- LINE_COUNT_PLACEHOLDER_1 -->` and `<!-- LINE_COUNT_PLACEHOLDER_2 -->` anywhere in your `README.md` and `clines` will update the content between them. If the placeholders are absent, the section is appended to the end of the file.
 
-## Project Size Labels
+## Configuration
+
+**No configuration is required** — `clines` works out of the box and never writes a file to your repo. By default it:
+
+- ignores common non-code directories (`node_modules`, `dist`, `build`, `coverage`, `.git`, `.idea`, `.vscode`, `public`, `static`, …),
+- ignores lockfiles/manifests and binary/asset extensions (`.png`, `.jpg`, `.log`, `.csv`, …), and
+- **respects your `.gitignore`** — anything git ignores is not counted.
+
+To customize, add an optional `clines.json` to your project root. It uses an **add / remove** model layered on the defaults, so you only specify your changes — for both directories and files:
+
+```json
+{
+  "ignore": {
+    "dirs": ["fixtures", "vendor"],
+    "files": ["CHANGELOG.md"],
+    "extensions": [".snap"],
+    "globs": ["**/*.min.js"]
+  },
+  "unignore": {
+    "dirs": ["public"],
+    "files": ["package.json"]
+  },
+  "respectGitignore": true
+}
+```
+
+- **`ignore`** — add more things to skip. `dirs` and `files` match by exact name; `extensions` include the leading dot; `globs` are matched against the path (e.g. `"*.min.js"`, `"test/fixtures/**"`).
+- **`unignore`** — remove entries from the defaults so they _are_ counted (e.g. start counting `package.json` or your `public/` directory).
+- **`respectGitignore`** — set to `false` to stop honoring `.gitignore` (default `true`).
+
+Every field is optional. The file is validated on load; unknown keys or wrong types produce a clear error.
+
+## How it works
+
+`clines` runs a small pipeline: **collect** files (honoring the default ignores, your `clines.json`, and `.gitignore`) → **tokenize** each file with a language-aware lexer that separates code, comments, and blanks → **analyze** into per-language and project totals → **report** to the console, JSON, or your README. The tokenizer and analyzers are pure and independently unit-tested.
+
+## Project size labels
 
 | Lines of Code | Project Size Label         |
 | ------------- | -------------------------- |
@@ -100,6 +119,17 @@ To customize which files and directories should be excluded from the line count,
 | < 20000       | Robust system 🔬           |
 | < 50000       | Complex software 🏢        |
 | 50000+        | Massive code empire 🌌     |
+
+## Development
+
+```sh
+npm install
+npm test            # run the test suite
+npm run coverage    # enforce 100% coverage
+npm run lint        # eslint
+npm run typecheck   # tsc --noEmit
+npm run build       # compile to dist/
+```
 
 ## License
 

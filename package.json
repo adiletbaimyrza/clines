@@ -1,24 +1,65 @@
 {
   "name": "clines",
-  "version": "2.0.1",
-  "description": "A tool to count lines of code and update the README.",
+  "version": "3.0.0",
+  "description": "An industry-grade CLI that measures your codebase (lines, comments, size) and updates your README — built to grow into duplication and complexity analysis.",
+  "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/adiletbaimyrza/clines"
-  },
-  "scripts": {
-    "clines": "node index.js"
+    "url": "git+https://github.com/adiletbaimyrza/clines.git"
   },
   "bin": {
-    "clines": "./index.js"
+    "clines": "dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "count",
     "lines",
+    "loc",
+    "cloc",
+    "code-metrics",
+    "static-analysis",
     "project"
   ],
-  "license": "MIT Licence",
+  "license": "MIT",
   "author": "Adilet Baimyrza Uulu",
-  "type": "module",
-  "main": "index.js"
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.5",
+    "@vitest/coverage-v8": "^3.2.7",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.19.1",
+    "vitest": "^3.2.7"
+  }
 }
