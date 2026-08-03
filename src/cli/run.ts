@@ -1,7 +1,8 @@
 import path from "node:path";
 import { loadConfig, loadGitignoreGlobs } from "../config/load.js";
 import type { Report } from "../core/model.js";
-import { analyze, analyzeDuplication } from "../core/pipeline.js";
+import { analyze, analyzeComplexity, analyzeDuplication } from "../core/pipeline.js";
+import { renderComplexity, renderComplexityHtml } from "../report/format/complexity.js";
 import { renderDuplication } from "../report/format/duplication.js";
 import { renderDuplicationHtml } from "../report/format/duplication-html.js";
 import { consoleReporter } from "../report/reporters/console.js";
@@ -23,6 +24,14 @@ export interface DupOptions {
   dir: string;
   minLines: number;
   minCopies: number;
+  open: boolean;
+  config?: string;
+  html?: string;
+}
+
+export interface ComplexityOptions {
+  dir: string;
+  top: number;
   open: boolean;
   config?: string;
   html?: string;
@@ -70,6 +79,27 @@ export async function runDup(
     const htmlPath = path.resolve(options.html);
     await writeText(htmlPath, renderDuplicationHtml(result));
     io.err(`Wrote duplication report to ${htmlPath}`);
+    if (options.open) {
+      opener(htmlPath);
+    }
+  }
+
+  return 0;
+}
+
+export async function runComplexity(
+  options: ComplexityOptions,
+  io: IO,
+  opener: Opener = openInBrowser,
+): Promise<number> {
+  const { rootDir, config, globs } = await prepare(options.dir, options.config);
+  const files = await analyzeComplexity(rootDir, config, globs);
+  io.out(renderComplexity(files));
+
+  if (options.html !== undefined) {
+    const htmlPath = path.resolve(options.html);
+    await writeText(htmlPath, renderComplexityHtml(files, { top: options.top }));
+    io.err(`Wrote complexity report to ${htmlPath}`);
     if (options.open) {
       opener(htmlPath);
     }

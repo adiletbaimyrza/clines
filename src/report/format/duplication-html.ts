@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { Clone, DuplicationResult } from "../../core/analyzers/duplication.js";
+import { escapeHtml as esc, formatNumber as fmt } from "./html.js";
 
 export interface HtmlOptions {
   title?: string;
@@ -161,18 +162,6 @@ const COPY_BUTTON =
 
 function stat(value: string, label: string): string {
   return `<div class="stat"><div class="value">${esc(value)}</div><div class="label">${esc(label)}</div></div>`;
-}
-
-function fmt(value: number): string {
-  return value.toLocaleString("en-US");
-}
-
-function esc(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
 }
 
 const STYLE = `

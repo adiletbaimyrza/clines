@@ -75,6 +75,28 @@ Run with `--html <file>` for a full browsable report with code snippets.
 
 The HTML report shows headline stats, a most-duplicated-files table, and a searchable list of clones with their code snippets and every location.
 
+### Ranking files by complexity
+
+`clines complexity` (alias `cx`) ranks every file by its decision-point count — your complexity hotspots. It prints the worst offenders and can write a **browsable HTML report** listing the top files (no code snippets, just the ranking).
+
+```sh
+npx clines cx                           # terminal summary (top 20)
+npx clines cx --html cx-report.html     # + a browsable HTML report of the top 100 (opens in your browser)
+npx clines cx --top 250 --html cx-report.html   # rank more files in the report
+npx clines cx --html cx-report.html --no-open    # write it without opening
+```
+
+```text
+Complexity: 51,082 total   ·   2,303 files with complexity
+
+Most complex files
+  File                                              Complexity   Code
+  packages/react-devtools-shared/.../renderer.js         1,292   6,487
+  packages/react-dom-bindings/.../ReactFizzConfigDOM.js  1,102   5,929
+
+Run with `--html <file>` for a full browsable report.
+```
+
 ## Example output
 
 ```text
