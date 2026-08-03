@@ -10,11 +10,14 @@ export const linesAnalyzer: Analyzer<Report> = {
     let totalComment = 0;
     let totalBlank = 0;
     let totalLines = 0;
+    let totalComplexity = 0;
 
     for (const file of files) {
       const language = getLanguageName(file.ext);
       const stat = byLanguage.get(language) ?? emptyStat(language);
       stat.files += 1;
+      stat.complexity += file.complexity;
+      totalComplexity += file.complexity;
 
       for (const kind of file.lineKinds) {
         stat.total += 1;
@@ -40,11 +43,12 @@ export const linesAnalyzer: Analyzer<Report> = {
       totalBlank,
       totalLines,
       totalFiles: files.length,
+      totalComplexity,
       languages: [...byLanguage.values()],
     };
   },
 };
 
 function emptyStat(language: string): LanguageStat {
-  return { language, files: 0, code: 0, comment: 0, blank: 0, total: 0 };
+  return { language, files: 0, code: 0, comment: 0, blank: 0, total: 0, complexity: 0 };
 }

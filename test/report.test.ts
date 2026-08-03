@@ -14,9 +14,10 @@ const report: Report = {
   totalBlank: 10,
   totalLines: 50,
   totalFiles: 3,
+  totalComplexity: 12,
   languages: [
-    { language: "CSS", files: 1, code: 5, comment: 2, blank: 3, total: 10 },
-    { language: "TypeScript", files: 2, code: 25, comment: 8, blank: 7, total: 40 },
+    { language: "CSS", files: 1, code: 5, comment: 2, blank: 3, total: 10, complexity: 0 },
+    { language: "TypeScript", files: 2, code: 25, comment: 8, blank: 7, total: 40, complexity: 12 },
   ],
 };
 
@@ -26,6 +27,7 @@ const empty: Report = {
   totalBlank: 0,
   totalLines: 0,
   totalFiles: 0,
+  totalComplexity: 0,
   languages: [],
 };
 
@@ -38,8 +40,8 @@ describe("sortedLanguages", () => {
     const tie: Report = {
       ...empty,
       languages: [
-        { language: "Bash", files: 1, code: 5, comment: 0, blank: 0, total: 5 },
-        { language: "Awk", files: 1, code: 5, comment: 0, blank: 0, total: 5 },
+        { language: "Bash", files: 1, code: 5, comment: 0, blank: 0, total: 5, complexity: 0 },
+        { language: "Awk", files: 1, code: 5, comment: 0, blank: 0, total: 5, complexity: 0 },
       ],
     };
     expect(sortedLanguages(tie).map((l) => l.language)).toEqual(["Awk", "Bash"]);
@@ -51,9 +53,11 @@ describe("buildReadmeSection", () => {
     const section = buildReadmeSection(report);
     expect(section).toContain("**Lines of Code:** `30`");
     expect(section).toContain('<span style="color: green;">Meteoroid 🪨</span>');
-    expect(section).toContain("| Language | Files | Code | Comments | Blank | Total |");
-    expect(section).toContain("| TypeScript | 2 | 25 | 8 | 7 | 40 |");
-    expect(section).toContain("| **Total** | **3** | **30** | 10 | 10 | **50** |");
+    expect(section).toContain(
+      "| Language | Files | Code | Comments | Blank | Complexity | Total |",
+    );
+    expect(section).toContain("| TypeScript | 2 | 25 | 8 | 7 | 12 | 40 |");
+    expect(section).toContain("| **Total** | **3** | **30** | 10 | 10 | **12** | **50** |");
   });
 });
 
@@ -62,6 +66,7 @@ describe("consoleReporter", () => {
     const output = consoleReporter.render(report);
     expect(output).toContain("Language");
     expect(output).toContain("Comments");
+    expect(output).toContain("Complexity");
     expect(output).toContain("TypeScript");
     expect(output).toContain("CSS");
     expect(output).toContain("Total");

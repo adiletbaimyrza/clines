@@ -78,16 +78,18 @@ The HTML report shows headline stats, a most-duplicated-files table, and a searc
 ## Example output
 
 ```text
-Language      Files   Lines   Code   Comments   Blank        %
-──────────────────────────────────────────────────────────────
-TypeScript       62   3,210  2,510        420     280    78.2%
-JavaScript       18     935    720         90     125    22.4%
-CSS               6     542    410         40      92    12.8%
-──────────────────────────────────────────────────────────────
-Total            86   4,687  3,208        550     497   100.0%
+Language      Files   Lines   Code   Comments   Blank   Complexity        %
+──────────────────────────────────────────────────────────────────────────
+TypeScript       62   3,210  2,510        420     280          312    78.2%
+JavaScript       18     935    720         90     125           88    22.4%
+CSS               6     542    410         40      92            0    12.8%
+──────────────────────────────────────────────────────────────────────────
+Total            86   4,687  3,208        550     497          400   100.0%
 
 Project size: Asteroid ☄️
 ```
+
+The **Complexity** column is a fast decision-point count (à la `scc`): occurrences of branch/loop keywords (`if`, `for`, `while`, `case`, `catch`, …) and logical operators (`&&`, `||`), counted per language while ignoring comments and strings.
 
 When README updating is enabled, the section between the placeholders is refreshed:
 
@@ -97,10 +99,10 @@ When README updating is enabled, the section between the placeholders is refresh
 **Lines of Code:** `707`  
 **Project Size:** <span style="color: green;">Meteoroid 🪨</span>
 
-| Language   | Files | Code | Comments | Blank | Total |
-| ---------- | ----: | ---: | -------: | ----: | ----: |
-| TypeScript |    23 |  707 |      165 |   124 |   996 |
-| **Total**  |    23 |  707 |      165 |   124 |   996 |
+| Language   | Files | Code | Comments | Blank | Complexity | Total |
+| ---------- | ----: | ---: | -------: | ----: | ---------: | ----: |
+| TypeScript |    23 |  707 |      165 |   124 |         96 |   996 |
+| **Total**  |    23 |  707 |      165 |   124 |         96 |   996 |
 
 <!-- clines · end ────────────────────────────────────────────────────────── -->
 ```

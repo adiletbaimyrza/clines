@@ -3,9 +3,9 @@ import { linesAnalyzer } from "../src/core/analyzers/lines.js";
 import type { FileTokens } from "../src/core/model.js";
 
 const files: FileTokens[] = [
-  { path: "a.ts", ext: ".ts", lineKinds: ["code", "comment", "blank", "code"] },
-  { path: "b.mts", ext: ".mts", lineKinds: ["code"] },
-  { path: "c.py", ext: ".py", lineKinds: ["comment", "comment"] },
+  { path: "a.ts", ext: ".ts", lineKinds: ["code", "comment", "blank", "code"], complexity: 4 },
+  { path: "b.mts", ext: ".mts", lineKinds: ["code"], complexity: 1 },
+  { path: "c.py", ext: ".py", lineKinds: ["comment", "comment"], complexity: 0 },
 ];
 
 describe("linesAnalyzer", () => {
@@ -24,6 +24,7 @@ describe("linesAnalyzer", () => {
       comment: 1,
       blank: 1,
       total: 5,
+      complexity: 5,
     });
 
     const py = report.languages.find((l) => l.language === "Python");
@@ -34,7 +35,10 @@ describe("linesAnalyzer", () => {
       comment: 2,
       blank: 0,
       total: 2,
+      complexity: 0,
     });
+
+    expect(report.totalComplexity).toBe(5);
   });
 
   it("returns an empty report for no files", () => {
@@ -44,6 +48,7 @@ describe("linesAnalyzer", () => {
       totalBlank: 0,
       totalLines: 0,
       totalFiles: 0,
+      totalComplexity: 0,
       languages: [],
     });
   });
