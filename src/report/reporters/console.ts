@@ -12,6 +12,7 @@ interface RowSource {
   code: number;
   comment: number;
   blank: number;
+  complexity: number;
 }
 
 export const consoleReporter: Reporter = {
@@ -24,6 +25,7 @@ export const consoleReporter: Reporter = {
       { header: "Code", align: "right", pick: (r) => num(r.code) },
       { header: "Comments", align: "right", pick: (r) => num(r.comment) },
       { header: "Blank", align: "right", pick: (r) => num(r.blank) },
+      { header: "Complexity", align: "right", pick: (r) => num(r.complexity) },
       { header: "%", align: "right", pick: (r) => percent(r.code, report.totalCode) },
     ];
 
@@ -34,6 +36,7 @@ export const consoleReporter: Reporter = {
       code: l.code,
       comment: l.comment,
       blank: l.blank,
+      complexity: l.complexity,
     }));
 
     const totalRow: RowSource = {
@@ -43,6 +46,7 @@ export const consoleReporter: Reporter = {
       code: report.totalCode,
       comment: report.totalComment,
       blank: report.totalBlank,
+      complexity: report.totalComplexity,
     };
 
     const sized = columns.map((col) => ({

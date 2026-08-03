@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { getLanguageName, getLanguageSyntax } from "../src/core/tokenizer/languages.js";
-import { classifyContent, tokenize } from "../src/core/tokenizer/tokenizer.js";
+import {
+  getComplexityChecks,
+  getLanguageName,
+  getLanguageSyntax,
+} from "../src/core/tokenizer/languages.js";
+import {
+  classifyContent,
+  countComplexity,
+  sanitizeCode,
+  tokenize,
+} from "../src/core/tokenizer/tokenizer.js";
 
 const js = getLanguageSyntax(".js");
 const py = getLanguageSyntax(".py");
@@ -66,6 +75,47 @@ describe("tokenize", () => {
 
   it("uses no_ext for files without an extension", () => {
     expect(tokenize("/proj/Makefile", "all:").ext).toBe("no_ext");
+  });
+
+  it("counts decision points as complexity", () => {
+    const src = "if (a && b) {\n  for (x of y) {}\n}";
+    expect(tokenize("/proj/a.js", src).complexity).toBe(3); // if + && + for
+  });
+});
+
+describe("sanitizeCode", () => {
+  it("strips comments and string contents but keeps code", () => {
+    const code = sanitizeCode('const url = "if for while"; // if\nx && y', js);
+    expect(code).toContain("const url");
+    expect(code).toContain("x && y");
+    expect(code).not.toContain("if for while");
+    expect(code).not.toMatch(/\/\/ if/);
+  });
+
+  it("removes block comments", () => {
+    expect(sanitizeCode("a /* while for */ b", js)).not.toContain("while");
+  });
+});
+
+describe("countComplexity", () => {
+  it("counts word-boundary keywords and operators", () => {
+    const checks = { keywords: ["if", "for"], operators: ["&&", "||"] };
+    expect(countComplexity("if (a) for (b) x && y || z", checks)).toBe(4);
+  });
+
+  it("does not count keywords inside identifiers", () => {
+    expect(
+      countComplexity("modify verify forest", { keywords: ["if", "for"], operators: [] }),
+    ).toBe(0);
+  });
+});
+
+describe("getComplexityChecks", () => {
+  it("returns C-style for programming languages and Python/data variants", () => {
+    expect(getComplexityChecks(".ts").keywords).toContain("catch");
+    expect(getComplexityChecks(".py").keywords).toContain("elif");
+    expect(getComplexityChecks(".rb").keywords).toContain("elsif");
+    expect(getComplexityChecks(".md")).toEqual({ keywords: [], operators: [] });
   });
 });
 

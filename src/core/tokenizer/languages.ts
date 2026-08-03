@@ -108,3 +108,47 @@ export function getLanguageSyntax(ext: string): LanguageSyntax {
 export function getLanguageName(ext: string): string {
   return LANGUAGE_NAMES[ext.toLowerCase()] ?? "Other";
 }
+
+export interface ComplexityChecks {
+  keywords: string[];
+  operators: string[];
+}
+
+const C_STYLE: ComplexityChecks = {
+  keywords: ["if", "for", "while", "case", "catch"],
+  operators: ["&&", "||"],
+};
+
+const PYTHON: ComplexityChecks = {
+  keywords: ["if", "elif", "for", "while", "except", "and", "or"],
+  operators: [],
+};
+
+const RUBY: ComplexityChecks = {
+  keywords: ["if", "elsif", "unless", "while", "until", "for", "when", "rescue", "and", "or"],
+  operators: ["&&", "||"],
+};
+
+const NONE: ComplexityChecks = { keywords: [], operators: [] };
+
+const COMPLEXITY: Record<string, ComplexityChecks> = {
+  ".py": PYTHON,
+  ".rb": RUBY,
+  ".json": NONE,
+  ".yml": NONE,
+  ".yaml": NONE,
+  ".toml": NONE,
+  ".md": NONE,
+  ".markdown": NONE,
+  ".txt": NONE,
+  ".html": NONE,
+  ".xml": NONE,
+  ".vue": NONE,
+  ".css": NONE,
+  ".scss": NONE,
+  ".less": NONE,
+};
+
+export function getComplexityChecks(ext: string): ComplexityChecks {
+  return COMPLEXITY[ext.toLowerCase()] ?? C_STYLE;
+}

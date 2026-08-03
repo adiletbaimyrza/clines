@@ -1,14 +1,19 @@
 import path from "node:path";
 import type { FileTokens, LanguageSyntax, LineKind } from "../model.js";
-import { getLanguageSyntax } from "./languages.js";
+import { getComplexityChecks, getLanguageSyntax, type ComplexityChecks } from "./languages.js";
 
 interface ScanState {
   inBlock: boolean;
 }
 
-export function classifyLine(rawLine: string, syntax: LanguageSyntax, state: ScanState): LineKind {
+interface LineScan {
+  kind: LineKind;
+  code: string;
+}
+
+function scanLine(rawLine: string, syntax: LanguageSyntax, state: ScanState): LineScan {
   if (rawLine.trim() === "") {
-    return "blank";
+    return { kind: "blank", code: "" };
   }
 
   const { singleComment, blockCommentStart, blockCommentEnd } = syntax;
@@ -17,6 +22,7 @@ export function classifyLine(rawLine: string, syntax: LanguageSyntax, state: Sca
   let hasCode = false;
   let inString = false;
   let stringChar = "";
+  let code = "";
 
   let i = 0;
   while (i < rawLine.length) {
@@ -41,6 +47,7 @@ export function classifyLine(rawLine: string, syntax: LanguageSyntax, state: Sca
       }
       if (char === stringChar) {
         inString = false;
+        code += char;
       }
       i += 1;
       continue;
@@ -60,6 +67,7 @@ export function classifyLine(rawLine: string, syntax: LanguageSyntax, state: Sca
       inString = true;
       stringChar = char;
       hasCode = true;
+      code += char;
       i += 1;
       continue;
     }
@@ -67,11 +75,11 @@ export function classifyLine(rawLine: string, syntax: LanguageSyntax, state: Sca
     if (!isWhitespace(char)) {
       hasCode = true;
     }
+    code += char;
     i += 1;
   }
 
-  if (hasCode) return "code";
-  return "comment";
+  return { kind: hasCode ? "code" : "comment", code };
 }
 
 function isWhitespace(char: string): boolean {
@@ -88,11 +96,34 @@ export function splitLines(content: string): string[] {
 
 export function classifyContent(content: string, syntax: LanguageSyntax): LineKind[] {
   const state: ScanState = { inBlock: false };
-  return splitLines(content).map((line) => classifyLine(line, syntax, state));
+  return splitLines(content).map((line) => scanLine(line, syntax, state).kind);
+}
+
+export function sanitizeCode(content: string, syntax: LanguageSyntax): string {
+  const state: ScanState = { inBlock: false };
+  return splitLines(content)
+    .map((line) => scanLine(line, syntax, state).code)
+    .join("\n");
+}
+
+export function countComplexity(code: string, checks: ComplexityChecks): number {
+  let total = 0;
+  for (const keyword of checks.keywords) {
+    total += code.match(new RegExp(`\\b${keyword}\\b`, "g"))?.length ?? 0;
+  }
+  for (const operator of checks.operators) {
+    total += code.split(operator).length - 1;
+  }
+  return total;
 }
 
 export function tokenize(filePath: string, content: string): FileTokens {
   const ext = path.extname(filePath) || "no_ext";
   const syntax = getLanguageSyntax(ext);
-  return { path: filePath, ext, lineKinds: classifyContent(content, syntax) };
+  return {
+    path: filePath,
+    ext,
+    lineKinds: classifyContent(content, syntax),
+    complexity: countComplexity(sanitizeCode(content, syntax), getComplexityChecks(ext)),
+  };
 }

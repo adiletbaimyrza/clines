@@ -9,17 +9,18 @@ export function sortedLanguages(report: Report): LanguageStat[] {
 
 export function buildReadmeSection(report: Report): string {
   const size = getProjectSize(report.totalCode);
-  const header = "| Language | Files | Code | Comments | Blank | Total |";
-  const divider = "|----------|------:|-----:|---------:|------:|------:|";
+  const header = "| Language | Files | Code | Comments | Blank | Complexity | Total |";
+  const divider = "|----------|------:|-----:|---------:|------:|-----------:|------:|";
 
   const rows = sortedLanguages(report).map(
-    (l) => `| ${l.language} | ${l.files} | ${l.code} | ${l.comment} | ${l.blank} | ${l.total} |`,
+    (l) =>
+      `| ${l.language} | ${l.files} | ${l.code} | ${l.comment} | ${l.blank} | ${l.complexity} | ${l.total} |`,
   );
 
   const totalRow = `| **Total** | **${report.totalFiles}** | **${report.totalCode}** | ${sumField(
     report,
     "comment",
-  )} | ${sumField(report, "blank")} | **${report.totalLines}** |`;
+  )} | ${sumField(report, "blank")} | **${report.totalComplexity}** | **${report.totalLines}** |`;
 
   return [
     `**Lines of Code:** \`${report.totalCode}\`  `,

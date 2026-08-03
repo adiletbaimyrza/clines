@@ -10,6 +10,7 @@ export interface FileTokens {
   path: string;
   ext: string;
   lineKinds: LineKind[];
+  complexity: number;
 }
 
 export interface LineCounts {
@@ -22,6 +23,7 @@ export interface LineCounts {
 export interface LanguageStat extends LineCounts {
   language: string;
   files: number;
+  complexity: number;
 }
 
 export interface Report {
@@ -30,5 +32,6 @@ export interface Report {
   totalBlank: number;
   totalLines: number;
   totalFiles: number;
+  totalComplexity: number;
   languages: LanguageStat[];
 }
