@@ -162,4 +162,57 @@ describe("runCli", () => {
 
     expect(out.join("\n")).toContain("Duplication:");
   });
+
+  it("runs complexity with default top 100 via the cx alias", async () => {
+    const complexityRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(["node", "clines", "cx", project.root], io, { complexityRunner });
+
+    expect(complexityRunner.mock.calls[0]![0]).toEqual({
+      dir: project.root,
+      top: 100,
+      open: true,
+    });
+  });
+
+  it("parses --top, --html, --no-open and --config for complexity", async () => {
+    const complexityRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(
+      [
+        "node",
+        "clines",
+        "complexity",
+        project.root,
+        "--top",
+        "25",
+        "--html",
+        "cx.html",
+        "--no-open",
+        "--config",
+        "c.json",
+      ],
+      io,
+      { complexityRunner },
+    );
+
+    expect(complexityRunner.mock.calls[0]![0]).toEqual({
+      dir: project.root,
+      top: 25,
+      open: false,
+      html: "cx.html",
+      config: "c.json",
+    });
+  });
+
+  it("wires the real complexity pipeline by default", async () => {
+    project.file("a.ts", "if (a) {}\n");
+    const { io, out } = captureIO();
+
+    await runCli(["node", "clines", "cx", project.root], io);
+
+    expect(out.join("\n")).toContain("Complexity:");
+  });
 });

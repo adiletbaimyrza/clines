@@ -1,11 +1,19 @@
 import { Command, InvalidArgumentError } from "commander";
 import { renderBanner } from "./banner.js";
 import type { IO } from "./io.js";
-import { run, runDup, type DupOptions, type RunOptions } from "./run.js";
+import {
+  run,
+  runComplexity,
+  runDup,
+  type ComplexityOptions,
+  type DupOptions,
+  type RunOptions,
+} from "./run.js";
 
 export interface ProgramDeps {
   runner?: (options: RunOptions, io: IO) => Promise<number>;
   dupRunner?: (options: DupOptions, io: IO) => Promise<number>;
+  complexityRunner?: (options: ComplexityOptions, io: IO) => Promise<number>;
   version?: string;
 }
 
@@ -22,6 +30,13 @@ interface DupFlags {
   html?: string;
 }
 
+interface ComplexityFlags {
+  top: number;
+  open?: boolean;
+  config?: string;
+  html?: string;
+}
+
 const EXAMPLES = `
 Examples:
   $ clines                   show this banner
@@ -29,6 +44,7 @@ Examples:
   $ clines count --readme    report and update README.md
   $ clines dup               find duplicated code blocks
   $ clines dup --min-lines 8 raise the clone threshold
+  $ clines cx --html cx.html rank files by complexity
 `;
 
 function parsePositiveInt(value: string): number {
@@ -91,6 +107,27 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
         ...(flags.html !== undefined ? { html: flags.html } : {}),
       };
       await dupRunner(options, io);
+    });
+
+  const complexityRunner = deps.complexityRunner ?? runComplexity;
+  program
+    .command("complexity")
+    .alias("cx")
+    .description("Rank files by decision-point complexity.")
+    .argument("[dir]", "directory to scan", ".")
+    .option("--top <n>", "number of files in the HTML report", parsePositiveInt, 100)
+    .option("--html <file>", "write a browsable HTML report to this path")
+    .option("--no-open", "do not open the HTML report in a browser")
+    .option("--config <path>", "path to a config file")
+    .action(async (dir: string, flags: ComplexityFlags) => {
+      const options: ComplexityOptions = {
+        dir,
+        top: flags.top,
+        open: flags.open !== false,
+        ...(flags.config !== undefined ? { config: flags.config } : {}),
+        ...(flags.html !== undefined ? { html: flags.html } : {}),
+      };
+      await complexityRunner(options, io);
     });
 
   return program;

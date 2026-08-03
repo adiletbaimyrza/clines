@@ -1,0 +1,148 @@
+import type { FileComplexity } from "../../core/model.js";
+import { escapeHtml, formatNumber } from "./html.js";
+
+export interface ComplexityHtmlOptions {
+  title?: string;
+  top?: number;
+}
+
+export function renderComplexity(files: FileComplexity[], topFiles: number = 20): string {
+  const total = files.reduce((sum, file) => sum + file.complexity, 0);
+  const ranked = files.filter((file) => file.complexity > 0);
+
+  const out: string[] = [
+    `Complexity: ${formatNumber(total)} total   ·   ${formatNumber(ranked.length)} files with complexity`,
+  ];
+
+  if (ranked.length === 0) {
+    out.push("", "No complexity detected.");
+    return out.join("\n");
+  }
+
+  const shown = ranked.slice(0, topFiles).map((file) => ({ ...file, path: shorten(file.path) }));
+  const width = Math.max(...shown.map((file) => file.path.length), "File".length);
+
+  out.push("", "Most complex files", `  ${"File".padEnd(width)}   Complexity   Code`);
+  for (const file of shown) {
+    out.push(
+      `  ${file.path.padEnd(width)}   ${formatNumber(file.complexity).padStart(10)}   ${formatNumber(
+        file.code,
+      ).padStart(4)}`,
+    );
+  }
+
+  const hidden = ranked.length - shown.length;
+  if (hidden > 0) {
+    out.push(`  … and ${formatNumber(hidden)} more files.`);
+  }
+
+  out.push("", "Run with `--html <file>` for a full browsable report.");
+  return out.join("\n");
+}
+
+export function renderComplexityHtml(
+  files: FileComplexity[],
+  options: ComplexityHtmlOptions = {},
+): string {
+  const title = options.title ?? "clines — complexity report";
+  const top = options.top ?? 100;
+
+  const total = files.reduce((sum, file) => sum + file.complexity, 0);
+  const ranked = files.filter((file) => file.complexity > 0);
+  const shown = ranked.slice(0, top);
+  const hidden = ranked.length - shown.length;
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${escapeHtml(title)}</title>
+<style>${STYLE}</style>
+</head>
+<body>
+<header>
+<h1>Complexity report</h1>
+<div class="stats">
+${stat(formatNumber(total), "total complexity")}
+${stat(formatNumber(ranked.length), "files with complexity")}
+${stat(formatNumber(shown.length), `shown (top ${formatNumber(top)})`)}
+</div>
+</header>
+
+<section>
+<h2>Most complex files</h2>
+${filesTable(shown)}
+${hidden > 0 ? `<p class="muted">… and ${formatNumber(hidden)} more files not shown.</p>` : ""}
+</section>
+
+<script>${SCRIPT}</script>
+</body>
+</html>
+`;
+}
+
+function filesTable(files: FileComplexity[]): string {
+  if (files.length === 0) {
+    return `<p class="muted">No complexity detected.</p>`;
+  }
+  const rows = files
+    .map(
+      (file, index) =>
+        `<tr data-search="${escapeHtml(file.path)}"><td class="n rank">${index + 1}</td><td class="path">${escapeHtml(
+          file.path,
+        )}</td><td class="lang">${escapeHtml(file.language)}</td><td class="n cx">${formatNumber(
+          file.complexity,
+        )}</td><td class="n">${formatNumber(file.code)}</td></tr>`,
+    )
+    .join("\n");
+  return `<input id="filter" type="search" placeholder="Filter files by path…" />
+<table><thead><tr><th class="n">#</th><th>File</th><th>Language</th><th class="n">Complexity</th><th class="n">Code</th></tr></thead>
+<tbody id="rows">${rows}</tbody></table>`;
+}
+
+function stat(value: string, label: string): string {
+  return `<div class="stat"><div class="value">${escapeHtml(value)}</div><div class="label">${escapeHtml(
+    label,
+  )}</div></div>`;
+}
+
+function shorten(filePath: string, max: number = 68): string {
+  return filePath.length <= max ? filePath : `…${filePath.slice(filePath.length - max + 1)}`;
+}
+
+const STYLE = `
+:root{--bg:#0a0e17;--panel:#141b2d;--border:#223049;--text:#e6ecf5;--muted:#9aa8bf;--accent:#5ed0ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+header,section{max-width:1000px;margin:0 auto;padding:24px 20px}
+h1{margin:0 0 16px}h2{border-bottom:1px solid var(--border);padding-bottom:8px}
+.stats{display:flex;gap:14px;flex-wrap:wrap}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 20px;min-width:120px}
+.stat .value{font-size:26px;font-weight:700;color:var(--accent)}
+.stat .label{color:var(--muted);font-size:13px}
+#filter{width:100%;padding:10px 14px;margin:8px 0 18px;background:var(--panel);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left}
+th{position:sticky;top:0;background:var(--bg)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+td.rank{color:var(--muted)}
+td.cx{color:var(--accent);font-weight:600}
+td.path{font-family:ui-monospace,Menlo,monospace}
+td.lang{color:var(--muted)}
+tbody tr:hover{background:#0e1526}
+.muted{color:var(--muted)}
+`;
+
+const SCRIPT = `
+const input=document.getElementById("filter");
+if(input){
+  const rows=[...document.querySelectorAll("#rows tr")];
+  input.addEventListener("input",()=>{
+    const q=input.value.toLowerCase();
+    for(const r of rows){
+      r.style.display=r.dataset.search.toLowerCase().includes(q)?"":"none";
+    }
+  });
+}
+`;

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { defaultConfig } from "../src/config/schema.js";
-import { analyze, analyzeDuplication } from "../src/core/pipeline.js";
+import { analyze, analyzeComplexity, analyzeDuplication } from "../src/core/pipeline.js";
 import { TempProject } from "./helpers/tmp.js";
 
 let project: TempProject;
@@ -24,6 +24,22 @@ describe("analyze", () => {
     expect(report.totalCode).toBe(2);
     const ts = report.languages.find((l) => l.language === "TypeScript");
     expect(ts).toMatchObject({ code: 1, comment: 1, blank: 1 });
+  });
+});
+
+describe("analyzeComplexity", () => {
+  it("ranks files by complexity, high to low, with language and code counts", async () => {
+    project.file("hot.ts", "if (a) {}\nif (b) {}\nwhile (c) {}\n");
+    project.file("cool.ts", "if (a) {}\n");
+    project.file("also.ts", "if (a) {}\n");
+    project.file("data.json", '{ "a": 1 }\n');
+
+    const files = await analyzeComplexity(project.root, defaultConfig());
+
+    expect(files.map((f) => f.path)).toEqual(["hot.ts", "also.ts", "cool.ts", "data.json"]);
+    expect(files[0]).toMatchObject({ complexity: 3, language: "TypeScript" });
+    expect(files[3]!.complexity).toBe(0);
+    expect(files[0]!.code).toBe(3);
   });
 });
 

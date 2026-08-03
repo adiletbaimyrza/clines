@@ -26,6 +26,13 @@ export interface LanguageStat extends LineCounts {
   complexity: number;
 }
 
+export interface FileComplexity {
+  path: string;
+  complexity: number;
+  code: number;
+  language: string;
+}
+
 export interface Report {
   totalCode: number;
   totalComment: number;
