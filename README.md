@@ -128,7 +128,14 @@ Run with `--html <file>` for a full browsable report.
 
 `--max` makes this a CI gate: `clines ctx --max 200k` fails the build once the repo no longer fits a 200k-token window.
 
-**On accuracy.** clines ships with zero runtime tokenizer dependencies, so token counts are an _estimate_, not a `tiktoken` call. The estimator was calibrated against GPT-4o's tokenizer over 2,943 files / 5.1M real tokens: repo-level totals land within **~1%**, and individual files have a **median error of ~10%** (p90 ~20%). Prose-heavy Markdown and JSON skew low; source files are the most accurate. Use it for ranking and budgeting, not for billing.
+**On accuracy.** clines ships with zero runtime tokenizer dependencies, so token counts are an _estimate_, not a `tiktoken` call. Measured against GPT-4o's tokenizer:
+
+| Corpus                                           | Total error | Per-file median |
+| ------------------------------------------------ | ----------: | --------------: |
+| Mixed calibration set (2,943 files, 5.1M tokens) |       +0.3% |           10.3% |
+| `facebook/react` (6,915 files, 8.3M tokens)      |   **+5.2%** |               — |
+
+The estimator **runs a few percent high on JavaScript/TypeScript-heavy repos** and low on prose-heavy Markdown and JSON; the near-zero figure on the mixed set is those two biases cancelling, not a general guarantee. Generated or minified files are the worst case (react's 3.7 MB `report.html` alone comes in +17.9%). Treat totals as accurate to **within roughly ±10%**, and use them for ranking and budgeting, not billing.
 
 ## Example output
 
