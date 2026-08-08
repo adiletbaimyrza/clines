@@ -2,9 +2,16 @@
 
 ![clines](https://img.shields.io/badge/Code%20Lines-Counter-blue)
 
-**clines** is a small, fast CLI that measures your codebase — counting code, comment, and blank lines per language — and can update your `README.md` with the results. It also labels your project by size, from _Meteoroid_ to _Universe_.
+`clines` is a command-line tool that measures a codebase. It has four commands:
 
-Beyond counting, it finds **duplicate code** (`dup`), ranks your **complexity hotspots** (`cx`), and estimates what the repo costs an **AI agent to read** (`ctx`) — with a CI gate for the token budget. Zero runtime dependencies beyond the CLI parser, 100% test coverage.
+| Command | Output                                                                 |
+| ------- | ---------------------------------------------------------------------- |
+| `count` | Code, comment and blank lines per language, plus a project size label. |
+| `dup`   | Duplicated code blocks and a duplication percentage.                   |
+| `cx`    | Files ranked by decision-point complexity.                             |
+| `ctx`   | Estimated token cost, with an optional budget check for CI.            |
+
+Runtime dependencies are `commander` and `zod`. Test coverage is 100%.
 
 **[📖 Website & docs](https://adiletbaimyrza.github.io/clines/)**
 
@@ -32,7 +39,7 @@ Running `clines` on its own prints a banner with the version and available comma
 
 ### `count` options
 
-`clines count` is **read-only by default** — it prints the report and touches nothing.
+`clines count` is read-only by default: it prints the report and does not modify any file.
 
 | Flag              | Description                                          |
 | ----------------- | ---------------------------------------------------- |
@@ -52,13 +59,13 @@ npx clines count --readme             # report + update README.md
 
 ### Finding duplicate code
 
-`clines dup` reports the duplication percentage and the most duplicated files, and can write a **browsable HTML report** with the actual duplicated code snippets. It uses maximal-block clone detection over your code lines (whitespace-insensitive).
+`clines dup` reports a duplication percentage and the most duplicated files. Detection uses maximal-block clone matching over code lines and ignores whitespace differences.
 
 ```sh
 npx clines dup                          # terminal summary
 npx clines dup --min-lines 8            # only flag larger clones
 npx clines dup --min-copies 3           # only blocks duplicated 3+ times
-npx clines dup --html dup-report.html   # + a browsable HTML report (opens in your browser)
+npx clines dup --html dup-report.html   # + an HTML report (opens in your browser)
 npx clines dup --html dup-report.html --no-open   # write it without opening
 ```
 
@@ -73,15 +80,15 @@ Most duplicated files
 Run with `--html <file>` for a full browsable report with code snippets.
 ```
 
-The HTML report shows headline stats, a most-duplicated-files table, and a searchable list of clones with their code snippets and every location.
+`--html` writes a self-contained report with headline stats, a most-duplicated-files table, and a searchable list of clones showing each snippet and every location.
 
 ### Ranking files by complexity
 
-`clines complexity` (alias `cx`) ranks every file by its decision-point count — your complexity hotspots. It prints the worst offenders and can write a **browsable HTML report** listing the top files (no code snippets, just the ranking).
+`clines complexity` (alias `cx`) ranks files by decision-point count. The terminal output lists the top 20; `--html` writes the top 100, adjustable with `--top`. The HTML report contains the ranking only, without code snippets.
 
 ```sh
 npx clines cx                           # terminal summary (top 20)
-npx clines cx --html cx-report.html     # + a browsable HTML report of the top 100 (opens in your browser)
+npx clines cx --html cx-report.html     # + an HTML report of the top 100 (opens in your browser)
 npx clines cx --top 250 --html cx-report.html   # rank more files in the report
 npx clines cx --html cx-report.html --no-open    # write it without opening
 ```
@@ -99,13 +106,13 @@ Run with `--html <file>` for a full browsable report.
 
 ### Measuring context cost
 
-`clines context` (alias `ctx`) estimates what your codebase costs an **AI agent** to read: how many tokens it is, how much of a model's context window that fills, and which files eat the budget. Unhealthy, oversized code is measurably more expensive for agents to work on — this is the number you pay for.
+`clines context` (alias `ctx`) estimates how many tokens a language model reads for the whole tree. It reports the total against a context window, the split between code and comment tokens, and a breakdown per file and per top-level directory.
 
 ```sh
 npx clines ctx                          # terminal summary against a 200k window
 npx clines ctx --window 1m              # compare against a 1M-token window
-npx clines ctx --max 200k               # exit non-zero if the repo blows the budget (CI gate)
-npx clines ctx --html ctx-report.html   # + a browsable HTML report (opens in your browser)
+npx clines ctx --max 200k               # exit non-zero if the total exceeds the budget
+npx clines ctx --html ctx-report.html   # + an HTML report (opens in your browser)
 ```
 
 ```text
@@ -126,16 +133,18 @@ Biggest files
 Run with `--html <file>` for a full browsable report.
 ```
 
-`--max` makes this a CI gate: `clines ctx --max 200k` fails the build once the repo no longer fits a 200k-token window.
+`--max` sets a budget. The command exits with status 1 once the total exceeds it, which makes it usable as a CI check.
 
-**On accuracy.** clines ships with zero runtime tokenizer dependencies, so token counts are an _estimate_, not a `tiktoken` call. Measured against GPT-4o's tokenizer:
+### Accuracy of the token estimate
+
+`clines` has no tokenizer dependency, so token counts are an estimate rather than a `tiktoken` call. Measured against GPT-4o's tokenizer:
 
 | Corpus                                           | Total error | Per-file median |
 | ------------------------------------------------ | ----------: | --------------: |
 | Mixed calibration set (2,943 files, 5.1M tokens) |       +0.3% |           10.3% |
-| `facebook/react` (6,915 files, 8.3M tokens)      |   **+5.2%** |               — |
+| `facebook/react` (6,915 files, 8.3M tokens)      |       +5.2% |               — |
 
-The estimator **runs a few percent high on JavaScript/TypeScript-heavy repos** and low on prose-heavy Markdown and JSON; the near-zero figure on the mixed set is those two biases cancelling, not a general guarantee. Generated or minified files are the worst case (react's 3.7 MB `report.html` alone comes in +17.9%). Treat totals as accurate to **within roughly ±10%**, and use them for ranking and budgeting, not billing.
+The estimate runs a few percent high on JavaScript and TypeScript, and low on Markdown and JSON. The near-zero figure on the mixed set is those two biases cancelling out, not a general guarantee. Generated and minified files are the worst case: react's 3.7 MB `report.html` is +17.9% on its own. Treat totals as accurate to within about ±10%, suitable for ranking and budgeting rather than billing.
 
 ## Example output
 
@@ -151,7 +160,7 @@ Total            86   4,687  3,208        550     497          400   100.0%
 Project size: Asteroid ☄️
 ```
 
-The **Complexity** column is a fast decision-point count (à la `scc`): occurrences of branch/loop keywords (`if`, `for`, `while`, `case`, `catch`, …) and logical operators (`&&`, `||`), counted per language while ignoring comments and strings.
+The Complexity column is a decision-point count, following the approach used by `scc`: occurrences of branch and loop keywords (`if`, `for`, `while`, `case`, `catch`, …) and logical operators (`&&`, `||`), counted per language with comments and string contents excluded.
 
 When README updating is enabled, the section between the placeholders is refreshed:
 
@@ -169,17 +178,17 @@ When README updating is enabled, the section between the placeholders is refresh
 <!-- clines · end ────────────────────────────────────────────────────────── -->
 ```
 
-Place the `clines · code metrics` and `clines · end` marker comments anywhere in your `README.md` and `clines count --readme` will update the content between them. If the markers are absent, the section is appended to the end of the file.
+Place the `clines · code metrics` and `clines · end` marker comments anywhere in `README.md`, and `clines count --readme` updates the content between them. If the markers are absent, the section is appended to the end of the file.
 
 ## Configuration
 
-**No configuration is required** — `clines` works out of the box and never writes a file to your repo. By default it:
+Configuration is optional and `clines` never writes a config file to the repo. By default it:
 
 - ignores common non-code directories (`node_modules`, `dist`, `build`, `coverage`, `.git`, `.idea`, `.vscode`, `public`, `static`, …),
-- ignores lockfiles/manifests and binary/asset extensions (`.png`, `.jpg`, `.log`, `.csv`, …), and
-- **respects your `.gitignore`** — anything git ignores is not counted.
+- ignores lockfiles, manifests, and binary and asset extensions (`.png`, `.jpg`, `.log`, `.csv`, …), and
+- respects `.gitignore`, so anything git ignores is not counted.
 
-To customize, add an optional `clines.json` to your project root. It uses an **add / remove** model layered on the defaults, so you only specify your changes — for both directories and files:
+To change the defaults, add `clines.json` to the project root. Entries are layered onto the defaults as additions (`ignore`) or removals (`unignore`):
 
 ```json
 {
@@ -197,15 +206,15 @@ To customize, add an optional `clines.json` to your project root. It uses an **a
 }
 ```
 
-- **`ignore`** — add more things to skip. `dirs` and `files` match by exact name; `extensions` include the leading dot; `globs` are matched against the path (e.g. `"*.min.js"`, `"test/fixtures/**"`).
-- **`unignore`** — remove entries from the defaults so they _are_ counted (e.g. start counting `package.json` or your `public/` directory).
-- **`respectGitignore`** — set to `false` to stop honoring `.gitignore` (default `true`).
+- `ignore` adds entries to skip. `dirs` and `files` match by exact name, `extensions` include the leading dot, and `globs` are matched against the path (for example `"*.min.js"` or `"test/fixtures/**"`).
+- `unignore` removes entries from the defaults so they are counted, for example `package.json` or a `public/` directory.
+- `respectGitignore` defaults to `true`. Set it to `false` to stop honoring `.gitignore`.
 
-Every field is optional. The file is validated on load; unknown keys or wrong types produce a clear error.
+Every field is optional. The file is validated on load; unknown keys and wrong types are rejected with an error.
 
 ## How it works
 
-`clines` runs a small pipeline: **collect** files (honoring the default ignores, your `clines.json`, and `.gitignore`) → **tokenize** each file with a language-aware lexer that separates code, comments, and blanks → **analyze** into per-language and project totals → **report** to the console (and optionally your README). The tokenizer and analyzers are pure and independently unit-tested.
+The pipeline has four stages. It collects files, applying the default ignores, `clines.json`, and `.gitignore`; tokenizes each file with a language-aware lexer that classifies every line as code, comment, or blank; analyzes the result into per-language and project totals; and reports to the console, and to the README when asked. The tokenizer and analyzers are pure functions and are unit-tested separately.
 
 ## Project size labels
 
@@ -233,11 +242,11 @@ npm run build       # compile to dist/
 
 ## Releasing
 
-Publishing uses npm **trusted publishing** (OIDC, tokenless) with **staged publishing**:
+Publishing uses npm trusted publishing (OIDC, tokenless) together with staged publishing:
 
-1. Bump the version in `package.json` and merge to `master`. CI **stages** the version to npm's staging queue — it is not public yet.
-2. Test the exact staged artifact: `npm run stage:list` → `npm stage download <stage-id>` → install the `.tgz` and run it.
-3. Deploy manually (requires your 2FA): approve on npmjs.com, or `npm run deploy -- <stage-id>` (= `npm stage approve`).
+1. Bump the version in `package.json` and merge to `master`. CI stages the version to npm's staging queue, where it is not yet public.
+2. Test the staged artifact: `npm run stage:list`, then `npm stage download <stage-id>`, then install the `.tgz` and run it.
+3. Deploy manually, which requires 2FA: approve on npmjs.com, or run `npm run deploy -- <stage-id>` (equivalent to `npm stage approve`).
 
 ## License
 
