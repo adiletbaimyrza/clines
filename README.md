@@ -4,7 +4,7 @@
 
 **clines** is a small, fast CLI that measures your codebase — counting code, comment, and blank lines per language — and can update your `README.md` with the results. It also labels your project by size, from _Meteoroid_ to _Universe_.
 
-It is built with a layered, fully-tested architecture (100% coverage) so it can grow into deeper code-health analysis (duplication and complexity) over time.
+Beyond counting, it finds **duplicate code** (`dup`), ranks your **complexity hotspots** (`cx`), and estimates what the repo costs an **AI agent to read** (`ctx`) — with a CI gate for the token budget. Zero runtime dependencies beyond the CLI parser, 100% test coverage.
 
 **[📖 Website & docs](https://adiletbaimyrza.github.io/clines/)**
 
@@ -96,6 +96,39 @@ Most complex files
 
 Run with `--html <file>` for a full browsable report.
 ```
+
+### Measuring context cost
+
+`clines context` (alias `ctx`) estimates what your codebase costs an **AI agent** to read: how many tokens it is, how much of a model's context window that fills, and which files eat the budget. Unhealthy, oversized code is measurably more expensive for agents to work on — this is the number you pay for.
+
+```sh
+npx clines ctx                          # terminal summary against a 200k window
+npx clines ctx --window 1m              # compare against a 1M-token window
+npx clines ctx --max 200k               # exit non-zero if the repo blows the budget (CI gate)
+npx clines ctx --html ctx-report.html   # + a browsable HTML report (opens in your browser)
+```
+
+```text
+Context: 8,776,571 tokens   ·   877.7% of a 1,000,000-token window   ·   11% comments
+
+Largest directories
+  Directory     Tokens   Files
+  packages   4,230,792   2,068
+  compiler   2,370,068   4,169
+  fixtures     538,565     421
+
+Biggest files
+  File                                                       Tokens        Code   Comments
+  report.html                                             1,131,404   1,131,404          0
+  fixtures/attribute-behavior/AttributeTableSnapshot.md     227,209     227,209          0
+  packages/react-dom/src/__tests__/ReactDOMFloat-test.js     74,455      71,003      3,452
+
+Run with `--html <file>` for a full browsable report.
+```
+
+`--max` makes this a CI gate: `clines ctx --max 200k` fails the build once the repo no longer fits a 200k-token window.
+
+**On accuracy.** clines ships with zero runtime tokenizer dependencies, so token counts are an _estimate_, not a `tiktoken` call. The estimator was calibrated against GPT-4o's tokenizer over 2,943 files / 5.1M real tokens: repo-level totals land within **~1%**, and individual files have a **median error of ~10%** (p90 ~20%). Prose-heavy Markdown and JSON skew low; source files are the most accurate. Use it for ranking and budgeting, not for billing.
 
 ## Example output
 

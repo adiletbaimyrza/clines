@@ -4,6 +4,10 @@ import * as api from "../src/index.js";
 describe("public API", () => {
   it("exposes the documented surface", () => {
     expect(typeof api.analyze).toBe("function");
+    expect(typeof api.analyzeComplexity).toBe("function");
+    expect(typeof api.analyzeContext).toBe("function");
+    expect(typeof api.analyzeDuplication).toBe("function");
+    expect(typeof api.estimateTokens).toBe("function");
     expect(typeof api.tokenize).toBe("function");
     expect(typeof api.classifyContent).toBe("function");
     expect(typeof api.getLanguageSyntax).toBe("function");

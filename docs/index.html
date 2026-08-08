@@ -6,7 +6,7 @@
     <title>clines — measure your codebase</title>
     <meta
       name="description"
-      content="clines is a zero-config CLI that measures your codebase — code, comments and blanks per language — with an elegant terminal table and README integration."
+      content="clines is a zero-config CLI that measures your codebase — lines per language, duplicate code, complexity hotspots, and what the repo costs an AI agent to read."
     />
     <link
       rel="icon"
@@ -358,8 +358,8 @@
  ╚═════╝╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝╚══════╝</pre>
         <div class="tagline">Measure your codebase. Zero config.</div>
         <p class="subtag">
-          A fast CLI that counts code, comments and blanks per language, labels your project on a
-          cosmic size scale, and can keep the numbers fresh in your README.
+          A fast CLI that counts code, comments and blanks per language, finds duplicate code, ranks
+          your complexity hotspots, and estimates what the repo costs an AI agent to read.
         </p>
         <div class="cta">
           <a class="btn primary" href="#usage">Get started</a>
@@ -399,7 +399,7 @@ Project size: <span class="size">Solar System ☀️</span></pre>
 
       <section id="features">
         <h2>Why clines</h2>
-        <p class="section-sub">Small, accurate, and built to grow into code-health analysis.</p>
+        <p class="section-sub">Small, accurate, and built for code-health analysis.</p>
         <div class="grid">
           <div class="card">
             <div class="ico">🚀</div>
@@ -446,6 +446,23 @@ Project size: <span class="size">Solar System ☀️</span></pre>
             </p>
           </div>
           <div class="card">
+            <div class="ico">🔥</div>
+            <h3>Complexity hotspots</h3>
+            <p>
+              <span class="cmd">clines cx</span> ranks every file by its decision-point count, so
+              you know exactly where the logic is dense — terminal or <code>--html</code>.
+            </p>
+          </div>
+          <div class="card">
+            <div class="ico">🤖</div>
+            <h3>AI context cost</h3>
+            <p>
+              <span class="cmd">clines ctx</span> estimates what your repo costs an AI agent to
+              read, how much of a context window it fills, and fails CI above a
+              <span class="cmd">--max</span> token budget.
+            </p>
+          </div>
+          <div class="card">
             <div class="ico">✅</div>
             <h3>100% tested</h3>
             <p>A layered, fully-covered TypeScript core, published tokenlessly with provenance.</p>
@@ -471,6 +488,15 @@ $ npx clines count --readme
 
 <span style="color: var(--muted)"># find duplicated code blocks</span>
 $ npx clines dup
+
+<span style="color: var(--muted)"># rank files by complexity, into a browsable report</span>
+$ npx clines cx --html cx-report.html
+
+<span style="color: var(--muted)"># what does this repo cost an AI agent to read?</span>
+$ npx clines ctx --window 1m
+
+<span style="color: var(--muted)"># fail CI once the repo no longer fits a 200k window</span>
+$ npx clines ctx --max 200k
 
 <span style="color: var(--muted)"># the bare command prints a banner + version</span>
 $ npx clines</pre>

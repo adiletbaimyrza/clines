@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { run, runComplexity, runDup } from "../src/cli/run.js";
+import { run, runComplexity, runContext, runDup } from "../src/cli/run.js";
 import { ClinesError } from "../src/util/errors.js";
 import { pathExists } from "../src/util/fs.js";
 import { captureIO, TempProject } from "./helpers/tmp.js";
@@ -117,6 +117,91 @@ describe("runDup", () => {
     const { io } = captureIO();
     await expect(
       runDup({ dir: project.path("nope"), minLines: 5, minCopies: 2, open: true }, io, () => {}),
+    ).rejects.toBeInstanceOf(ClinesError);
+  });
+});
+
+describe("runContext", () => {
+  it("prints a context summary and opens nothing without --html", async () => {
+    project.file("a.ts", "const a = 1;\n");
+    const { io, out } = captureIO();
+    const opened: string[] = [];
+
+    const code = await runContext(
+      { dir: project.root, window: 200000, top: 100, open: true },
+      io,
+      (p) => opened.push(p),
+    );
+
+    expect(code).toBe(0);
+    expect(out.join("\n")).toContain("Context:");
+    expect(out.join("\n")).toContain("Biggest files");
+    expect(opened).toEqual([]);
+  });
+
+  it("writes an HTML report and opens it", async () => {
+    project.file("a.ts", "const a = 1;\n");
+    const htmlPath = project.path("ctx.html");
+    const { io, err } = captureIO();
+    const opened: string[] = [];
+
+    await runContext(
+      { dir: project.root, window: 200000, top: 50, open: true, html: htmlPath },
+      io,
+      (p) => opened.push(p),
+    );
+
+    expect(err.join("\n")).toContain("Wrote context report");
+    expect(readFileSync(htmlPath, "utf8")).toContain("<!doctype html>");
+    expect(opened).toEqual([htmlPath]);
+  });
+
+  it("does not open the report when open is false", async () => {
+    project.file("a.ts", "const a = 1;\n");
+    const htmlPath = project.path("ctx.html");
+    const { io } = captureIO();
+    const opened: string[] = [];
+
+    await runContext(
+      { dir: project.root, window: 200000, top: 50, open: false, html: htmlPath },
+      io,
+      (p) => opened.push(p),
+    );
+
+    expect(opened).toEqual([]);
+  });
+
+  it("stays quiet when the total is within --max", async () => {
+    project.file("a.ts", "const a = 1;\n");
+    const { io } = captureIO();
+
+    const code = await runContext(
+      { dir: project.root, window: 200000, top: 100, open: false, max: 1000 },
+      io,
+      () => {},
+    );
+
+    expect(code).toBe(0);
+  });
+
+  it("throws once the total exceeds --max", async () => {
+    project.file("a.ts", "const a = 1;\n");
+    const { io, out } = captureIO();
+
+    await expect(
+      runContext(
+        { dir: project.root, window: 200000, top: 100, open: false, max: 1 },
+        io,
+        () => {},
+      ),
+    ).rejects.toThrow(/Context budget exceeded/);
+    expect(out.join("\n")).toContain("Context:");
+  });
+
+  it("throws for a missing directory", async () => {
+    const { io } = captureIO();
+    await expect(
+      runContext({ dir: project.path("nope"), window: 200000, top: 100, open: true }, io, () => {}),
     ).rejects.toBeInstanceOf(ClinesError);
   });
 });

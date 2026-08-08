@@ -1,4 +1,5 @@
-export { analyze } from "./core/pipeline.js";
+export { analyze, analyzeComplexity, analyzeContext, analyzeDuplication } from "./core/pipeline.js";
+export { estimateTokens } from "./core/tokenizer/tokens.js";
 export { linesAnalyzer } from "./core/analyzers/lines.js";
 export type { Analyzer } from "./core/analyzers/analyzer.js";
 export { tokenize, classifyContent } from "./core/tokenizer/tokenizer.js";
@@ -10,4 +11,14 @@ export { injectReadme } from "./report/reporters/readme.js";
 export type { Reporter } from "./report/reporter.js";
 export { defaultConfig, parseConfig, resolveConfig, userConfigSchema } from "./config/schema.js";
 export type { Config, UserConfig } from "./config/schema.js";
-export type { Report, LanguageStat, FileTokens, LineKind, LanguageSyntax } from "./core/model.js";
+export type {
+  Report,
+  LanguageStat,
+  FileTokens,
+  LineKind,
+  LanguageSyntax,
+  FileComplexity,
+  FileContext,
+  DirContext,
+  ContextResult,
+} from "./core/model.js";

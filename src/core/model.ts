@@ -33,6 +33,29 @@ export interface FileComplexity {
   language: string;
 }
 
+export interface FileContext {
+  path: string;
+  language: string;
+  tokens: number;
+  codeTokens: number;
+  commentTokens: number;
+  lines: number;
+}
+
+export interface DirContext {
+  dir: string;
+  tokens: number;
+  files: number;
+}
+
+export interface ContextResult {
+  files: FileContext[];
+  dirs: DirContext[];
+  totalTokens: number;
+  codeTokens: number;
+  commentTokens: number;
+}
+
 export interface Report {
   totalCode: number;
   totalComment: number;
