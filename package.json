@@ -1,6 +1,6 @@
 {
   "name": "clines",
-  "version": "3.11.0",
+  "version": "3.11.1",
   "description": "An industry-grade CLI that measures your codebase — lines per language, duplicate code, complexity hotspots, and what the repo costs an AI agent to read.",
   "type": "module",
   "repository": {
