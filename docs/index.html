@@ -6,7 +6,7 @@
     <title>clines — measure your codebase</title>
     <meta
       name="description"
-      content="clines is a zero-config CLI that measures your codebase — lines per language, duplicate code, complexity hotspots, and what the repo costs an AI agent to read."
+      content="clines is a command-line tool that measures a codebase: lines per language, duplicate code, complexity ranking, and estimated token cost."
     />
     <link
       rel="icon"
@@ -356,10 +356,10 @@
 ██║     ██║     ██║██║╚██╗██║██╔══╝  ╚════██║
 ╚██████╗███████╗██║██║ ╚████║███████╗███████║
  ╚═════╝╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝╚══════╝</pre>
-        <div class="tagline">Measure your codebase. Zero config.</div>
+        <div class="tagline">Measure your codebase from the terminal.</div>
         <p class="subtag">
-          A fast CLI that counts code, comments and blanks per language, finds duplicate code, ranks
-          your complexity hotspots, and estimates what the repo costs an AI agent to read.
+          A CLI that counts code, comments and blanks per language, finds duplicate code, ranks
+          files by complexity, and estimates token cost.
         </p>
         <div class="cta">
           <a class="btn primary" href="#usage">Get started</a>
@@ -398,22 +398,22 @@ Project size: <span class="size">Solar System ☀️</span></pre>
       </section>
 
       <section id="features">
-        <h2>Why clines</h2>
-        <p class="section-sub">Small, accurate, and built for code-health analysis.</p>
+        <h2>Features</h2>
+        <p class="section-sub">What clines measures, and what it skips.</p>
         <div class="grid">
           <div class="card">
             <div class="ico">🚀</div>
-            <h3>Zero config</h3>
+            <h3>Optional config</h3>
             <p>
-              Run it and go — no config file is ever written to your repo. Sensible defaults, out of
-              the box.
+              No config file is required, and none is ever written to the repo. A
+              <code>clines.json</code> can override the defaults if you need it.
             </p>
           </div>
           <div class="card">
             <div class="ico">🙈</div>
             <h3>.gitignore aware</h3>
             <p>
-              Respects your <code>.gitignore</code> and skips lockfiles, source maps and build junk
+              Respects <code>.gitignore</code>. Lockfiles, source maps and build output are skipped
               by default.
             </p>
           </div>
@@ -421,51 +421,55 @@ Project size: <span class="size">Solar System ☀️</span></pre>
             <div class="ico">📊</div>
             <h3>Per-language table</h3>
             <p>
-              Code, comments and blanks per language — verified against <code>cloc</code> to the
-              line.
+              Code, comments and blanks per language. Counts agree with <code>cloc</code> to within
+              0.12% on the react repository.
             </p>
           </div>
           <div class="card">
             <div class="ico">🌌</div>
-            <h3>Cosmic size scale</h3>
-            <p>From <b>Meteoroid</b> to <b>Universe</b> — an honest, calibrated sense of scale.</p>
+            <h3>Size label</h3>
+            <p>A label from Meteoroid to Universe, derived from the total lines of code.</p>
           </div>
           <div class="card">
             <div class="ico">📝</div>
             <h3>README integration</h3>
             <p>
-              Keep a live metrics section in your README with <span class="cmd">--readme</span>.
+              <span class="cmd">--readme</span> writes the metrics table into
+              <code>README.md</code>, between marker comments.
             </p>
           </div>
           <div class="card">
             <div class="ico">👯</div>
             <h3>Duplicate detection</h3>
             <p>
-              <span class="cmd">clines dup</span> finds copy-pasted blocks, reports a duplication
-              percentage, and writes a browsable <code>--html</code> report with code snippets.
+              <span class="cmd">clines dup</span> reports duplicated blocks and a duplication
+              percentage. <code>--html</code> writes a report with each snippet and every location.
             </p>
           </div>
           <div class="card">
             <div class="ico">🔥</div>
-            <h3>Complexity hotspots</h3>
+            <h3>Complexity ranking</h3>
             <p>
-              <span class="cmd">clines cx</span> ranks every file by its decision-point count, so
-              you know exactly where the logic is dense — terminal or <code>--html</code>.
+              <span class="cmd">clines cx</span> ranks files by decision-point count, in the
+              terminal or as an <code>--html</code> report.
             </p>
           </div>
           <div class="card">
             <div class="ico">🤖</div>
-            <h3>AI context cost</h3>
+            <h3>Token cost</h3>
             <p>
-              <span class="cmd">clines ctx</span> estimates what your repo costs an AI agent to
-              read, how much of a context window it fills, and fails CI above a
-              <span class="cmd">--max</span> token budget.
+              <span class="cmd">clines ctx</span> estimates the token cost of the tree, compares it
+              against a context window, and exits non-zero above a
+              <span class="cmd">--max</span> budget.
             </p>
           </div>
           <div class="card">
             <div class="ico">✅</div>
             <h3>100% tested</h3>
-            <p>A layered, fully-covered TypeScript core, published tokenlessly with provenance.</p>
+            <p>
+              TypeScript, with 100% statement, branch, function and line coverage enforced in CI.
+              Published with provenance over OIDC.
+            </p>
           </div>
         </div>
       </section>
@@ -473,8 +477,7 @@ Project size: <span class="size">Solar System ☀️</span></pre>
       <section id="usage">
         <h2>Usage</h2>
         <p class="section-sub">
-          <span class="cmd">count</span> is read-only by default — it never touches your files
-          unless you ask.
+          <span class="cmd">count</span> is read-only by default and does not modify any file.
         </p>
         <pre class="code">
 <span style="color: var(--muted)"># count the current directory, print the table</span>
@@ -489,10 +492,10 @@ $ npx clines count --readme
 <span style="color: var(--muted)"># find duplicated code blocks</span>
 $ npx clines dup
 
-<span style="color: var(--muted)"># rank files by complexity, into a browsable report</span>
+<span style="color: var(--muted)"># rank files by complexity, into an HTML report</span>
 $ npx clines cx --html cx-report.html
 
-<span style="color: var(--muted)"># what does this repo cost an AI agent to read?</span>
+<span style="color: var(--muted)"># estimate token cost against a 1M window</span>
 $ npx clines ctx --window 1m
 
 <span style="color: var(--muted)"># fail CI once the repo no longer fits a 200k window</span>
@@ -502,16 +505,17 @@ $ npx clines ctx --max 200k
 $ npx clines</pre>
         <div class="note">
           <b>README markers.</b> Place the <code>clines · code metrics</code> and
-          <code>clines · end</code> marker comments anywhere in your README and the section between
-          them stays up to date. No markers? The report is appended to the bottom.
+          <code>clines · end</code> marker comments anywhere in the README, and the section between
+          them is updated in place. If the markers are absent, the report is appended to the end of
+          the file.
         </div>
       </section>
 
       <section id="config">
         <h2>Configuration</h2>
         <p class="section-sub">
-          Optional. Add a <code>clines.json</code> to tweak the defaults with a simple add / remove
-          model — for both directories and files.
+          Optional. A <code>clines.json</code> layers additions and removals onto the defaults, for
+          both directories and files.
         </p>
         <pre class="code">
 {
@@ -532,7 +536,7 @@ $ npx clines</pre>
       <section id="sizes">
         <h2>Project size scale</h2>
         <p class="section-sub">
-          Calibrated on real codebases — react is a Solar System, Linux a Universe.
+          Thresholds are based on real codebases: react is a Solar System, Linux a Universe.
         </p>
         <table class="tiers">
           <tr>
