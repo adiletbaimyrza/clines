@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>From 2.0.2 to 3.11.1 — clines</title>
+    <meta
+      name="description"
+      content="What changed in clines between 2.0.2 and 3.11.1: a TypeScript rewrite, a subcommand CLI, and three new commands for duplication, complexity and token cost."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A8%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --bg: #0a0e17;
+        --bg-soft: #111726;
+        --panel: #141b2d;
+        --border: #223049;
+        --text: #e6ecf5;
+        --muted: #9aa8bf;
+        --accent: #5ed0ff;
+        --accent-2: #a78bfa;
+        --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        color: var(--text);
+        background:
+          radial-gradient(1200px 600px at 80% -10%, rgba(94, 208, 255, 0.12), transparent 60%),
+          var(--bg);
+        line-height: 1.65;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .wrap {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      nav .brand {
+        font-family: var(--mono);
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: var(--text);
+      }
+      nav .brand::before {
+        content: "✨ ";
+      }
+      nav .links a {
+        color: var(--muted);
+        margin-left: 20px;
+        font-size: 14px;
+      }
+      nav .links a:hover {
+        color: var(--text);
+        text-decoration: none;
+      }
+      article {
+        padding: 40px 0 64px;
+      }
+      h1 {
+        font-size: clamp(26px, 4vw, 34px);
+        margin: 0 0 8px;
+        line-height: 1.25;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0 0 32px;
+      }
+      h2 {
+        font-size: 21px;
+        margin: 40px 0 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+      h3 {
+        font-size: 17px;
+        margin: 28px 0 4px;
+      }
+      p,
+      li {
+        color: #cdd6e6;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.9em;
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 1px 5px;
+      }
+      pre {
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: #cdd6e6;
+      }
+      pre code {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: inherit;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin: 16px 0;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      td.v {
+        font-family: var(--mono);
+        color: var(--accent);
+        white-space: nowrap;
+      }
+      td.n {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      blockquote {
+        margin: 20px 0;
+        padding: 12px 16px;
+        border-left: 3px solid var(--accent-2);
+        background: var(--panel);
+        border-radius: 0 8px 8px 0;
+        color: var(--muted);
+      }
+      blockquote p {
+        margin: 0;
+        color: var(--muted);
+      }
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 24px 0 40px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <span class="brand">clines</span>
+        <span class="links">
+          <a href="../index.html">Home</a>
+          <a href="https://github.com/adiletbaimyrza/clines">GitHub</a>
+        </span>
+      </nav>
+    </div>
+
+    <div class="wrap">
+      <article>
+        <h1>From 2.0.2 to 3.11.1</h1>
+        <p class="meta">8 August 2026 · covers versions 3.0.0 through 3.11.1</p>
+
+        <p>
+          Version 2.0.2 was a single 258-line <code>index.js</code>. It walked a directory, skipped
+          blank and comment lines, and printed one number: the count of everything left over. It
+          could write that number into a README and attach a size label to it. There were no tests
+          and no build step.
+        </p>
+        <p>
+          Everything below happened after that. The tool is now a typed, layered codebase with four
+          commands, and the counting itself is verifiably accurate rather than approximately right.
+        </p>
+
+        <h2>3.0.0 — the rewrite</h2>
+        <p>
+          The whole tool was rewritten in TypeScript and split into layers:
+          <code>cli → config → core → report</code>. The core is pure functions, so the parts that
+          decide what a line is can be tested without touching a filesystem.
+        </p>
+        <p>
+          Test coverage is enforced at 100% for statements, branches, functions and lines. This is a
+          CI gate, not an aspiration: a pull request that drops coverage to 99.7% fails. Publishing
+          moved to GitHub Actions using npm trusted publishing over OIDC, with no long-lived token
+          in the repository.
+        </p>
+
+        <h2>3.0.1 – 3.3.3 — counting got precise</h2>
+        <p>
+          2.0.2 discarded comments and blanks. 3.x classifies every line as code, comment or blank
+          and reports all three per language, so the output is a table rather than a single number:
+        </p>
+        <div class="table-wrap">
+          <pre><code>Language      Files      Lines     Code  Comments    Blank  Complexity       %
+JavaScript    3,954    673,654  546,899    62,317   64,438      37,405   65.5%
+TypeScript      419     81,509   65,140    11,248    5,121       8,399    7.8%</code></pre>
+        </div>
+        <p>Along the way:</p>
+        <ul>
+          <li>JSX and TSX became their own categories instead of being folded into JS and TS.</li>
+          <li>
+            A trailing-blank-line overcount was fixed, and unknown extensions now fall into an
+            <code>Other</code> bucket instead of being dropped.
+          </li>
+          <li>
+            The size scale was recalibrated against real repositories. The old labels topped out at
+            50,000 lines, which put most real projects in the same bucket. The new ladder runs from
+            Meteoroid to Universe and spans 1,000 to 5,000,000 lines.
+          </li>
+          <li>
+            The CLI became subcommand-based. <code>clines count</code> is read-only by default; the
+            bare command prints a banner. Before this, running <code>clines</code> would modify your
+            README without being asked.
+          </li>
+        </ul>
+        <p>
+          3.3.3 added this site. Counting accuracy was checked against <code>cloc</code>: on the
+          react repository, over an identical 6,915-file set, the two agree to within 0.12% on code
+          lines and 0.02% on blanks.
+        </p>
+
+        <h2>3.4.0 – 3.8.0 — <code>clines dup</code></h2>
+        <p>
+          The first new command finds duplicated code. Detection is maximal-block clone matching
+          over code lines, ignoring whitespace differences, so reformatted copies still match.
+          <code>--html</code> writes a self-contained report with each snippet, every location, and
+          a filter box.
+        </p>
+        <p>
+          The five releases in this range were mostly corrections found by running it on real
+          repositories: syntax highlighting and indentation in the snippets, merging overlapping
+          fragments, <code>--min-copies</code> for blocks duplicated more than twice, and a fix
+          where the headline statistics ignored the <code>--min-lines</code> and
+          <code>--min-copies</code> filters and so disagreed with the table underneath them.
+        </p>
+
+        <h2>3.9.0 – 3.10.0 — complexity</h2>
+        <p>
+          3.9.0 added a Complexity column to <code>count</code>: a decision-point count, following
+          the approach used by <code>scc</code>, of branch and loop keywords and logical operators,
+          with comments and string contents excluded. 3.10.0 promoted it to its own command,
+          <code>clines complexity</code> (alias <code>cx</code>), which ranks files rather than
+          aggregating by language.
+        </p>
+        <div class="table-wrap">
+          <pre><code>Complexity: 51,082 total   ·   2,303 files with complexity
+
+Most complex files
+  File                                                          Complexity   Code
+  packages/react-devtools-shared/src/backend/fiber/renderer.js       1,292   6,487
+  packages/react-dom-bindings/src/server/ReactFizzConfigDOM.js       1,102   5,929</code></pre>
+        </div>
+
+        <h2>3.11.0 — <code>clines context</code></h2>
+        <p>
+          The newest command estimates how many tokens a language model reads for the whole tree,
+          compares the total against a context window, and breaks it down per file and per top-level
+          directory. <code>--max</code> turns it into a CI check: the command exits with status 1
+          once the total exceeds the budget.
+        </p>
+        <pre><code>$ clines ctx --window 1m
+Context: 8,776,571 tokens   ·   877.7% of a 1,000,000-token window   ·   11% comments</code></pre>
+        <p>
+          Adding a tokenizer dependency was not an option, so the estimator approximates one:
+          sub-word splitting on camelCase and snake_case boundaries, symbol runs charged by length,
+          and one token per newline. The constants were fitted against GPT-4o's tokenizer rather
+          than guessed.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <tr>
+              <th>Corpus</th>
+              <th class="n">Total error</th>
+              <th class="n">Per-file median</th>
+            </tr>
+            <tr>
+              <td>Mixed calibration set (2,943 files, 5.1M tokens)</td>
+              <td class="n">+0.3%</td>
+              <td class="n">10.3%</td>
+            </tr>
+            <tr>
+              <td>facebook/react (6,915 files, 8.3M tokens)</td>
+              <td class="n">+5.2%</td>
+              <td class="n">—</td>
+            </tr>
+          </table>
+        </div>
+        <blockquote>
+          <p>
+            The estimate runs a few percent high on JavaScript and TypeScript and low on Markdown
+            and JSON. The near-zero figure on the mixed set is those two biases cancelling out, not
+            a general guarantee. Treat totals as accurate to within about ±10%.
+          </p>
+        </blockquote>
+
+        <h2>Version summary</h2>
+        <div class="table-wrap">
+          <table>
+            <tr>
+              <th>Version</th>
+              <th>Change</th>
+            </tr>
+            <tr>
+              <td class="v">3.0.0</td>
+              <td>TypeScript rewrite, layered architecture, 100% coverage gate, CI/CD</td>
+            </tr>
+            <tr>
+              <td class="v">3.0.1</td>
+              <td>Exclude generated files; fold unknown extensions into <code>Other</code></td>
+            </tr>
+            <tr>
+              <td class="v">3.1.0</td>
+              <td>Per-language table with code, comment and blank columns</td>
+            </tr>
+            <tr>
+              <td class="v">3.1.1</td>
+              <td>Split JSX and TSX into their own categories; fix trailing-blank overcount</td>
+            </tr>
+            <tr>
+              <td class="v">3.2.0</td>
+              <td>Recalibrated project-size scale</td>
+            </tr>
+            <tr>
+              <td class="v">3.3.0</td>
+              <td><code>clines count</code> subcommand, banner, read-only by default</td>
+            </tr>
+            <tr>
+              <td class="v">3.3.1 – 3.3.2</td>
+              <td>Fix <code>clines help</code>; new README marker comments</td>
+            </tr>
+            <tr>
+              <td class="v">3.3.3</td>
+              <td>This site</td>
+            </tr>
+            <tr>
+              <td class="v">3.4.0 – 3.5.1</td>
+              <td><code>clines dup</code>, with an HTML report and syntax highlighting</td>
+            </tr>
+            <tr>
+              <td class="v">3.6.0 – 3.6.1</td>
+              <td>Merge overlapping fragments; collapsible cards; snippet fixes</td>
+            </tr>
+            <tr>
+              <td class="v">3.7.0 – 3.7.2</td>
+              <td><code>--min-copies</code>; statistics now respect the filters</td>
+            </tr>
+            <tr>
+              <td class="v">3.8.0</td>
+              <td><code>--html</code> opens the report in the browser</td>
+            </tr>
+            <tr>
+              <td class="v">3.9.0</td>
+              <td>Complexity column in <code>count</code></td>
+            </tr>
+            <tr>
+              <td class="v">3.10.0</td>
+              <td><code>clines complexity</code> (<code>cx</code>) with a ranked HTML report</td>
+            </tr>
+            <tr>
+              <td class="v">3.11.0</td>
+              <td>
+                <code>clines context</code> (<code>ctx</code>) with a <code>--max</code> budget
+              </td>
+            </tr>
+            <tr>
+              <td class="v">3.11.1</td>
+              <td>Banner lists every command</td>
+            </tr>
+          </table>
+        </div>
+
+        <h2>What did not change</h2>
+        <p>
+          <code>clines.json</code> still uses the same add and remove model,
+          <code>.gitignore</code> is still respected, and <code>--readme</code> still writes into
+          the same marker comments. A 2.x configuration file works unchanged.
+        </p>
+      </article>
+    </div>
+
+    <div class="wrap">
+      <footer>
+        <p>MIT License © Adilet Baimyrza Uulu · <a href="../index.html">clines</a></p>
+      </footer>
+    </div>
+  </body>
+</html>
