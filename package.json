@@ -1,7 +1,7 @@
 {
   "name": "clines",
-  "version": "3.10.0",
-  "description": "An industry-grade CLI that measures your codebase (lines, comments, size) and updates your README — built to grow into duplication and complexity analysis.",
+  "version": "3.11.0",
+  "description": "An industry-grade CLI that measures your codebase — lines per language, duplicate code, complexity hotspots, and what the repo costs an AI agent to read.",
   "type": "module",
   "repository": {
     "type": "git",
@@ -42,6 +42,11 @@
     "cloc",
     "code-metrics",
     "static-analysis",
+    "complexity",
+    "duplicate-code",
+    "tokens",
+    "context-window",
+    "ai",
     "project"
   ],
   "license": "MIT",

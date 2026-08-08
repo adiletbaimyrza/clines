@@ -1,8 +1,14 @@
 import path from "node:path";
 import { loadConfig, loadGitignoreGlobs } from "../config/load.js";
 import type { Report } from "../core/model.js";
-import { analyze, analyzeComplexity, analyzeDuplication } from "../core/pipeline.js";
+import {
+  analyze,
+  analyzeComplexity,
+  analyzeContext,
+  analyzeDuplication,
+} from "../core/pipeline.js";
 import { renderComplexity, renderComplexityHtml } from "../report/format/complexity.js";
+import { renderContext, renderContextHtml } from "../report/format/context.js";
 import { renderDuplication } from "../report/format/duplication.js";
 import { renderDuplicationHtml } from "../report/format/duplication-html.js";
 import { consoleReporter } from "../report/reporters/console.js";
@@ -33,6 +39,16 @@ export interface ComplexityOptions {
   dir: string;
   top: number;
   open: boolean;
+  config?: string;
+  html?: string;
+}
+
+export interface ContextOptions {
+  dir: string;
+  window: number;
+  top: number;
+  open: boolean;
+  max?: number;
   config?: string;
   html?: string;
 }
@@ -103,6 +119,36 @@ export async function runComplexity(
     if (options.open) {
       opener(htmlPath);
     }
+  }
+
+  return 0;
+}
+
+export async function runContext(
+  options: ContextOptions,
+  io: IO,
+  opener: Opener = openInBrowser,
+): Promise<number> {
+  const { rootDir, config, globs } = await prepare(options.dir, options.config);
+  const result = await analyzeContext(rootDir, config, globs);
+  io.out(renderContext(result, options.window));
+
+  if (options.html !== undefined) {
+    const htmlPath = path.resolve(options.html);
+    await writeText(
+      htmlPath,
+      renderContextHtml(result, { top: options.top, window: options.window }),
+    );
+    io.err(`Wrote context report to ${htmlPath}`);
+    if (options.open) {
+      opener(htmlPath);
+    }
+  }
+
+  if (options.max !== undefined && result.totalTokens > options.max) {
+    throw new ClinesError(
+      `Context budget exceeded: ${result.totalTokens.toLocaleString("en-US")} tokens > ${options.max.toLocaleString("en-US")}`,
+    );
   }
 
   return 0;

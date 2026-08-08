@@ -215,4 +215,81 @@ describe("runCli", () => {
 
     expect(out.join("\n")).toContain("Complexity:");
   });
+
+  it("runs context with a default 200k window via the ctx alias", async () => {
+    const contextRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(["node", "clines", "ctx", project.root], io, { contextRunner });
+
+    expect(contextRunner.mock.calls[0]![0]).toEqual({
+      dir: project.root,
+      window: 200000,
+      top: 100,
+      open: true,
+    });
+  });
+
+  it("parses --window, --max, --top, --html, --no-open and --config for context", async () => {
+    const contextRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(
+      [
+        "node",
+        "clines",
+        "context",
+        project.root,
+        "--window",
+        "1m",
+        "--max",
+        "200k",
+        "--top",
+        "25",
+        "--html",
+        "ctx.html",
+        "--no-open",
+        "--config",
+        "c.json",
+      ],
+      io,
+      { contextRunner },
+    );
+
+    expect(contextRunner.mock.calls[0]![0]).toEqual({
+      dir: project.root,
+      window: 1000000,
+      max: 200000,
+      top: 25,
+      open: false,
+      html: "ctx.html",
+      config: "c.json",
+    });
+  });
+
+  it("accepts a plain token count and rejects malformed budgets", async () => {
+    const contextRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(["node", "clines", "ctx", project.root, "--window", "50000"], io, {
+      contextRunner,
+    });
+    expect(contextRunner.mock.calls[0]![0]).toMatchObject({ window: 50000 });
+
+    for (const bad of ["abc", "0", "1kb"]) {
+      await expect(
+        runCli(["node", "clines", "ctx", project.root, "--window", bad], io, { contextRunner }),
+      ).rejects.toBeTruthy();
+    }
+    expect(contextRunner).toHaveBeenCalledTimes(1);
+  });
+
+  it("wires the real context pipeline by default", async () => {
+    project.file("a.ts", "const a = 1;\n");
+    const { io, out } = captureIO();
+
+    await runCli(["node", "clines", "ctx", project.root], io);
+
+    expect(out.join("\n")).toContain("Context:");
+  });
 });
