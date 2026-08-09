@@ -206,6 +206,37 @@ describe("runContext", () => {
   });
 });
 
+describe("runContext --comments", () => {
+  it("prints comment drift when blame is available", async () => {
+    project.file("a.ts", "// note\nconst a = 1;\n");
+    const { io, out } = captureIO();
+
+    await runContext(
+      { dir: project.root, window: 200000, budget: 50000, top: 100, open: false, comments: true },
+      io,
+      () => {},
+      { blamer: async () => [0, 9 * 365 * 24 * 60 * 60] },
+    );
+
+    expect(out.join("\n")).toContain("Comment drift");
+    expect(out.join("\n")).toContain("describe code that changed later");
+  });
+
+  it("says so when blame is unavailable", async () => {
+    project.file("a.ts", "// note\nconst a = 1;\n");
+    const { io, out } = captureIO();
+
+    await runContext(
+      { dir: project.root, window: 200000, budget: 50000, top: 100, open: false, comments: true },
+      io,
+      () => {},
+      { blamer: async () => undefined },
+    );
+
+    expect(out.join("\n")).toContain("Comment drift: unavailable");
+  });
+});
+
 describe("runComplexity", () => {
   it("prints a complexity summary and opens nothing without --html", async () => {
     project.file("a.ts", "if (a) {}\nif (b) {}\n");

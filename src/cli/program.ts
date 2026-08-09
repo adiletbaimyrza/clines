@@ -45,6 +45,7 @@ interface ComplexityFlags {
 
 interface ContextFlags {
   all?: boolean;
+  comments?: boolean;
   window: number;
   budget: number;
   top: number;
@@ -177,6 +178,7 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .argument("[dir]", "directory to scan", ".")
     .option("--window <n>", "context window to compare against", parseTokenCount, 200000)
     .option("--budget <n>", "working set a single read should fit inside", parseTokenCount, 50000)
+    .option("--comments", "also check whether comments have drifted from the code (needs git)")
     .option("--max <n>", "exit non-zero when the total exceeds this budget", parseTokenCount)
     .option("--top <n>", "number of files in the HTML report", parsePositiveInt, 100)
     .option("--html <file>", "write a browsable HTML report to this path")
@@ -188,6 +190,7 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
         dir,
         window: flags.window,
         budget: flags.budget,
+        comments: flags.comments === true,
         all: flags.all === true,
         top: flags.top,
         open: flags.open !== false,
