@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>clines 5.0.0: auditing our own output — clines</title>
+    <meta
+      name="description"
+      content="What a measured audit of clines found: 304,216 wasted regex compilations, every file classified twice, and output that did not fit an 80-column terminal."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A8%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --bg: #0a0e17;
+        --bg-soft: #111726;
+        --panel: #141b2d;
+        --border: #223049;
+        --text: #e6ecf5;
+        --muted: #9aa8bf;
+        --accent: #5ed0ff;
+        --accent-2: #a78bfa;
+        --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        color: var(--text);
+        background:
+          radial-gradient(1200px 600px at 80% -10%, rgba(94, 208, 255, 0.12), transparent 60%),
+          var(--bg);
+        line-height: 1.65;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .wrap {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      nav .brand {
+        font-family: var(--mono);
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: var(--text);
+      }
+      nav .brand::before {
+        content: "✨ ";
+      }
+      nav .links a {
+        color: var(--muted);
+        margin-left: 20px;
+        font-size: 14px;
+      }
+      nav .links a:hover {
+        color: var(--text);
+        text-decoration: none;
+      }
+      article {
+        padding: 40px 0 64px;
+      }
+      h1 {
+        font-size: clamp(26px, 4vw, 34px);
+        margin: 0 0 8px;
+        line-height: 1.25;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0 0 32px;
+      }
+      h2 {
+        font-size: 21px;
+        margin: 40px 0 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+      h3 {
+        font-size: 17px;
+        margin: 28px 0 4px;
+      }
+      p,
+      li {
+        color: #cdd6e6;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.9em;
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 1px 5px;
+      }
+      pre {
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: #cdd6e6;
+      }
+      pre code {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: inherit;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin: 16px 0;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      td.v {
+        font-family: var(--mono);
+        color: var(--accent);
+        white-space: nowrap;
+      }
+      td.n {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      blockquote {
+        margin: 20px 0;
+        padding: 12px 16px;
+        border-left: 3px solid var(--accent-2);
+        background: var(--panel);
+        border-radius: 0 8px 8px 0;
+        color: var(--muted);
+      }
+      blockquote p {
+        margin: 0;
+        color: var(--muted);
+      }
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 24px 0 40px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <span class="brand">clines</span>
+        <span class="links">
+          <a href="../index.html">Home</a>
+          <a href="index.html">Blog</a>
+          <a href="https://github.com/adiletbaimyrza/clines">GitHub</a>
+        </span>
+      </nav>
+    </div>
+
+    <div class="wrap">
+      <article>
+        <h1>5.0.0: auditing our own output</h1>
+        <p class="meta">10 August 2026 · covers 4.4.0 through 5.0.0</p>
+
+        <p>
+          A tool that tells you where your codebase wastes effort should be able to survive the same
+          question. So 4.4.0 through 5.0.0 came out of pointing that question at clines itself —
+          first at what it spends, then at what it puts on your screen. Both audits were done by
+          measuring rather than by reading the code and forming opinions, which turned out to
+          matter.
+        </p>
+
+        <h2>4.4.0 — three kinds of repeated work</h2>
+        <p>
+          Profiling every command against <code>facebook/react</code> found three redundancies, none
+          of which were obvious from reading the source.
+        </p>
+        <p>
+          <b>Glob patterns were recompiled per file, per pattern.</b>
+          <code>isIgnoredFile</code> called <code>globToRegExp</code> inside a <code>.some()</code>,
+          so react's 44 <code>.gitignore</code> entries produced <b>304,216 RegExp constructions</b>
+          on every run.
+        </p>
+        <pre><code>isIgnoredFile over 6,914 files:  171 ms
+precompiled equivalent:           12 ms</code></pre>
+        <p>
+          <b>Every file was classified twice.</b> The collector worked out which lines were code,
+          comment or blank in order to summarise file roles — then <code>tokenize</code>,
+          <code>measureContext</code> and <code>toDupFile</code> each did the identical work again
+          on the same content.
+        </p>
+        <p>
+          <b><code>comments</code> spent a third of a second on data it never used.</b> It ran the
+          full context analysis, estimating tokens for every line of every file, purely to rank
+          candidates by comment volume — then re-read and re-classified the fifty files it picked.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <tr>
+              <th>command</th>
+              <th class="n">before</th>
+              <th class="n">after</th>
+            </tr>
+            <tr>
+              <td><code>count</code></td>
+              <td class="n">1.13s</td>
+              <td class="n">0.84s</td>
+            </tr>
+            <tr>
+              <td><code>dup</code></td>
+              <td class="n">1.23s</td>
+              <td class="n">0.90s</td>
+            </tr>
+            <tr>
+              <td><code>cx</code></td>
+              <td class="n">1.20s</td>
+              <td class="n">0.82s</td>
+            </tr>
+            <tr>
+              <td><code>ctx</code></td>
+              <td class="n">1.28s</td>
+              <td class="n">0.88s</td>
+            </tr>
+            <tr>
+              <td><code>comments</code></td>
+              <td class="n">7.33s</td>
+              <td class="n">6.81s</td>
+            </tr>
+          </table>
+        </div>
+        <p>
+          The check that mattered was not the stopwatch but the diff: output from
+          <code>count</code>, <code>dup</code>, <code>cx</code> and <code>ctx</code> is
+          byte-identical before and after.
+        </p>
+
+        <h2>4.5.0 — the output did not fit</h2>
+        <p>
+          Nothing in the codebase read <code>process.stdout.columns</code>, and four separate
+          renderers each hardcoded a 68-character truncation. On a standard 80-column terminal a
+          fifth of the output wrapped, which destroys the alignment the tables exist for.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <tr>
+              <th>lines over 80 columns</th>
+              <th class="n">before</th>
+              <th class="n">after</th>
+            </tr>
+            <tr>
+              <td><code>ctx</code></td>
+              <td class="n">24</td>
+              <td class="n">0</td>
+            </tr>
+            <tr>
+              <td><code>cx</code></td>
+              <td class="n">22</td>
+              <td class="n">0</td>
+            </tr>
+            <tr>
+              <td><code>comments</code></td>
+              <td class="n">21</td>
+              <td class="n">0</td>
+            </tr>
+            <tr>
+              <td><code>dup</code></td>
+              <td class="n">12</td>
+              <td class="n">0</td>
+            </tr>
+          </table>
+        </div>
+        <p>
+          Truncation also threw away the wrong end. In a monorepo the package name is the part that
+          tells you where you are, and a leading ellipsis deleted exactly that:
+        </p>
+        <pre><code>before   …plugin-react-compiler/src/Inference/InferMutationAliasingEffects.ts
+after    compiler/packages/babel-…/InferMutationAliasingEffects.ts</code></pre>
+        <p>
+          And a repository that dwarfs a context window now reads as a multiple:
+          <code>16.5× a 200,000-token window</code> rather than <code>1651.5% of</code> one.
+        </p>
+
+        <blockquote>
+          <p>
+            One finding in this pass was wrong. An early measurement reported a 219-character line
+            in <code>count</code>, which looked like a serious overflow. It was
+            <code>awk</code> counting bytes: the box-drawing character <code>─</code> is three bytes
+            in UTF-8, and the divider was 73 characters all along. Re-measuring by code point put
+            every command under 100. Worth stating plainly, because a metrics tool has no business
+            reporting a number it has not checked the units of.
+          </p>
+        </blockquote>
+
+        <h2>5.0.0 — the rough edges</h2>
+        <p>
+          A walk through the actual journeys — piping, typos, empty directories, malformed config —
+          turned up six problems.
+        </p>
+        <p>
+          <b>The banner leaked escape codes when redirected.</b>
+          <code>clines &gt; notes.txt</code> wrote <code>^[[1m^[[38;5;38m…</code> into the file.
+          Nothing checked for a terminal, and <code>NO_COLOR</code> was ignored. Both are now
+          honoured.
+        </p>
+        <p><b>One mistyped config key produced ten lines of validator internals:</b></p>
+        <pre><code>before   Invalid config in …/clines.json: [
+           { "code": "unrecognized_keys", "keys": [ "ignor" ], "path": [], … } ]
+
+after    Invalid config in …/clines.json:
+           Unknown key "ignor" — did you mean "ignore"?</code></pre>
+        <p>
+          <b><code>--top</code> did not do what it looked like it did.</b>
+          <code>clines cx --top 3</code> still printed twenty-one rows, because the flag only sized
+          the HTML report. It now sets how many files the terminal lists, on every command —
+          including <code>dup</code>, which had the most results and no limit at all.
+        </p>
+        <p>
+          <b><code>--html</code> opened a browser by itself.</b> Writing a file is expected of a
+          command-line tool; launching a graphical application unasked is not. It now takes
+          <code>--open</code>.
+        </p>
+        <p>
+          Alongside those: <code>comments</code> says what it is doing before spending seven seconds
+          in <code>git blame</code>, an empty directory reports that no files were found instead of
+          drawing an empty table and calling the project a Meteoroid, and the
+          <code>--html</code> hint is dropped when the output is piped, because advice addressed to
+          a human does not belong in a pipeline.
+        </p>
+
+        <h2>Upgrading</h2>
+        <p>
+          npm went straight from 3.11.1 to 5.0.0, so an upgrade crosses two sets of breaking changes
+          at once.
+        </p>
+        <ul>
+          <li>
+            Numbers will drop: tests, fixtures, generated and vendored files are excluded by default
+            since 4.0.0. <code>--all</code> reproduces the old output exactly.
+          </li>
+          <li><code>--html</code> no longer opens a browser. Add <code>--open</code>.</li>
+          <li><code>--top</code> now sets terminal rows, not HTML rows.</li>
+          <li><code>comments --files</code> is now <code>--scan</code>.</li>
+          <li><code>ctx --comments</code> is now the <code>comments</code> command.</li>
+          <li><code>clines.json</code> is unchanged, and a 2.x config still works.</li>
+        </ul>
+        <p>
+          The intermediate versions were never published. There is nothing between 3.11.1 and 5.0.0
+          on the registry, and nothing missing from 5.0.0 because of it.
+        </p>
+      </article>
+    </div>
+
+    <div class="wrap">
+      <footer>
+        <p>MIT License © Adilet Baimyrza Uulu · <a href="../index.html">clines</a></p>
+      </footer>
+    </div>
+  </body>
+</html>
