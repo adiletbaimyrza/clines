@@ -3,6 +3,7 @@ import { defaultConfig } from "../src/config/schema.js";
 import {
   analyze,
   analyzeComplexity,
+  analyzeComments,
   analyzeContext,
   analyzeDuplication,
 } from "../src/core/pipeline.js";
@@ -163,5 +164,100 @@ describe("analyzeDuplication", () => {
     expect(result.percentage).toBeGreaterThan(0);
     expect(result.clones).toHaveLength(1);
     expect(result.clones[0]!.fragments).toHaveLength(2);
+  });
+});
+
+describe("analyzeComments", () => {
+  const YEAR = 365 * 24 * 60 * 60;
+
+  it("reports drift using blame times", async () => {
+    project.file("a.ts", "// old note\nconst a = 1;\n");
+    const ctx = await analyzeContext(project.root, defaultConfig());
+
+    const health = await analyzeComments(project.root, ctx.files, {
+      years: 3,
+      blamer: async () => [0, 9 * YEAR],
+    });
+
+    expect(health).toMatchObject({ filesChecked: 1, blocks: 1, drifted: 1, years: 3 });
+    expect(health!.worst[0]).toMatchObject({ path: "a.ts", drifted: 1 });
+  });
+
+  it("returns undefined when nothing can be blamed", async () => {
+    project.file("a.ts", "// note\nconst a = 1;\n");
+    const ctx = await analyzeContext(project.root, defaultConfig());
+
+    expect(
+      await analyzeComments(project.root, ctx.files, { blamer: async () => undefined }),
+    ).toBeUndefined();
+  });
+
+  it("returns undefined when no file has comments", async () => {
+    project.file("a.ts", "const a = 1;\n");
+    const ctx = await analyzeContext(project.root, defaultConfig());
+
+    expect(
+      await analyzeComments(project.root, ctx.files, { blamer: async () => [0] }),
+    ).toBeUndefined();
+  });
+
+  it("checks only the most commented files up to the cap", async () => {
+    project.file("a.ts", "// one\n// two\n// three\nconst a = 1;\n");
+    project.file("b.ts", "// x\nconst b = 2;\n");
+    const ctx = await analyzeContext(project.root, defaultConfig());
+    const seen: string[] = [];
+
+    await analyzeComments(project.root, ctx.files, {
+      maxFiles: 1,
+      blamer: async (_root, file) => {
+        seen.push(file);
+        return [0, 0, 0, 0];
+      },
+    });
+
+    expect(seen).toEqual(["a.ts"]);
+  });
+
+  it("uses real git blame when no blamer is injected", async () => {
+    const health = await analyzeComments(process.cwd(), [
+      {
+        path: "package.json",
+        language: "JSON",
+        tokens: 10,
+        codeTokens: 9,
+        commentTokens: 1,
+        lines: 5,
+      },
+    ]);
+
+    expect(health).toBeDefined();
+  });
+
+  it("breaks candidate ties on path", async () => {
+    project.file("b.ts", "// note\nconst a = 1;\n");
+    project.file("a.ts", "// note\nconst a = 1;\n");
+    const ctx = await analyzeContext(project.root, defaultConfig());
+    const seen: string[] = [];
+
+    await analyzeComments(project.root, ctx.files, {
+      maxFiles: 1,
+      blamer: async (_root, file) => {
+        seen.push(file);
+        return [0, 0];
+      },
+    });
+
+    expect(seen).toEqual(["a.ts"]);
+  });
+
+  it("defaults to a three-year threshold", async () => {
+    project.file("a.ts", "// note\nconst a = 1;\n");
+    const ctx = await analyzeContext(project.root, defaultConfig());
+
+    const health = await analyzeComments(project.root, ctx.files, {
+      blamer: async () => [0, 2 * YEAR],
+    });
+
+    expect(health).toMatchObject({ years: 3, drifted: 0 });
   });
 });

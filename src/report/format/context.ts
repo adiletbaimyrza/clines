@@ -1,3 +1,4 @@
+import type { CommentHealth } from "../../core/analyzers/comments.js";
 import type { ContextResult, FileContext } from "../../core/model.js";
 import { escapeHtml, excludedNotice, formatNumber } from "./html.js";
 
@@ -28,6 +29,25 @@ export interface ContextHtmlOptions {
   top?: number;
   window?: number;
   budget?: number;
+}
+
+export function renderComments(health: CommentHealth): string {
+  if (health.blocks === 0) {
+    return "Comment drift: no comment blocks sit above code, nothing to compare.";
+  }
+
+  const share = (health.drifted / health.blocks) * 100;
+  const lines = [
+    `Comment drift (${formatNumber(health.filesChecked)} most commented files, ${health.years}-year threshold)`,
+    `  ${formatNumber(health.drifted)} of ${formatNumber(health.blocks)} comment blocks (${share.toFixed(0)}%) describe code that changed later`,
+  ];
+  if (health.worst.length > 0) {
+    const worst = health.worst
+      .map((f) => `${shorten(f.path, 40)} ${f.drifted}/${f.blocks}`)
+      .join("   ");
+    lines.push(`  Worst: ${worst}`);
+  }
+  return lines.join("\n");
 }
 
 export function renderContext(

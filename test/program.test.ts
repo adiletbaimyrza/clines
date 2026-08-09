@@ -230,6 +230,7 @@ describe("runCli", () => {
     expect(contextRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
       all: false,
+      comments: false,
       window: 200000,
       budget: 50000,
       top: 100,
@@ -266,6 +267,7 @@ describe("runCli", () => {
     expect(contextRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
       all: false,
+      comments: false,
       window: 1000000,
       budget: 50000,
       max: 200000,
@@ -308,6 +310,15 @@ describe("runCli", () => {
     for (const fn of [runner, dupRunner, complexityRunner, contextRunner]) {
       expect(fn.mock.calls[0]![0]).toMatchObject({ all: true });
     }
+  });
+
+  it("passes --comments through to context", async () => {
+    const contextRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(["node", "clines", "ctx", project.root, "--comments"], io, { contextRunner });
+
+    expect(contextRunner.mock.calls[0]![0]).toMatchObject({ comments: true });
   });
 
   it("wires the real context pipeline by default", async () => {
