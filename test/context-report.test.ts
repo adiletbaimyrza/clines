@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ContextResult } from "../src/core/model.js";
-import {
-  budgetTiers,
-  renderComments,
-  renderContext,
-  renderContextHtml,
-} from "../src/report/format/context.js";
+import { budgetTiers, renderContext, renderContextHtml } from "../src/report/format/context.js";
 
 function result(overrides: Partial<ContextResult> = {}): ContextResult {
   return {
@@ -284,46 +279,5 @@ describe("working set and navigability", () => {
 
     expect(html).toContain("&lt;index&gt;.ts &times;2");
     expect(html).not.toContain("&mdash;");
-  });
-});
-
-describe("renderComments", () => {
-  it("summarises drift and names the worst files", () => {
-    const output = renderComments({
-      filesChecked: 2,
-      blocks: 100,
-      drifted: 25,
-      years: 3,
-      worst: [{ path: "src/a.ts", blocks: 40, drifted: 20 }],
-    });
-
-    expect(output).toContain("2 most commented files, 3-year threshold");
-    expect(output).toContain("25 of 100 comment blocks (25%)");
-    expect(output).toContain("src/a.ts 20/40");
-  });
-
-  it("omits the worst line when nothing drifted", () => {
-    const output = renderComments({
-      filesChecked: 1,
-      blocks: 10,
-      drifted: 0,
-      years: 3,
-      worst: [],
-    });
-
-    expect(output).toContain("0 of 10 comment blocks (0%)");
-    expect(output).not.toContain("Worst:");
-  });
-
-  it("says so when there is nothing to compare", () => {
-    const output = renderComments({
-      filesChecked: 0,
-      blocks: 0,
-      drifted: 0,
-      years: 3,
-      worst: [],
-    });
-
-    expect(output).toContain("nothing to compare");
   });
 });

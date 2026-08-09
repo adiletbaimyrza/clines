@@ -475,6 +475,15 @@ Project size: <span class="size">Solar System ☀️</span></pre>
             </p>
           </div>
           <div class="card">
+            <div class="ico">🕰️</div>
+            <h3>Comment drift</h3>
+            <p>
+              <span class="cmd">clines comments</span> uses <code>git blame</code> to find comment
+              blocks the code has moved away from. Models treat comments as fact, so a stale one is
+              worse than none.
+            </p>
+          </div>
+          <div class="card">
             <div class="ico">✅</div>
             <h3>100% tested</h3>
             <p>
@@ -514,6 +523,9 @@ $ npx clines ctx --window 1m
 
 <span style="color: var(--muted)"># fail CI once the repo no longer fits a 200k window</span>
 $ npx clines ctx --max 200k
+
+<span style="color: var(--muted)"># find comments the code has drifted away from</span>
+$ npx clines comments
 
 <span style="color: var(--muted)"># the bare command prints a banner + version</span>
 $ npx clines</pre>

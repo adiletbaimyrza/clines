@@ -11,7 +11,7 @@ describe("renderBanner", () => {
 
   it("lists every command with a description", () => {
     const banner = renderBanner("1.0.0");
-    for (const name of ["count", "dup", "cx", "ctx"]) {
+    for (const name of ["count", "dup", "cx", "ctx", "comments"]) {
       expect(banner).toContain(name);
     }
     expect(banner).toContain("lines, comments and blanks per language");

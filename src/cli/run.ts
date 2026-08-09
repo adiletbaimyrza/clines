@@ -11,7 +11,8 @@ import {
   type CommentOptions,
 } from "../core/pipeline.js";
 import { renderComplexity, renderComplexityHtml } from "../report/format/complexity.js";
-import { renderComments, renderContext, renderContextHtml } from "../report/format/context.js";
+import { renderComments } from "../report/format/comments.js";
+import { renderContext, renderContextHtml } from "../report/format/context.js";
 import { renderDuplication } from "../report/format/duplication.js";
 import { renderDuplicationHtml } from "../report/format/duplication-html.js";
 import { consoleReporter } from "../report/reporters/console.js";
@@ -49,12 +50,19 @@ export interface ComplexityOptions {
   html?: string;
 }
 
+export interface CommentsOptions {
+  dir: string;
+  all?: boolean;
+  years: number;
+  files: number;
+  config?: string;
+}
+
 export interface ContextOptions {
   dir: string;
   all?: boolean;
   window: number;
   budget: number;
-  comments?: boolean;
   top: number;
   open: boolean;
   max?: number;
@@ -157,7 +165,6 @@ export async function runContext(
   options: ContextOptions,
   io: IO,
   opener: Opener = openInBrowser,
-  commentOptions: CommentOptions = {},
 ): Promise<number> {
   const {
     rootDir,
@@ -167,15 +174,6 @@ export async function runContext(
   } = await prepare(options.dir, options.config, options.all);
   const result = await analyzeContext(rootDir, config, globs, opts);
   io.out(renderContext(result, options.window, options.budget));
-
-  if (options.comments === true) {
-    const health = await analyzeComments(rootDir, result.files, commentOptions);
-    io.out(
-      health === undefined
-        ? "\nComment drift: unavailable (needs a git repository with tracked files)."
-        : `\n${renderComments(health)}`,
-    );
-  }
 
   if (options.html !== undefined) {
     const htmlPath = path.resolve(options.html);
@@ -199,6 +197,28 @@ export async function runContext(
     );
   }
 
+  return 0;
+}
+
+export async function runComments(
+  options: CommentsOptions,
+  io: IO,
+  commentOptions: CommentOptions = {},
+): Promise<number> {
+  const {
+    rootDir,
+    config,
+    globs,
+    options: opts,
+  } = await prepare(options.dir, options.config, options.all);
+  const result = await analyzeContext(rootDir, config, globs, opts);
+  const outcome = await analyzeComments(rootDir, result.files, {
+    years: options.years,
+    maxFiles: options.files,
+    ...commentOptions,
+  });
+
+  io.out(renderComments(outcome));
   return 0;
 }
 

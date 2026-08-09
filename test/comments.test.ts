@@ -55,11 +55,11 @@ describe("summarizeDrift", () => {
       blocks: 0,
       drifted: 0,
       years: 3,
-      worst: [],
+      files: [],
     });
   });
 
-  it("ranks the worst files by drifted share and caps the list at three", () => {
+  it("ranks files by drifted share", () => {
     const health = summarizeDrift(
       [
         { path: "a.ts", blocks: 10, drifted: 1 },
@@ -72,7 +72,7 @@ describe("summarizeDrift", () => {
     );
 
     expect(health).toMatchObject({ filesChecked: 5, blocks: 50, drifted: 19 });
-    expect(health.worst.map((f) => f.path)).toEqual(["b.ts", "c.ts", "d.ts"]);
+    expect(health.files.map((f) => f.path)).toEqual(["b.ts", "c.ts", "d.ts", "a.ts", "e.ts"]);
   });
 
   it("breaks ties on drifted count and then path", () => {
@@ -84,7 +84,7 @@ describe("summarizeDrift", () => {
       1,
     );
 
-    expect(health.worst.map((f) => f.path)).toEqual(["a.ts", "b.ts"]);
+    expect(health.files.map((f) => f.path)).toEqual(["a.ts", "b.ts"]);
   });
 });
 
