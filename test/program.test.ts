@@ -230,7 +230,6 @@ describe("runCli", () => {
     expect(contextRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
       all: false,
-      comments: false,
       window: 200000,
       budget: 50000,
       top: 100,
@@ -267,7 +266,6 @@ describe("runCli", () => {
     expect(contextRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
       all: false,
-      comments: false,
       window: 1000000,
       budget: 50000,
       max: 200000,
@@ -312,13 +310,58 @@ describe("runCli", () => {
     }
   });
 
-  it("passes --comments through to context", async () => {
-    const contextRunner = vi.fn(async (): Promise<number> => 0);
+  it("runs comments with defaults via the cm alias", async () => {
+    const commentsRunner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();
 
-    await runCli(["node", "clines", "ctx", project.root, "--comments"], io, { contextRunner });
+    await runCli(["node", "clines", "cm", project.root], io, { commentsRunner });
 
-    expect(contextRunner.mock.calls[0]![0]).toMatchObject({ comments: true });
+    expect(commentsRunner.mock.calls[0]![0]).toEqual({
+      dir: project.root,
+      all: false,
+      years: 3,
+      files: 50,
+    });
+  });
+
+  it("parses --years, --files, --all and --config for comments", async () => {
+    const commentsRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(
+      [
+        "node",
+        "clines",
+        "comments",
+        project.root,
+        "--years",
+        "1",
+        "--files",
+        "10",
+        "--all",
+        "--config",
+        "c.json",
+      ],
+      io,
+      { commentsRunner },
+    );
+
+    expect(commentsRunner.mock.calls[0]![0]).toEqual({
+      dir: project.root,
+      all: true,
+      years: 1,
+      files: 10,
+      config: "c.json",
+    });
+  });
+
+  it("wires the real comments pipeline by default", async () => {
+    project.file("a.ts", "const a = 1;\n");
+    const { io, out } = captureIO();
+
+    await runCli(["node", "clines", "comments", project.root], io);
+
+    expect(out.join("\n")).toContain("nothing to compare");
   });
 
   it("wires the real context pipeline by default", async () => {

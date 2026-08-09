@@ -5,7 +5,7 @@ import { blameFile, type Blamer } from "../util/git.js";
 import {
   measureDrift,
   summarizeDrift,
-  type CommentHealth,
+  type CommentOutcome,
   type FileDrift,
 } from "./analyzers/comments.js";
 import { linesAnalyzer } from "./analyzers/lines.js";
@@ -230,7 +230,7 @@ export async function analyzeComments(
   rootDir: string,
   files: FileContext[],
   options: CommentOptions = {},
-): Promise<CommentHealth | undefined> {
+): Promise<CommentOutcome> {
   const years = options.years ?? 3;
   const blamer = options.blamer ?? blameFile;
   const candidates = [...files]
@@ -250,7 +250,13 @@ export async function analyzeComments(
     drifts.push({ path: file.path, blocks, drifted });
   }
 
-  return drifts.length === 0 ? undefined : summarizeDrift(drifts, years);
+  if (candidates.length === 0) {
+    return { status: "no-comments" };
+  }
+  if (drifts.length === 0) {
+    return { status: "unavailable" };
+  }
+  return { status: "ok", health: summarizeDrift(drifts, years) };
 }
 
 export async function analyzeDuplication(

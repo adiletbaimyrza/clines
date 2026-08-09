@@ -13,8 +13,11 @@ export interface CommentHealth {
   blocks: number;
   drifted: number;
   years: number;
-  worst: FileDrift[];
+  files: FileDrift[];
 }
+
+export type CommentOutcome =
+  { status: "ok"; health: CommentHealth } | { status: "no-comments" } | { status: "unavailable" };
 
 export function measureDrift(
   kinds: LineKind[],
@@ -66,14 +69,11 @@ export function summarizeDrift(files: FileDrift[], years: number): CommentHealth
     blocks: withBlocks.reduce((sum, file) => sum + file.blocks, 0),
     drifted: withBlocks.reduce((sum, file) => sum + file.drifted, 0),
     years,
-    worst: [...withBlocks]
-      .filter((file) => file.drifted > 0)
-      .sort(
-        (a, b) =>
-          b.drifted / b.blocks - a.drifted / a.blocks ||
-          b.drifted - a.drifted ||
-          a.path.localeCompare(b.path),
-      )
-      .slice(0, 3),
+    files: [...withBlocks].sort(
+      (a, b) =>
+        b.drifted / b.blocks - a.drifted / a.blocks ||
+        b.drifted - a.drifted ||
+        a.path.localeCompare(b.path),
+    ),
   };
 }

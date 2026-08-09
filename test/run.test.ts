@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { run, runComplexity, runContext, runDup } from "../src/cli/run.js";
+import { run, runComments, runComplexity, runContext, runDup } from "../src/cli/run.js";
 import { ClinesError } from "../src/util/errors.js";
 import { pathExists } from "../src/util/fs.js";
 import { captureIO, TempProject } from "./helpers/tmp.js";
@@ -206,37 +206,6 @@ describe("runContext", () => {
   });
 });
 
-describe("runContext --comments", () => {
-  it("prints comment drift when blame is available", async () => {
-    project.file("a.ts", "// note\nconst a = 1;\n");
-    const { io, out } = captureIO();
-
-    await runContext(
-      { dir: project.root, window: 200000, budget: 50000, top: 100, open: false, comments: true },
-      io,
-      () => {},
-      { blamer: async () => [0, 9 * 365 * 24 * 60 * 60] },
-    );
-
-    expect(out.join("\n")).toContain("Comment drift");
-    expect(out.join("\n")).toContain("describe code that changed later");
-  });
-
-  it("says so when blame is unavailable", async () => {
-    project.file("a.ts", "// note\nconst a = 1;\n");
-    const { io, out } = captureIO();
-
-    await runContext(
-      { dir: project.root, window: 200000, budget: 50000, top: 100, open: false, comments: true },
-      io,
-      () => {},
-      { blamer: async () => undefined },
-    );
-
-    expect(out.join("\n")).toContain("Comment drift: unavailable");
-  });
-});
-
 describe("runComplexity", () => {
   it("prints a complexity summary and opens nothing without --html", async () => {
     project.file("a.ts", "if (a) {}\nif (b) {}\n");
@@ -285,6 +254,50 @@ describe("runComplexity", () => {
     const { io } = captureIO();
     await expect(
       runComplexity({ dir: project.path("nope"), top: 100, open: true }, io, () => {}),
+    ).rejects.toBeInstanceOf(ClinesError);
+  });
+});
+
+describe("runComments", () => {
+  it("prints drift when blame is available", async () => {
+    project.file("a.ts", "// note\nconst a = 1;\n");
+    const { io, out } = captureIO();
+
+    const code = await runComments({ dir: project.root, years: 3, files: 50 }, io, {
+      blamer: async () => [0, 9 * 365 * 24 * 60 * 60],
+    });
+
+    expect(code).toBe(0);
+    expect(out.join("\n")).toContain("Comment drift:");
+    expect(out.join("\n")).toContain("Most drifted files");
+  });
+
+  it("says so when git cannot blame", async () => {
+    project.file("a.ts", "// note\nconst a = 1;\n");
+    const { io, out } = captureIO();
+
+    await runComments({ dir: project.root, years: 3, files: 50 }, io, {
+      blamer: async () => undefined,
+    });
+
+    expect(out.join("\n")).toContain("needs a git repository");
+  });
+
+  it("says so when there are no comments", async () => {
+    project.file("a.ts", "const a = 1;\n");
+    const { io, out } = captureIO();
+
+    await runComments({ dir: project.root, years: 3, files: 50 }, io, {
+      blamer: async () => [0],
+    });
+
+    expect(out.join("\n")).toContain("nothing to compare");
+  });
+
+  it("throws for a missing directory", async () => {
+    const { io } = captureIO();
+    await expect(
+      runComments({ dir: project.path("nope"), years: 3, files: 50 }, io),
     ).rejects.toBeInstanceOf(ClinesError);
   });
 });

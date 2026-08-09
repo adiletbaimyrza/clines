@@ -17,6 +17,7 @@ const COMMANDS: [string, string][] = [
   ["dup", "duplicated code blocks"],
   ["cx", "complexity hotspots"],
   ["ctx", "what the repo costs an AI agent to read"],
+  ["comments", "comments the code has drifted away from"],
 ];
 
 const ESC = String.fromCharCode(27);

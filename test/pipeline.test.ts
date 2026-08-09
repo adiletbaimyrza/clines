@@ -174,31 +174,33 @@ describe("analyzeComments", () => {
     project.file("a.ts", "// old note\nconst a = 1;\n");
     const ctx = await analyzeContext(project.root, defaultConfig());
 
-    const health = await analyzeComments(project.root, ctx.files, {
+    const outcome = await analyzeComments(project.root, ctx.files, {
       years: 3,
       blamer: async () => [0, 9 * YEAR],
     });
 
-    expect(health).toMatchObject({ filesChecked: 1, blocks: 1, drifted: 1, years: 3 });
-    expect(health!.worst[0]).toMatchObject({ path: "a.ts", drifted: 1 });
+    expect(outcome.status).toBe("ok");
+    expect(outcome).toMatchObject({
+      health: { filesChecked: 1, blocks: 1, drifted: 1, years: 3 },
+    });
   });
 
-  it("returns undefined when nothing can be blamed", async () => {
+  it("reports unavailable when nothing can be blamed", async () => {
     project.file("a.ts", "// note\nconst a = 1;\n");
     const ctx = await analyzeContext(project.root, defaultConfig());
 
     expect(
       await analyzeComments(project.root, ctx.files, { blamer: async () => undefined }),
-    ).toBeUndefined();
+    ).toEqual({ status: "unavailable" });
   });
 
-  it("returns undefined when no file has comments", async () => {
+  it("reports no-comments when no file has comments", async () => {
     project.file("a.ts", "const a = 1;\n");
     const ctx = await analyzeContext(project.root, defaultConfig());
 
-    expect(
-      await analyzeComments(project.root, ctx.files, { blamer: async () => [0] }),
-    ).toBeUndefined();
+    expect(await analyzeComments(project.root, ctx.files, { blamer: async () => [0] })).toEqual({
+      status: "no-comments",
+    });
   });
 
   it("checks only the most commented files up to the cap", async () => {
@@ -219,7 +221,7 @@ describe("analyzeComments", () => {
   });
 
   it("uses real git blame when no blamer is injected", async () => {
-    const health = await analyzeComments(process.cwd(), [
+    const outcome = await analyzeComments(process.cwd(), [
       {
         path: "package.json",
         language: "JSON",
@@ -230,7 +232,7 @@ describe("analyzeComments", () => {
       },
     ]);
 
-    expect(health).toBeDefined();
+    expect(outcome.status).toBe("ok");
   });
 
   it("breaks candidate ties on path", async () => {
@@ -254,10 +256,10 @@ describe("analyzeComments", () => {
     project.file("a.ts", "// note\nconst a = 1;\n");
     const ctx = await analyzeContext(project.root, defaultConfig());
 
-    const health = await analyzeComments(project.root, ctx.files, {
+    const outcome = await analyzeComments(project.root, ctx.files, {
       blamer: async () => [0, 2 * YEAR],
     });
 
-    expect(health).toMatchObject({ years: 3, drifted: 0 });
+    expect(outcome).toMatchObject({ health: { years: 3, drifted: 0 } });
   });
 });

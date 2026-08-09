@@ -11,12 +11,13 @@ alternative with three additional analyses built in.
 
 It has four commands:
 
-| Command | Output                                                                 |
-| ------- | ---------------------------------------------------------------------- |
-| `count` | Code, comment and blank lines per language, plus a project size label. |
-| `dup`   | Duplicated code blocks and a duplication percentage.                   |
-| `cx`    | Files ranked by decision-point complexity.                             |
-| `ctx`   | Estimated token cost, with an optional budget check for CI.            |
+| Command    | Output                                                                 |
+| ---------- | ---------------------------------------------------------------------- |
+| `count`    | Code, comment and blank lines per language, plus a project size label. |
+| `dup`      | Duplicated code blocks and a duplication percentage.                   |
+| `cx`       | Files ranked by decision-point complexity.                             |
+| `ctx`      | Estimated token cost, with an optional budget check for CI.            |
+| `comments` | Comment blocks the code has drifted away from.                         |
 
 Runtime dependencies are `commander` and `zod`. Test coverage is 100%.
 
@@ -189,6 +190,36 @@ Run with `--html <file>` for a full browsable report.
 | `facebook/react` (6,915 files, 8.3M tokens)      |       +5.2% |               — |
 
 The estimate runs a few percent high on JavaScript and TypeScript, and low on Markdown and JSON. The near-zero figure on the mixed set is those two biases cancelling out, not a general guarantee. Generated and minified files are the worst case: react's 3.7 MB `report.html` is +17.9% on its own. Treat totals as accurate to within about ±10%, suitable for ranking and budgeting rather than billing.
+
+### Finding comments the code moved away from
+
+`clines comments` (alias `cm`) compares, per comment block, when the comment was last touched
+against when the code beneath it was last touched, using `git blame`.
+
+```sh
+npx clines comments             # the 50 most commented files, 3-year threshold
+npx clines comments --years 1   # treat a one-year gap as suspect
+npx clines comments --files 200 # check more files (slower)
+```
+
+```text
+Comment drift: 13% of comment blocks describe code that changed later
+  1,027 of 8,066 blocks across 50 files   ·   3-year threshold
+
+Most drifted files
+  File                                                            Drifted   Blocks     %
+  packages/eslint-plugin-react-hooks/src/rules/ExhaustiveDeps.ts       94      150   63%
+  packages/eslint-plugin-react-hooks/src/rules/RulesOfHooks.ts         36       73   49%
+```
+
+This matters because language models
+[treat comments as authoritative](https://arxiv.org/pdf/2512.16790) and do not separate them from
+the code. Incorrect comments measurably degrade model output, while _missing_ comments barely
+matter — so a stale comment is worse than no comment.
+
+It is a suspicion signal, not proof: a comment describing unchanged intent can legitimately outlive
+edits below it. Only the most-commented files are checked, because `git blame` is slow — react
+takes about eight seconds. Requires a git repository with tracked files.
 
 ## Example output
 

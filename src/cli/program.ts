@@ -3,9 +3,11 @@ import { renderBanner } from "./banner.js";
 import type { IO } from "./io.js";
 import {
   run,
+  runComments,
   runComplexity,
   runContext,
   runDup,
+  type CommentsOptions,
   type ComplexityOptions,
   type ContextOptions,
   type DupOptions,
@@ -17,6 +19,7 @@ export interface ProgramDeps {
   dupRunner?: (options: DupOptions, io: IO) => Promise<number>;
   complexityRunner?: (options: ComplexityOptions, io: IO) => Promise<number>;
   contextRunner?: (options: ContextOptions, io: IO) => Promise<number>;
+  commentsRunner?: (options: CommentsOptions, io: IO) => Promise<number>;
   version?: string;
 }
 
@@ -45,7 +48,6 @@ interface ComplexityFlags {
 
 interface ContextFlags {
   all?: boolean;
-  comments?: boolean;
   window: number;
   budget: number;
   top: number;
@@ -53,6 +55,13 @@ interface ContextFlags {
   open?: boolean;
   config?: string;
   html?: string;
+}
+
+interface CommentsFlags {
+  all?: boolean;
+  years: number;
+  files: number;
+  config?: string;
 }
 
 const EXAMPLES = `
@@ -65,6 +74,7 @@ Examples:
   $ clines cx --html cx.html  rank files by complexity
   $ clines ctx --window 1m    fit the repo to a context window
   $ clines ctx --max 200k     fail CI above a token budget
+  $ clines comments           find comments the code moved away from
 `;
 
 function parsePositiveInt(value: string): number {
@@ -178,7 +188,6 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .argument("[dir]", "directory to scan", ".")
     .option("--window <n>", "context window to compare against", parseTokenCount, 200000)
     .option("--budget <n>", "working set a single read should fit inside", parseTokenCount, 50000)
-    .option("--comments", "also check whether comments have drifted from the code (needs git)")
     .option("--max <n>", "exit non-zero when the total exceeds this budget", parseTokenCount)
     .option("--top <n>", "number of files in the HTML report", parsePositiveInt, 100)
     .option("--html <file>", "write a browsable HTML report to this path")
@@ -190,7 +199,6 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
         dir,
         window: flags.window,
         budget: flags.budget,
-        comments: flags.comments === true,
         all: flags.all === true,
         top: flags.top,
         open: flags.open !== false,
@@ -199,6 +207,32 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
         ...(flags.html !== undefined ? { html: flags.html } : {}),
       };
       await contextRunner(options, io);
+    });
+
+  const commentsRunner = deps.commentsRunner ?? runComments;
+  program
+    .command("comments")
+    .alias("cm")
+    .description("Find comments the code has drifted away from (needs git).")
+    .argument("[dir]", "directory to scan", ".")
+    .option(
+      "--years <n>",
+      "how far the code may drift before a comment is suspect",
+      parsePositiveInt,
+      3,
+    )
+    .option("--files <n>", "how many of the most commented files to check", parsePositiveInt, 50)
+    .option("--all", "include test, generated, vendored and docs files")
+    .option("--config <path>", "path to a config file")
+    .action(async (dir: string, flags: CommentsFlags) => {
+      const options: CommentsOptions = {
+        dir,
+        all: flags.all === true,
+        years: flags.years,
+        files: flags.files,
+        ...(flags.config !== undefined ? { config: flags.config } : {}),
+      };
+      await commentsRunner(options, io);
     });
 
   return program;
