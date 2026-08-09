@@ -26,6 +26,7 @@ import type {
   Exclusions,
   FileContext,
   Navigability,
+  LineKind,
   Report,
   RoleSummary,
 } from "./model.js";
@@ -51,7 +52,9 @@ export interface RoledFile {
   path: string;
   content: string;
   role: FileRole;
+  kinds: LineKind[];
   code: number;
+  comments: number;
 }
 
 export async function collectRoledFiles(
@@ -73,7 +76,9 @@ export async function collectRoledFiles(
         path: relativePath,
         content,
         role: classifyRole(relativePath, content.slice(0, HEAD_BYTES), config.roles, attributes),
+        kinds,
         code: kinds.filter((kind) => kind === "code").length,
+        comments: kinds.filter((kind) => kind === "comment").length,
       };
     }),
   );
@@ -86,7 +91,7 @@ export function summarizeRoles(files: RoledFile[]): RoleSummary[] {
   }).filter((summary) => summary.files > 0);
 }
 
-function partition(
+export function partition(
   files: RoledFile[],
   includeAll: boolean,
 ): { included: RoledFile[]; excluded: Exclusions } {
@@ -106,7 +111,7 @@ export async function analyze(
 ): Promise<Report> {
   const files = await collectRoledFiles(rootDir, config, extraGlobs, options);
   const { included } = partition(files, options.includeAll === true);
-  const tokens = included.map((file) => tokenize(file.path, file.content));
+  const tokens = included.map((file) => tokenize(file.path, file.content, file.kinds));
   return { ...linesAnalyzer.analyze(tokens), roles: summarizeRoles(files) };
 }
 
@@ -120,7 +125,7 @@ export async function analyzeComplexity(
   const { included, excluded } = partition(files, options.includeAll === true);
 
   const result = included.map((file) => {
-    const tokens = tokenize(file.path, file.content);
+    const tokens = tokenize(file.path, file.content, file.kinds);
     return {
       path: tokens.path,
       complexity: tokens.complexity,
@@ -136,7 +141,7 @@ export async function analyzeComplexity(
 function measureContext(file: RoledFile): FileContext {
   const ext = path.extname(file.path) || "no_ext";
   const lines = splitLines(file.content);
-  const kinds = classifyContent(file.content, getLanguageSyntax(ext));
+  const kinds = file.kinds;
 
   let codeTokens = 0;
   let commentTokens = 0;
@@ -228,14 +233,14 @@ export async function analyzeContext(
 
 export async function analyzeComments(
   rootDir: string,
-  files: FileContext[],
+  files: RoledFile[],
   options: CommentOptions = {},
 ): Promise<CommentOutcome> {
   const years = options.years ?? 3;
   const blamer = options.blamer ?? blameFile;
   const candidates = [...files]
-    .filter((file) => file.commentTokens > 0)
-    .sort((a, b) => b.commentTokens - a.commentTokens || a.path.localeCompare(b.path))
+    .filter((file) => file.comments > 0)
+    .sort((a, b) => b.comments - a.comments || a.path.localeCompare(b.path))
     .slice(0, options.maxFiles ?? DEFAULT_COMMENT_FILES);
 
   const drifts: FileDrift[] = [];
@@ -244,9 +249,7 @@ export async function analyzeComments(
     if (times === undefined) {
       continue;
     }
-    const content = await readText(path.join(rootDir, file.path));
-    const kinds = classifyContent(content, getLanguageSyntax(path.extname(file.path)));
-    const { blocks, drifted } = measureDrift(kinds, times, years * SECONDS_PER_YEAR);
+    const { blocks, drifted } = measureDrift(file.kinds, times, years * SECONDS_PER_YEAR);
     drifts.push({ path: file.path, blocks, drifted });
   }
 
@@ -269,6 +272,6 @@ export async function analyzeDuplication(
 ): Promise<DuplicationResult> {
   const collected = await collectRoledFiles(rootDir, config, extraGlobs, options);
   const { included, excluded } = partition(collected, options.includeAll === true);
-  const dupFiles = included.map((file) => toDupFile(file.path, file.content));
+  const dupFiles = included.map((file) => toDupFile(file.path, file.content, file.kinds));
   return { ...detectDuplication(dupFiles, minLines, minCopies), excluded };
 }

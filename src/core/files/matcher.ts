@@ -1,7 +1,19 @@
 import path from "node:path";
 import type { Config } from "../../config/schema.js";
 
+const compiled = new Map<string, RegExp>();
+
 export function globToRegExp(glob: string): RegExp {
+  const cached = compiled.get(glob);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const built = buildRegExp(glob);
+  compiled.set(glob, built);
+  return built;
+}
+
+function buildRegExp(glob: string): RegExp {
   let out = "";
   let i = 0;
   while (i < glob.length) {

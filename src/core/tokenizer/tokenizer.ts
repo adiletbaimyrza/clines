@@ -117,13 +117,13 @@ export function countComplexity(code: string, checks: ComplexityChecks): number 
   return total;
 }
 
-export function tokenize(filePath: string, content: string): FileTokens {
+export function tokenize(filePath: string, content: string, kinds?: LineKind[]): FileTokens {
   const ext = path.extname(filePath) || "no_ext";
   const syntax = getLanguageSyntax(ext);
   return {
     path: filePath,
     ext,
-    lineKinds: classifyContent(content, syntax),
+    lineKinds: kinds ?? classifyContent(content, syntax),
     complexity: countComplexity(sanitizeCode(content, syntax), getComplexityChecks(ext)),
   };
 }
