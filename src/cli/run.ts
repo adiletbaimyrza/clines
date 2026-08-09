@@ -36,6 +36,7 @@ export interface RunOptions {
 export interface DupOptions {
   dir: string;
   all?: boolean;
+  top: number;
   minLines: number;
   minCopies: number;
   open: boolean;
@@ -55,8 +56,9 @@ export interface ComplexityOptions {
 export interface CommentsOptions {
   dir: string;
   all?: boolean;
+  top: number;
+  scan: number;
   years: number;
-  files: number;
   config?: string;
 }
 
@@ -123,7 +125,7 @@ export async function runDup(
     options.minCopies,
     opts,
   );
-  io.out(renderDuplication(result));
+  io.out(renderDuplication(result, options.top));
 
   if (options.html !== undefined) {
     const htmlPath = path.resolve(options.html);
@@ -149,11 +151,11 @@ export async function runComplexity(
     options: opts,
   } = await prepare(options.dir, options.config, options.all);
   const result = await analyzeComplexity(rootDir, config, globs, opts);
-  io.out(renderComplexity(result));
+  io.out(renderComplexity(result, options.top));
 
   if (options.html !== undefined) {
     const htmlPath = path.resolve(options.html);
-    await writeText(htmlPath, renderComplexityHtml(result, { top: options.top }));
+    await writeText(htmlPath, renderComplexityHtml(result));
     io.err(`Wrote complexity report to ${htmlPath}`);
     if (options.open) {
       opener(htmlPath);
@@ -175,17 +177,13 @@ export async function runContext(
     options: opts,
   } = await prepare(options.dir, options.config, options.all);
   const result = await analyzeContext(rootDir, config, globs, opts);
-  io.out(renderContext(result, options.window, options.budget));
+  io.out(renderContext(result, options.window, options.budget, options.top));
 
   if (options.html !== undefined) {
     const htmlPath = path.resolve(options.html);
     await writeText(
       htmlPath,
-      renderContextHtml(result, {
-        top: options.top,
-        window: options.window,
-        budget: options.budget,
-      }),
+      renderContextHtml(result, { window: options.window, budget: options.budget }),
     );
     io.err(`Wrote context report to ${htmlPath}`);
     if (options.open) {
@@ -215,13 +213,17 @@ export async function runComments(
   } = await prepare(options.dir, options.config, options.all);
   const collected = await collectRoledFiles(rootDir, config, globs, opts);
   const { included } = partition(collected, opts.includeAll === true);
+  const candidates = Math.min(options.scan, included.filter((file) => file.comments > 0).length);
+  if (candidates > 0) {
+    io.err(`Blaming ${candidates.toLocaleString("en-US")} files with git…`);
+  }
   const outcome = await analyzeComments(rootDir, included, {
     years: options.years,
-    maxFiles: options.files,
+    maxFiles: options.scan,
     ...commentOptions,
   });
 
-  io.out(renderComments(outcome));
+  io.out(renderComments(outcome, options.top));
   return 0;
 }
 

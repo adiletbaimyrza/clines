@@ -1,5 +1,6 @@
 import path from "node:path";
 import { emptyRoleAttributes, type RoleAttributes } from "../core/files/roles.js";
+import { z } from "zod";
 import { ClinesError, errorMessage } from "../util/errors.js";
 import { pathExists, readText } from "../util/fs.js";
 import { type Config, defaultConfig, parseConfig } from "./schema.js";
@@ -28,7 +29,7 @@ function readAndParse(raw: string, configPath: string): Config {
   try {
     return parseConfig(data);
   } catch (error) {
-    throw new ClinesError(`Invalid config in ${configPath}: ${errorMessage(error)}`);
+    throw new ClinesError(`Invalid config in ${configPath}:\n${describeIssues(error)}`);
   }
 }
 
@@ -41,6 +42,30 @@ export async function loadGitignoreGlobs(rootDir: string, respect: boolean): Pro
     return [];
   }
   return parseGitignore(await readText(gitignorePath));
+}
+
+const KNOWN_KEYS = ["ignore", "unignore", "roles", "respectGitignore"];
+
+export function describeIssues(error: unknown): string {
+  if (!(error instanceof z.ZodError)) {
+    return `  ${errorMessage(error)}`;
+  }
+  return error.issues
+    .map((issue) => {
+      const where = issue.path.length === 0 ? "" : `${issue.path.join(".")}: `;
+      if (issue.code === "unrecognized_keys") {
+        return issue.keys.map((key) => `  Unknown key "${where}${key}"${suggest(key)}`).join("\n");
+      }
+      return `  ${where}${issue.message.toLowerCase()}`;
+    })
+    .join("\n");
+}
+
+function suggest(key: string): string {
+  const match = KNOWN_KEYS.find(
+    (known) => known.startsWith(key.slice(0, 3)) || key.startsWith(known.slice(0, 3)),
+  );
+  return match === undefined ? "" : ` — did you mean "${match}"?`;
 }
 
 export async function loadGitAttributes(rootDir: string): Promise<RoleAttributes> {

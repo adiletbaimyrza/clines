@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { parseConfig } from "../src/config/schema.js";
 import {
+  describeIssues,
   loadConfig,
   loadGitAttributes,
   loadGitignoreGlobs,
@@ -97,5 +99,47 @@ describe("loadGitAttributes", () => {
       vendored: [],
       docs: [],
     });
+  });
+});
+
+describe("describeIssues", () => {
+  it("names an unknown key and suggests the closest real one", () => {
+    let caught: unknown;
+    try {
+      parseConfig({ ignor: {} });
+    } catch (error) {
+      caught = error;
+    }
+
+    const described = describeIssues(caught);
+    expect(described).toContain('Unknown key "ignor"');
+    expect(described).toContain('did you mean "ignore"?');
+  });
+
+  it("omits a suggestion when nothing is close", () => {
+    let caught: unknown;
+    try {
+      parseConfig({ zzzzz: {} });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(describeIssues(caught)).toContain('Unknown key "zzzzz"');
+    expect(describeIssues(caught)).not.toContain("did you mean");
+  });
+
+  it("names the path for a wrong type", () => {
+    let caught: unknown;
+    try {
+      parseConfig({ ignore: { dirs: "nope" } });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(describeIssues(caught)).toContain("ignore.dirs:");
+  });
+
+  it("falls back to the raw message for a non-validation error", () => {
+    expect(describeIssues(new Error("boom"))).toContain("boom");
   });
 });

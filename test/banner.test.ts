@@ -24,3 +24,17 @@ describe("renderBanner", () => {
     expect(renderBanner("1.0.0")).toContain("█");
   });
 });
+
+describe("renderBanner colour", () => {
+  it("emits escape codes for a terminal", () => {
+    expect(renderBanner("1.0.0", true)).toContain("\u001b[");
+  });
+
+  it("emits none when colour is off", () => {
+    const plain = renderBanner("1.0.0", false);
+
+    expect(plain).not.toContain("\u001b[");
+    expect(plain).toContain("count");
+    expect(plain).toContain("█");
+  });
+});

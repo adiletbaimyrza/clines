@@ -19,6 +19,10 @@ interface RowSource {
 export const consoleReporter: Reporter = {
   name: "console",
   render(report: Report): string {
+    if (report.totalFiles === 0) {
+      return "No files found. Everything was ignored, or the directory has no source files.";
+    }
+
     const columns: { header: string; align: Align; pick: (r: RowSource) => string }[] = [
       { header: "Language", align: "left", pick: (r) => r.label },
       { header: "Files", align: "right", pick: (r) => num(r.files) },

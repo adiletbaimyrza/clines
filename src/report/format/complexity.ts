@@ -1,11 +1,12 @@
 import type { ComplexityResult, FileComplexity } from "../../core/model.js";
 import { escapeHtml, excludedNotice, formatNumber } from "./html.js";
-import { table, wrap } from "./text.js";
+import { pushHint, table, wrap } from "./text.js";
 
 export interface ComplexityHtmlOptions {
   title?: string;
-  top?: number;
 }
+
+const HTML_CAP = 1000;
 
 export function renderComplexity(result: ComplexityResult, topFiles: number = 20): string {
   const files = result.files;
@@ -40,7 +41,7 @@ export function renderComplexity(result: ComplexityResult, topFiles: number = 20
     out.push("", ...wrap(notice));
   }
 
-  out.push("", "Run with `--html <file>` for a full browsable report.");
+  pushHint(out, "Run with `--html <file>` for a full browsable report.");
   return out.join("\n");
 }
 
@@ -50,7 +51,7 @@ export function renderComplexityHtml(
 ): string {
   const files = result.files;
   const title = options.title ?? "clines — complexity report";
-  const top = options.top ?? 100;
+  const top = HTML_CAP;
 
   const total = files.reduce((sum, file) => sum + file.complexity, 0);
   const ranked = files.filter((file) => file.complexity > 0);

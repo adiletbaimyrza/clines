@@ -25,7 +25,7 @@ describe("renderComplexity (terminal)", () => {
     expect(output).toContain("src/big.ts");
     expect(output).toContain("120");
     expect(output).not.toContain("src/data.json");
-    expect(output).toContain("--html");
+    expect(output).not.toContain("--html");
   });
 
   it("notes when there are more files than shown", () => {
@@ -86,9 +86,23 @@ describe("renderComplexityHtml", () => {
     expect(html).toContain("&lt;x&gt;&amp;");
   });
 
-  it("truncates to the top-N and notes the remainder", () => {
-    const html = renderComplexityHtml(wrap(files()), { top: 1 });
-    expect(html).toContain("more files not shown");
+  it("lists every ranked file without truncating small reports", () => {
+    const html = renderComplexityHtml(wrap(files()));
+
+    expect(html).toContain("src/big.ts");
+    expect(html).toContain("src/small.py");
+    expect(html).not.toContain("more files not shown");
+  });
+
+  it("notes the remainder once the report exceeds its cap", () => {
+    const many: FileComplexity[] = Array.from({ length: 1001 }, (_, i) => ({
+      path: `src/f${i}.ts`,
+      complexity: 1001 - i,
+      code: 10,
+      language: "TypeScript",
+    }));
+
+    expect(renderComplexityHtml(wrap(many))).toContain("… and 1 more files not shown.");
   });
 
   it("shows an empty state when nothing has complexity", () => {
