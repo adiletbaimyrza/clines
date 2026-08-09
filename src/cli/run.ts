@@ -7,6 +7,8 @@ import {
   analyzeContext,
   analyzeComments,
   analyzeDuplication,
+  collectRoledFiles,
+  partition,
   type AnalyzeOptions,
   type CommentOptions,
 } from "../core/pipeline.js";
@@ -211,8 +213,9 @@ export async function runComments(
     globs,
     options: opts,
   } = await prepare(options.dir, options.config, options.all);
-  const result = await analyzeContext(rootDir, config, globs, opts);
-  const outcome = await analyzeComments(rootDir, result.files, {
+  const collected = await collectRoledFiles(rootDir, config, globs, opts);
+  const { included } = partition(collected, opts.includeAll === true);
+  const outcome = await analyzeComments(rootDir, included, {
     years: options.years,
     maxFiles: options.files,
     ...commentOptions,

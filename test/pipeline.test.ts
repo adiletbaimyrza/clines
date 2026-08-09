@@ -6,6 +6,7 @@ import {
   analyzeComments,
   analyzeContext,
   analyzeDuplication,
+  collectRoledFiles,
 } from "../src/core/pipeline.js";
 import { TempProject } from "./helpers/tmp.js";
 
@@ -172,9 +173,9 @@ describe("analyzeComments", () => {
 
   it("reports drift using blame times", async () => {
     project.file("a.ts", "// old note\nconst a = 1;\n");
-    const ctx = await analyzeContext(project.root, defaultConfig());
+    const roled = await collectRoledFiles(project.root, defaultConfig(), [], {});
 
-    const outcome = await analyzeComments(project.root, ctx.files, {
+    const outcome = await analyzeComments(project.root, roled, {
       years: 3,
       blamer: async () => [0, 9 * YEAR],
     });
@@ -187,18 +188,18 @@ describe("analyzeComments", () => {
 
   it("reports unavailable when nothing can be blamed", async () => {
     project.file("a.ts", "// note\nconst a = 1;\n");
-    const ctx = await analyzeContext(project.root, defaultConfig());
+    const roled = await collectRoledFiles(project.root, defaultConfig(), [], {});
 
-    expect(
-      await analyzeComments(project.root, ctx.files, { blamer: async () => undefined }),
-    ).toEqual({ status: "unavailable" });
+    expect(await analyzeComments(project.root, roled, { blamer: async () => undefined })).toEqual({
+      status: "unavailable",
+    });
   });
 
   it("reports no-comments when no file has comments", async () => {
     project.file("a.ts", "const a = 1;\n");
-    const ctx = await analyzeContext(project.root, defaultConfig());
+    const roled = await collectRoledFiles(project.root, defaultConfig(), [], {});
 
-    expect(await analyzeComments(project.root, ctx.files, { blamer: async () => [0] })).toEqual({
+    expect(await analyzeComments(project.root, roled, { blamer: async () => [0] })).toEqual({
       status: "no-comments",
     });
   });
@@ -206,10 +207,10 @@ describe("analyzeComments", () => {
   it("checks only the most commented files up to the cap", async () => {
     project.file("a.ts", "// one\n// two\n// three\nconst a = 1;\n");
     project.file("b.ts", "// x\nconst b = 2;\n");
-    const ctx = await analyzeContext(project.root, defaultConfig());
+    const roled = await collectRoledFiles(project.root, defaultConfig(), [], {});
     const seen: string[] = [];
 
-    await analyzeComments(project.root, ctx.files, {
+    await analyzeComments(project.root, roled, {
       maxFiles: 1,
       blamer: async (_root, file) => {
         seen.push(file);
@@ -224,11 +225,11 @@ describe("analyzeComments", () => {
     const outcome = await analyzeComments(process.cwd(), [
       {
         path: "package.json",
-        language: "JSON",
-        tokens: 10,
-        codeTokens: 9,
-        commentTokens: 1,
-        lines: 5,
+        content: "{}\n",
+        role: "source",
+        kinds: ["code"],
+        code: 1,
+        comments: 1,
       },
     ]);
 
@@ -238,10 +239,10 @@ describe("analyzeComments", () => {
   it("breaks candidate ties on path", async () => {
     project.file("b.ts", "// note\nconst a = 1;\n");
     project.file("a.ts", "// note\nconst a = 1;\n");
-    const ctx = await analyzeContext(project.root, defaultConfig());
+    const roled = await collectRoledFiles(project.root, defaultConfig(), [], {});
     const seen: string[] = [];
 
-    await analyzeComments(project.root, ctx.files, {
+    await analyzeComments(project.root, roled, {
       maxFiles: 1,
       blamer: async (_root, file) => {
         seen.push(file);
@@ -254,9 +255,9 @@ describe("analyzeComments", () => {
 
   it("defaults to a three-year threshold", async () => {
     project.file("a.ts", "// note\nconst a = 1;\n");
-    const ctx = await analyzeContext(project.root, defaultConfig());
+    const roled = await collectRoledFiles(project.root, defaultConfig(), [], {});
 
-    const outcome = await analyzeComments(project.root, ctx.files, {
+    const outcome = await analyzeComments(project.root, roled, {
       blamer: async () => [0, 2 * YEAR],
     });
 
