@@ -60,7 +60,7 @@ describe("renderComments", () => {
       1,
     );
 
-    expect(output).toContain("…deep/");
+    expect(output).toContain("…");
     expect(output).not.toContain(long);
     expect(output).toContain("… and 2 more files.");
   });

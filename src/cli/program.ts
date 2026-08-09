@@ -114,6 +114,10 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
   program
     .command("count")
     .description("Count lines of code and report per-language metrics.")
+    .addHelpText(
+      "after",
+      "\nExamples:\n  $ clines count\n  $ clines count src --readme\n  $ clines count --all\n",
+    )
     .argument("[dir]", "directory to count", ".")
     .option("--readme", "also write the report into README.md")
     .option("--all", "include test, generated, vendored and docs files")
@@ -132,6 +136,10 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
   program
     .command("dup")
     .description("Find duplicated code blocks and report the duplication percentage.")
+    .addHelpText(
+      "after",
+      "\nExamples:\n  $ clines dup\n  $ clines dup --min-lines 8 --min-copies 3\n  $ clines dup --html dup.html\n",
+    )
     .argument("[dir]", "directory to scan", ".")
     .option("--min-lines <n>", "minimum block size to flag as a clone", parsePositiveInt, 5)
     .option(
@@ -162,6 +170,7 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .command("complexity")
     .alias("cx")
     .description("Rank files by decision-point complexity.")
+    .addHelpText("after", "\nExamples:\n  $ clines cx\n  $ clines cx --top 250 --html cx.html\n")
     .argument("[dir]", "directory to scan", ".")
     .option("--top <n>", "number of files in the HTML report", parsePositiveInt, 100)
     .option("--html <file>", "write a browsable HTML report to this path")
@@ -185,6 +194,10 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .command("context")
     .alias("ctx")
     .description("Estimate what the codebase costs an AI agent to read.")
+    .addHelpText(
+      "after",
+      "\nExamples:\n  $ clines ctx\n  $ clines ctx --window 1m --budget 100k\n  $ clines ctx --max 200k\n",
+    )
     .argument("[dir]", "directory to scan", ".")
     .option("--window <n>", "context window to compare against", parseTokenCount, 200000)
     .option("--budget <n>", "working set a single read should fit inside", parseTokenCount, 50000)
@@ -214,6 +227,10 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .command("comments")
     .alias("cm")
     .description("Find comments the code has drifted away from (needs git).")
+    .addHelpText(
+      "after",
+      "\nExamples:\n  $ clines comments\n  $ clines comments --years 1 --files 200\n",
+    )
     .argument("[dir]", "directory to scan", ".")
     .option(
       "--years <n>",

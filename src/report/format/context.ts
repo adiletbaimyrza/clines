@@ -1,5 +1,6 @@
 import type { ContextResult, FileContext } from "../../core/model.js";
 import { escapeHtml, excludedNotice, formatNumber } from "./html.js";
+import { multiple, table, wrap } from "./text.js";
 
 export const DEFAULT_WINDOW = 200000;
 export const DEFAULT_BUDGET = 50000;
@@ -37,7 +38,7 @@ export function renderContext(
   topFiles: number = 20,
 ): string {
   const out: string[] = [
-    `Context: ${formatNumber(result.totalTokens)} tokens   ·   ${fill(result.totalTokens, window)} of a ${formatNumber(window)}-token window   ·   ${share(result.commentTokens, result.totalTokens)} comments`,
+    `Context: ${formatNumber(result.totalTokens)} tokens   ·   ${windowPhrase(result.totalTokens, window)}   ·   ${share(result.commentTokens, result.totalTokens)} comments`,
   ];
 
   if (result.files.length === 0) {
@@ -54,7 +55,7 @@ export function renderContext(
   const files = result.files
     .slice(0, topFiles)
     .map((file) => [
-      shorten(file.path),
+      file.path,
       formatNumber(file.tokens),
       formatNumber(file.codeTokens),
       formatNumber(file.commentTokens),
@@ -211,7 +212,10 @@ function navigabilityLines(result: ContextResult): string[] {
   const share = (nav.ambiguousFiles / nav.files) * 100;
   const worst = nav.worstNames.map((n) => `${n.name} \u00d7${n.count}`).join(", ");
   lines.push(
-    `  Ambiguous names   ${formatNumber(nav.ambiguousFiles)} of ${formatNumber(nav.files)} files (${share.toFixed(0)}%) share a basename${worst === "" ? "" : `   worst: ${worst}`}`,
+    ...wrap(
+      `  Ambiguous names   ${formatNumber(nav.ambiguousFiles)} of ${formatNumber(nav.files)} files (${share.toFixed(0)}%) share a basename${worst === "" ? "" : `   worst: ${worst}`}`,
+      "                    ",
+    ),
   );
   lines.push(`  Path depth        median ${nav.medianDepth}, max ${nav.maxDepth}`);
   return lines;
@@ -220,23 +224,8 @@ function navigabilityLines(result: ContextResult): string[] {
 function pushNotice(out: string[], result: ContextResult): void {
   const notice = excludedNotice(result.excluded);
   if (notice !== "") {
-    out.push("", notice);
+    out.push("", ...wrap(notice));
   }
-}
-
-function table(headers: string[], rows: string[][]): string[] {
-  const widths = headers.map((header, column) =>
-    Math.max(header.length, ...rows.map((row) => (row[column] as string).length)),
-  );
-  const line = (cells: string[]): string =>
-    `  ${cells
-      .map((cell, column) =>
-        column === 0
-          ? cell.padEnd(widths[column] as number)
-          : cell.padStart(widths[column] as number),
-      )
-      .join("   ")}`;
-  return [line(headers), ...rows.map(line)];
 }
 
 function stat(value: string, label: string): string {
@@ -245,16 +234,18 @@ function stat(value: string, label: string): string {
   )}</div></div>`;
 }
 
+function windowPhrase(tokens: number, window: number): string {
+  const value = multiple(tokens, window);
+  const joiner = value.endsWith("×") ? "" : " of";
+  return `${value}${joiner} a ${formatNumber(window)}-token window`;
+}
+
 function fill(tokens: number, window: number): string {
-  return window === 0 ? "—" : `${((tokens / window) * 100).toFixed(1)}%`;
+  return multiple(tokens, window);
 }
 
 function share(part: number, whole: number): string {
   return whole === 0 ? "0%" : `${((part / whole) * 100).toFixed(0)}%`;
-}
-
-function shorten(filePath: string, max: number = 68): string {
-  return filePath.length <= max ? filePath : `…${filePath.slice(filePath.length - max + 1)}`;
 }
 
 const STYLE = `

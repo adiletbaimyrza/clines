@@ -1,5 +1,6 @@
 import type { ComplexityResult, FileComplexity } from "../../core/model.js";
 import { escapeHtml, excludedNotice, formatNumber } from "./html.js";
+import { table, wrap } from "./text.js";
 
 export interface ComplexityHtmlOptions {
   title?: string;
@@ -20,17 +21,14 @@ export function renderComplexity(result: ComplexityResult, topFiles: number = 20
     return out.join("\n");
   }
 
-  const shown = ranked.slice(0, topFiles).map((file) => ({ ...file, path: shorten(file.path) }));
-  const width = Math.max(...shown.map((file) => file.path.length), "File".length);
+  const shown = ranked.slice(0, topFiles);
+  const rows = shown.map((file) => [
+    file.path,
+    formatNumber(file.complexity),
+    formatNumber(file.code),
+  ]);
 
-  out.push("", "Most complex files", `  ${"File".padEnd(width)}   Complexity   Code`);
-  for (const file of shown) {
-    out.push(
-      `  ${file.path.padEnd(width)}   ${formatNumber(file.complexity).padStart(10)}   ${formatNumber(
-        file.code,
-      ).padStart(4)}`,
-    );
-  }
+  out.push("", "Most complex files", ...table(["File", "Complexity", "Code"], rows));
 
   const hidden = ranked.length - shown.length;
   if (hidden > 0) {
@@ -39,7 +37,7 @@ export function renderComplexity(result: ComplexityResult, topFiles: number = 20
 
   const notice = excludedNotice(result.excluded);
   if (notice !== "") {
-    out.push("", notice);
+    out.push("", ...wrap(notice));
   }
 
   out.push("", "Run with `--html <file>` for a full browsable report.");
@@ -112,10 +110,6 @@ function stat(value: string, label: string): string {
   return `<div class="stat"><div class="value">${escapeHtml(value)}</div><div class="label">${escapeHtml(
     label,
   )}</div></div>`;
-}
-
-function shorten(filePath: string, max: number = 68): string {
-  return filePath.length <= max ? filePath : `…${filePath.slice(filePath.length - max + 1)}`;
 }
 
 const STYLE = `

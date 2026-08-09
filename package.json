@@ -1,6 +1,6 @@
 {
   "name": "clines",
-  "version": "4.4.0",
+  "version": "4.5.0",
   "description": "Count lines of code, comments and blanks per language, find duplicate code, rank files by complexity, estimate the token cost of a repository, and find stale comments. A modern cloc alternative.",
   "type": "module",
   "repository": {

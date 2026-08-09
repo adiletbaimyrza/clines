@@ -2,6 +2,7 @@ import type { Report } from "../../core/model.js";
 import type { Reporter } from "../reporter.js";
 import { getProjectSize } from "../format/size-label.js";
 import { sortedLanguages } from "../format/table.js";
+import { wrap } from "../format/text.js";
 
 type Align = "left" | "right";
 
@@ -83,7 +84,7 @@ function roleLines(report: Report): string[] {
     return [];
   }
   const parts = report.roles.map((r) => `${r.role} ${num(r.files)}`);
-  const lines = [`Files by role: ${parts.join("   ·   ")}`];
+  const lines = wrap(`Files by role: ${parts.join("   ·   ")}`, "  ");
 
   const source = report.roles.find((r) => r.role === "source");
   const test = report.roles.find((r) => r.role === "test");
