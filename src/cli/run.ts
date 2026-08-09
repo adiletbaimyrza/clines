@@ -51,6 +51,7 @@ export interface ContextOptions {
   dir: string;
   all?: boolean;
   window: number;
+  budget: number;
   top: number;
   open: boolean;
   max?: number;
@@ -161,13 +162,17 @@ export async function runContext(
     options: opts,
   } = await prepare(options.dir, options.config, options.all);
   const result = await analyzeContext(rootDir, config, globs, opts);
-  io.out(renderContext(result, options.window));
+  io.out(renderContext(result, options.window, options.budget));
 
   if (options.html !== undefined) {
     const htmlPath = path.resolve(options.html);
     await writeText(
       htmlPath,
-      renderContextHtml(result, { top: options.top, window: options.window }),
+      renderContextHtml(result, {
+        top: options.top,
+        window: options.window,
+        budget: options.budget,
+      }),
     );
     io.err(`Wrote context report to ${htmlPath}`);
     if (options.open) {

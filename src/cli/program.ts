@@ -46,6 +46,7 @@ interface ComplexityFlags {
 interface ContextFlags {
   all?: boolean;
   window: number;
+  budget: number;
   top: number;
   max?: number;
   open?: boolean;
@@ -175,6 +176,7 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .description("Estimate what the codebase costs an AI agent to read.")
     .argument("[dir]", "directory to scan", ".")
     .option("--window <n>", "context window to compare against", parseTokenCount, 200000)
+    .option("--budget <n>", "working set a single read should fit inside", parseTokenCount, 50000)
     .option("--max <n>", "exit non-zero when the total exceeds this budget", parseTokenCount)
     .option("--top <n>", "number of files in the HTML report", parsePositiveInt, 100)
     .option("--html <file>", "write a browsable HTML report to this path")
@@ -185,6 +187,7 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
       const options: ContextOptions = {
         dir,
         window: flags.window,
+        budget: flags.budget,
         all: flags.all === true,
         top: flags.top,
         open: flags.open !== false,
