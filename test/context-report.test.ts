@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest";
 import type { ContextResult } from "../src/core/model.js";
-import { renderContext, renderContextHtml } from "../src/report/format/context.js";
+import { budgetTiers, renderContext, renderContextHtml } from "../src/report/format/context.js";
 
 function result(overrides: Partial<ContextResult> = {}): ContextResult {
   return {
     excluded: { files: 0, roles: [] },
+    navigability: {
+      files: 2,
+      ambiguousFiles: 0,
+      worstNames: [],
+      medianDepth: 2,
+      maxDepth: 2,
+    },
     files: [
       {
         path: "src/big.ts",
@@ -33,6 +40,7 @@ function result(overrides: Partial<ContextResult> = {}): ContextResult {
 
 const empty: ContextResult = {
   excluded: { files: 0, roles: [] },
+  navigability: { files: 0, ambiguousFiles: 0, worstNames: [], medianDepth: 0, maxDepth: 0 },
   files: [],
   dirs: [],
   totalTokens: 0,
@@ -60,7 +68,7 @@ describe("renderContext", () => {
   });
 
   it("truncates the file list", () => {
-    const output = renderContext(result(), 10000, 1);
+    const output = renderContext(result(), 10000, 50000, 1);
 
     expect(output).toContain("… and 1 more files.");
     expect(output).not.toContain("src/small.ts");
@@ -172,5 +180,104 @@ describe("renderContextHtml", () => {
 
   it("uses a custom title", () => {
     expect(renderContextHtml(result(), { title: "custom" })).toContain("<title>custom</title>");
+  });
+});
+
+describe("working set and navigability", () => {
+  it("counts files that dominate a single read", () => {
+    const big = result({
+      files: [
+        {
+          path: "a.ts",
+          language: "TS",
+          tokens: 30000,
+          codeTokens: 30000,
+          commentTokens: 0,
+          lines: 1,
+        },
+        {
+          path: "b.ts",
+          language: "TS",
+          tokens: 13000,
+          codeTokens: 13000,
+          commentTokens: 0,
+          lines: 1,
+        },
+        {
+          path: "c.ts",
+          language: "TS",
+          tokens: 6000,
+          codeTokens: 6000,
+          commentTokens: 0,
+          lines: 1,
+        },
+        { path: "d.ts", language: "TS", tokens: 100, codeTokens: 100, commentTokens: 0, lines: 1 },
+      ],
+    });
+
+    expect(budgetTiers(big, 50000)).toEqual([
+      { share: 0.5, threshold: 25000, files: 1 },
+      { share: 0.25, threshold: 12500, files: 2 },
+      { share: 0.1, threshold: 5000, files: 3 },
+    ]);
+
+    const output = renderContext(big, 200000, 50000);
+    expect(output).toContain("Working set (50,000 tokens)");
+    expect(output).toContain("1 files exceed 50%");
+    expect(output).toContain("(> 25,000 tokens)");
+  });
+
+  it("reports ambiguous basenames and depth", () => {
+    const output = renderContext(
+      result({
+        navigability: {
+          files: 10,
+          ambiguousFiles: 4,
+          worstNames: [{ name: "index.ts", count: 3 }],
+          medianDepth: 3,
+          maxDepth: 7,
+        },
+      }),
+      200000,
+      50000,
+    );
+
+    expect(output).toContain("4 of 10 files (40%) share a basename");
+    expect(output).toContain("worst: index.ts \u00d73");
+    expect(output).toContain("median 3, max 7");
+  });
+
+  it("omits the worst-name list when nothing repeats", () => {
+    const output = renderContext(result(), 200000, 50000);
+    expect(output).toContain("0 of 2 files (0%) share a basename");
+    expect(output).not.toContain("worst:");
+  });
+
+  it("renders both sections in the HTML report", () => {
+    const html = renderContextHtml(result(), { budget: 40000 });
+    expect(html).toContain("Working set");
+    expect(html).toContain("40,000 tokens");
+    expect(html).toContain("Navigability");
+  });
+
+  it("omits the navigability table when there are no files", () => {
+    expect(renderContextHtml(empty)).not.toContain("Files sharing a basename");
+  });
+
+  it("names repeated basenames in the HTML report, escaped", () => {
+    const html = renderContextHtml(
+      result({
+        navigability: {
+          files: 4,
+          ambiguousFiles: 2,
+          worstNames: [{ name: "<index>.ts", count: 2 }],
+          medianDepth: 2,
+          maxDepth: 3,
+        },
+      }),
+    );
+
+    expect(html).toContain("&lt;index&gt;.ts &times;2");
+    expect(html).not.toContain("&mdash;");
   });
 });

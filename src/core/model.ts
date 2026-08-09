@@ -66,12 +66,26 @@ export interface DirContext {
   files: number;
 }
 
+export interface AmbiguousName {
+  name: string;
+  count: number;
+}
+
+export interface Navigability {
+  files: number;
+  ambiguousFiles: number;
+  worstNames: AmbiguousName[];
+  medianDepth: number;
+  maxDepth: number;
+}
+
 export interface ContextResult {
   files: FileContext[];
   dirs: DirContext[];
   totalTokens: number;
   codeTokens: number;
   commentTokens: number;
+  navigability: Navigability;
   excluded: Exclusions;
 }
 

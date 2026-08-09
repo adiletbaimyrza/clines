@@ -18,6 +18,7 @@ import type {
   DirContext,
   Exclusions,
   FileContext,
+  Navigability,
   Report,
   RoleSummary,
 } from "./model.js";
@@ -158,6 +159,34 @@ function rollUpDirs(files: FileContext[]): DirContext[] {
   return [...totals.values()].sort((a, b) => b.tokens - a.tokens || a.dir.localeCompare(b.dir));
 }
 
+function measureNavigability(files: FileContext[]): Navigability {
+  const counts = new Map<string, number>();
+  const depths: number[] = [];
+
+  for (const file of files) {
+    const segments = file.path.split(path.sep);
+    depths.push(segments.length);
+    const base = segments[segments.length - 1] as string;
+    counts.set(base, (counts.get(base) ?? 0) + 1);
+  }
+
+  const repeated = [...counts.entries()].filter(([, count]) => count > 1);
+  const worstNames = repeated
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    .slice(0, 3);
+
+  depths.sort((a, b) => a - b);
+
+  return {
+    files: files.length,
+    ambiguousFiles: repeated.reduce((sum, [, count]) => sum + count, 0),
+    worstNames,
+    medianDepth: depths.length === 0 ? 0 : (depths[Math.floor(depths.length / 2)] as number),
+    maxDepth: depths.length === 0 ? 0 : (depths[depths.length - 1] as number),
+  };
+}
+
 export async function analyzeContext(
   rootDir: string,
   config: Config,
@@ -176,6 +205,7 @@ export async function analyzeContext(
     totalTokens: files.reduce((sum, file) => sum + file.tokens, 0),
     codeTokens: files.reduce((sum, file) => sum + file.codeTokens, 0),
     commentTokens: files.reduce((sum, file) => sum + file.commentTokens, 0),
+    navigability: measureNavigability(files),
     excluded,
   };
 }

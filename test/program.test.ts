@@ -231,6 +231,7 @@ describe("runCli", () => {
       dir: project.root,
       all: false,
       window: 200000,
+      budget: 50000,
       top: 100,
       open: true,
     });
@@ -266,6 +267,7 @@ describe("runCli", () => {
       dir: project.root,
       all: false,
       window: 1000000,
+      budget: 50000,
       max: 200000,
       top: 25,
       open: false,

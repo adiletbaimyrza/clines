@@ -2,16 +2,38 @@ import type { ContextResult, FileContext } from "../../core/model.js";
 import { escapeHtml, excludedNotice, formatNumber } from "./html.js";
 
 export const DEFAULT_WINDOW = 200000;
+export const DEFAULT_BUDGET = 50000;
+
+const BUDGET_TIERS = [0.5, 0.25, 0.1];
+
+export interface BudgetTier {
+  share: number;
+  threshold: number;
+  files: number;
+}
+
+export function budgetTiers(result: ContextResult, budget: number): BudgetTier[] {
+  return BUDGET_TIERS.map((share) => {
+    const threshold = Math.round(budget * share);
+    return {
+      share,
+      threshold,
+      files: result.files.filter((file) => file.tokens > threshold).length,
+    };
+  });
+}
 
 export interface ContextHtmlOptions {
   title?: string;
   top?: number;
   window?: number;
+  budget?: number;
 }
 
 export function renderContext(
   result: ContextResult,
   window: number = DEFAULT_WINDOW,
+  budget: number = DEFAULT_BUDGET,
   topFiles: number = 20,
 ): string {
   const out: string[] = [
@@ -44,6 +66,8 @@ export function renderContext(
     out.push(`  … and ${formatNumber(hidden)} more files.`);
   }
 
+  out.push("", ...workingSetLines(result, budget), "", ...navigabilityLines(result));
+
   pushNotice(out, result);
 
   out.push("", "Run with `--html <file>` for a full browsable report.");
@@ -54,6 +78,7 @@ export function renderContextHtml(result: ContextResult, options: ContextHtmlOpt
   const title = options.title ?? "clines — context report";
   const top = options.top ?? 100;
   const window = options.window ?? DEFAULT_WINDOW;
+  const budget = options.budget ?? DEFAULT_BUDGET;
 
   const shown = result.files.slice(0, top);
   const hidden = result.files.length - shown.length;
@@ -80,6 +105,12 @@ ${stat(formatNumber(result.files.length), "files")}
 </header>
 
 <section>
+<h2>Working set</h2>
+${budgetTable(result, budget)}
+${navigabilityHtml(result)}
+</section>
+
+<section>
 <h2>Largest directories</h2>
 ${dirsTable(result)}
 </section>
@@ -94,6 +125,33 @@ ${hidden > 0 ? `<p class="muted">… and ${formatNumber(hidden)} more files not 
 </body>
 </html>
 `;
+}
+
+function budgetTable(result: ContextResult, budget: number): string {
+  const rows = budgetTiers(result, budget)
+    .map(
+      (tier) =>
+        `<tr><td>Files above ${(tier.share * 100).toFixed(0)}% of the working set</td><td class="n">&gt; ${formatNumber(tier.threshold)}</td><td class="n cx">${formatNumber(tier.files)}</td></tr>`,
+    )
+    .join("\n");
+  return `<p class="muted">A single read costing more than a fraction of the working set crowds out everything else. Budget: ${formatNumber(budget)} tokens.</p>
+<table><thead><tr><th>Threshold</th><th class="n">Tokens</th><th class="n">Files</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function navigabilityHtml(result: ContextResult): string {
+  const nav = result.navigability;
+  if (nav.files === 0) {
+    return "";
+  }
+  const pct = ((nav.ambiguousFiles / nav.files) * 100).toFixed(0);
+  const worst = nav.worstNames
+    .map((n) => `${escapeHtml(n.name)} &times;${formatNumber(n.count)}`)
+    .join(", ");
+  return `<table><thead><tr><th>Navigability</th><th class="n">Value</th></tr></thead><tbody>
+<tr><td>Files sharing a basename</td><td class="n cx">${formatNumber(nav.ambiguousFiles)} of ${formatNumber(nav.files)} (${pct}%)</td></tr>
+<tr><td>Most repeated names</td><td class="n">${worst === "" ? "&mdash;" : worst}</td></tr>
+<tr><td>Path depth</td><td class="n">median ${nav.medianDepth}, max ${nav.maxDepth}</td></tr>
+</tbody></table>`;
 }
 
 function dirsTable(result: ContextResult): string {
@@ -133,6 +191,30 @@ function filesTable(files: FileContext[]): string {
   return `<input id="filter" type="search" placeholder="Filter files by path…" />
 <table><thead><tr><th class="n">#</th><th>File</th><th>Language</th><th class="n">Tokens</th><th class="n">Code</th><th class="n">Comments</th><th class="n">Lines</th></tr></thead>
 <tbody id="rows">${rows}</tbody></table>`;
+}
+
+function workingSetLines(result: ContextResult, budget: number): string[] {
+  const tiers = budgetTiers(result, budget);
+  const lines = [`Working set (${formatNumber(budget)} tokens)`];
+  for (const tier of tiers) {
+    lines.push(
+      `  ${formatNumber(tier.files).padStart(6)} files exceed ${(tier.share * 100).toFixed(0)}% of it on a single read   (> ${formatNumber(tier.threshold)} tokens)`,
+    );
+  }
+  return lines;
+}
+
+function navigabilityLines(result: ContextResult): string[] {
+  const nav = result.navigability;
+  const lines = ["Navigability"];
+
+  const share = (nav.ambiguousFiles / nav.files) * 100;
+  const worst = nav.worstNames.map((n) => `${n.name} \u00d7${n.count}`).join(", ");
+  lines.push(
+    `  Ambiguous names   ${formatNumber(nav.ambiguousFiles)} of ${formatNumber(nav.files)} files (${share.toFixed(0)}%) share a basename${worst === "" ? "" : `   worst: ${worst}`}`,
+  );
+  lines.push(`  Path depth        median ${nav.medianDepth}, max ${nav.maxDepth}`);
+  return lines;
 }
 
 function pushNotice(out: string[], result: ContextResult): void {
