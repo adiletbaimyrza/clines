@@ -9,6 +9,10 @@ import {
 import { buildReadmeSection, sortedLanguages } from "../src/report/format/table.js";
 
 const report: Report = {
+  roles: [
+    { role: "source", files: 3, code: 100 },
+    { role: "test", files: 2, code: 40 },
+  ],
   totalCode: 30,
   totalComment: 10,
   totalBlank: 10,
@@ -22,6 +26,7 @@ const report: Report = {
 };
 
 const empty: Report = {
+  roles: [],
   totalCode: 0,
   totalComment: 0,
   totalBlank: 0,
@@ -38,6 +43,7 @@ describe("sortedLanguages", () => {
 
   it("breaks ties by language name", () => {
     const tie: Report = {
+      roles: [],
       ...empty,
       languages: [
         { language: "Bash", files: 1, code: 5, comment: 0, blank: 0, total: 5, complexity: 0 },

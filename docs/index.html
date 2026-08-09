@@ -411,6 +411,16 @@ Project size: <span class="size">Solar System ☀️</span></pre>
             </p>
           </div>
           <div class="card">
+            <div class="ico">🏷️</div>
+            <h3>Source by default</h3>
+            <p>
+              Files are classified as source, test, generated, vendored or docs — using
+              <code>.gitattributes</code>, <code>@generated</code> headers and path conventions.
+              Headline figures cover source only; <span class="cmd">--all</span> includes
+              everything.
+            </p>
+          </div>
+          <div class="card">
             <div class="ico">🙈</div>
             <h3>.gitignore aware</h3>
             <p>
@@ -490,8 +500,11 @@ $ npx clines count src
 <span style="color: var(--muted)"># also write the report into README.md</span>
 $ npx clines count --readme
 
-<span style="color: var(--muted)"># find duplicated code blocks</span>
+<span style="color: var(--muted)"># find duplicated code blocks in source files</span>
 $ npx clines dup
+
+<span style="color: var(--muted)"># ...including tests, fixtures and generated files</span>
+$ npx clines dup --all
 
 <span style="color: var(--muted)"># rank files by complexity, into an HTML report</span>
 $ npx clines cx --html cx-report.html

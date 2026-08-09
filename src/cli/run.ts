@@ -1,11 +1,12 @@
 import path from "node:path";
-import { loadConfig, loadGitignoreGlobs } from "../config/load.js";
+import { loadConfig, loadGitAttributes, loadGitignoreGlobs } from "../config/load.js";
 import type { Report } from "../core/model.js";
 import {
   analyze,
   analyzeComplexity,
   analyzeContext,
   analyzeDuplication,
+  type AnalyzeOptions,
 } from "../core/pipeline.js";
 import { renderComplexity, renderComplexityHtml } from "../report/format/complexity.js";
 import { renderContext, renderContextHtml } from "../report/format/context.js";
@@ -22,12 +23,14 @@ export type Opener = (target: string) => void;
 
 export interface RunOptions {
   dir: string;
+  all?: boolean;
   readme: boolean;
   config?: string;
 }
 
 export interface DupOptions {
   dir: string;
+  all?: boolean;
   minLines: number;
   minCopies: number;
   open: boolean;
@@ -37,6 +40,7 @@ export interface DupOptions {
 
 export interface ComplexityOptions {
   dir: string;
+  all?: boolean;
   top: number;
   open: boolean;
   config?: string;
@@ -45,6 +49,7 @@ export interface ComplexityOptions {
 
 export interface ContextOptions {
   dir: string;
+  all?: boolean;
   window: number;
   top: number;
   open: boolean;
@@ -53,19 +58,28 @@ export interface ContextOptions {
   html?: string;
 }
 
-async function prepare(dir: string, configPath?: string) {
+async function prepare(dir: string, configPath?: string, all?: boolean) {
   const rootDir = path.resolve(dir);
   if (!(await pathExists(rootDir))) {
     throw new ClinesError(`Directory not found: ${rootDir}`);
   }
   const config = await loadConfig(rootDir, configPath);
   const globs = await loadGitignoreGlobs(rootDir, config.respectGitignore);
-  return { rootDir, config, globs };
+  const options: AnalyzeOptions = {
+    attributes: await loadGitAttributes(rootDir),
+    includeAll: all === true,
+  };
+  return { rootDir, config, globs, options };
 }
 
 export async function run(options: RunOptions, io: IO): Promise<number> {
-  const { rootDir, config, globs } = await prepare(options.dir, options.config);
-  const report = await analyze(rootDir, config, globs);
+  const {
+    rootDir,
+    config,
+    globs,
+    options: opts,
+  } = await prepare(options.dir, options.config, options.all);
+  const report = await analyze(rootDir, config, globs, opts);
 
   io.out(consoleReporter.render(report));
 
@@ -81,13 +95,19 @@ export async function runDup(
   io: IO,
   opener: Opener = openInBrowser,
 ): Promise<number> {
-  const { rootDir, config, globs } = await prepare(options.dir, options.config);
+  const {
+    rootDir,
+    config,
+    globs,
+    options: opts,
+  } = await prepare(options.dir, options.config, options.all);
   const result = await analyzeDuplication(
     rootDir,
     config,
     globs,
     options.minLines,
     options.minCopies,
+    opts,
   );
   io.out(renderDuplication(result));
 
@@ -108,13 +128,18 @@ export async function runComplexity(
   io: IO,
   opener: Opener = openInBrowser,
 ): Promise<number> {
-  const { rootDir, config, globs } = await prepare(options.dir, options.config);
-  const files = await analyzeComplexity(rootDir, config, globs);
-  io.out(renderComplexity(files));
+  const {
+    rootDir,
+    config,
+    globs,
+    options: opts,
+  } = await prepare(options.dir, options.config, options.all);
+  const result = await analyzeComplexity(rootDir, config, globs, opts);
+  io.out(renderComplexity(result));
 
   if (options.html !== undefined) {
     const htmlPath = path.resolve(options.html);
-    await writeText(htmlPath, renderComplexityHtml(files, { top: options.top }));
+    await writeText(htmlPath, renderComplexityHtml(result, { top: options.top }));
     io.err(`Wrote complexity report to ${htmlPath}`);
     if (options.open) {
       opener(htmlPath);
@@ -129,8 +154,13 @@ export async function runContext(
   io: IO,
   opener: Opener = openInBrowser,
 ): Promise<number> {
-  const { rootDir, config, globs } = await prepare(options.dir, options.config);
-  const result = await analyzeContext(rootDir, config, globs);
+  const {
+    rootDir,
+    config,
+    globs,
+    options: opts,
+  } = await prepare(options.dir, options.config, options.all);
+  const result = await analyzeContext(rootDir, config, globs, opts);
   io.out(renderContext(result, options.window));
 
   if (options.html !== undefined) {

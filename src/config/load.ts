@@ -1,4 +1,5 @@
 import path from "node:path";
+import { emptyRoleAttributes, type RoleAttributes } from "../core/files/roles.js";
 import { ClinesError, errorMessage } from "../util/errors.js";
 import { pathExists, readText } from "../util/fs.js";
 import { type Config, defaultConfig, parseConfig } from "./schema.js";
@@ -40,6 +41,42 @@ export async function loadGitignoreGlobs(rootDir: string, respect: boolean): Pro
     return [];
   }
   return parseGitignore(await readText(gitignorePath));
+}
+
+export async function loadGitAttributes(rootDir: string): Promise<RoleAttributes> {
+  const attributesPath = path.join(rootDir, ".gitattributes");
+  if (!(await pathExists(attributesPath))) {
+    return emptyRoleAttributes();
+  }
+  return parseGitAttributes(await readText(attributesPath));
+}
+
+const LINGUIST: Record<string, keyof RoleAttributes> = {
+  "linguist-generated": "generated",
+  "linguist-vendored": "vendored",
+  "linguist-documentation": "docs",
+};
+
+export function parseGitAttributes(content: string): RoleAttributes {
+  const result = emptyRoleAttributes();
+
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (trimmed === "" || trimmed.startsWith("#")) {
+      continue;
+    }
+    const [pattern, ...tokens] = trimmed.split(/\s+/);
+    for (const token of tokens) {
+      const negated = token.startsWith("-");
+      const [name, value] = (negated ? token.slice(1) : token).split("=");
+      const bucket = LINGUIST[name as string];
+      if (bucket !== undefined && !negated && value !== "false") {
+        result[bucket].push(normalizePattern(pattern as string));
+      }
+    }
+  }
+
+  return result;
 }
 
 export function parseGitignore(content: string): string[] {

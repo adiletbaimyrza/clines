@@ -64,6 +64,43 @@ npx clines count src --config c.json  # count src/ with an explicit config
 npx clines count --readme             # report + update README.md
 ```
 
+### What gets counted
+
+By default `clines` reports on **source files only**. Every file is classified into one role:
+
+| Role        | Detected by                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------------------------------ |
+| `source`    | anything not matched below                                                                                   |
+| `test`      | `__tests__/`, `test/`, `spec/`, `fixtures/`, `benchmarks/`, `*.test.*`, `*.spec.*`                           |
+| `generated` | `linguist-generated` in `.gitattributes`, a `@generated` or `DO NOT EDIT` header, `*.min.*`, `*.generated.*` |
+| `vendored`  | `linguist-vendored`, `vendor/`, `third_party/`, `flow-typed/`                                                |
+| `docs`      | `linguist-documentation`, `docs/`, `.md`, `.txt`, `.rst`                                                     |
+
+Non-source files are excluded from headline figures and named underneath:
+
+```text
+Excluded 4,892 files: 4,699 test · 20 generated · 13 vendored · 160 docs   (--all to include)
+```
+
+`--all` restores the pre-4.0 behaviour of counting everything. `count` always prints a per-role
+breakdown and a test-to-source ratio regardless.
+
+Roles can be overridden in `clines.json`, which takes precedence over every heuristic:
+
+```json
+{
+  "roles": {
+    "source": ["fixtures/golden/**"],
+    "test": ["e2e/**"],
+    "generated": ["src/schema.ts"]
+  }
+}
+```
+
+This matters more than it sounds. On `facebook/react`, tests, fixtures and generated files account
+for 59% of the estimated token cost and 72% of all duplicated lines — so the pre-4.0 headline
+duplication figure of 43.5% was mostly test code.
+
 ### Finding duplicate code
 
 `clines dup` reports a duplication percentage and the most duplicated files. Detection uses maximal-block clone matching over code lines and ignores whitespace differences.
@@ -77,12 +114,14 @@ npx clines dup --html dup-report.html --no-open   # write it without opening
 ```
 
 ```text
-Duplication: 4.2%   1,240 of 29,500 code lines   ·   12 clones
+Duplication: 4.2%   1,240 duplicated lines   ·   12 clones
 
 Most duplicated files
   File                 Dup lines   % of file
   src/legacy/api.ts          220         64%
   src/legacy/api.old.ts      220         71%
+
+Excluded 128 files: 121 test · 7 docs   (--all to include)
 
 Run with `--html <file>` for a full browsable report with code snippets.
 ```
@@ -101,7 +140,7 @@ npx clines cx --html cx-report.html --no-open    # write it without opening
 ```
 
 ```text
-Complexity: 51,082 total   ·   2,303 files with complexity
+Complexity: 40,872 total   ·   1,159 files with complexity
 
 Most complex files
   File                                              Complexity   Code
@@ -123,19 +162,17 @@ npx clines ctx --html ctx-report.html   # + an HTML report (opens in your browse
 ```
 
 ```text
-Context: 8,776,571 tokens   ·   877.7% of a 1,000,000-token window   ·   11% comments
+Context: 3,303,084 tokens   ·   330.3% of a 1,000,000-token window   ·   19% comments
 
 Largest directories
   Directory     Tokens   Files
-  packages   4,230,792   2,068
-  compiler   2,370,068   4,169
-  fixtures     538,565     421
+  packages   1,904,551     893
+  compiler   1,201,364   1,003
 
 Biggest files
-  File                                                       Tokens        Code   Comments
-  report.html                                             1,131,404   1,131,404          0
-  fixtures/attribute-behavior/AttributeTableSnapshot.md     227,209     227,209          0
-  packages/react-dom/src/__tests__/ReactDOMFloat-test.js     74,455      71,003      3,452
+  File                                                        Tokens     Code   Comments
+  packages/react-devtools-shared/src/backend/fiber/renderer.js 64,222   48,348     15,874
+  compiler/crates/react_compiler_lowering/src/build_hir.rs      59,223   52,970      6,253
 
 Run with `--html <file>` for a full browsable report.
 ```

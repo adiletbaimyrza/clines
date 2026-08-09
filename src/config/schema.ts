@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { RolePatterns } from "../core/files/roles.js";
 
 export const DEFAULT_IGNORE_DIRS = [
   "node_modules",
@@ -70,10 +71,21 @@ const unignoreSection = z
   })
   .strict();
 
+const rolesSection = z
+  .object({
+    source: patterns.default([]),
+    test: patterns.default([]),
+    generated: patterns.default([]),
+    vendored: patterns.default([]),
+    docs: patterns.default([]),
+  })
+  .strict();
+
 export const userConfigSchema = z
   .object({
     ignore: ignoreSection.default({}),
     unignore: unignoreSection.default({}),
+    roles: rolesSection.default({}),
     respectGitignore: z.boolean().default(true),
   })
   .strict();
@@ -85,6 +97,7 @@ export interface Config {
   ignoreFiles: string[];
   ignoreExtensions: string[];
   ignoreGlobs: string[];
+  roles: RolePatterns;
   respectGitignore: boolean;
 }
 
@@ -106,6 +119,7 @@ export function resolveConfig(user: UserConfig): Config {
       user.unignore.extensions,
     ),
     ignoreGlobs: [...user.ignore.globs],
+    roles: { ...user.roles },
     respectGitignore: user.respectGitignore,
   };
 }

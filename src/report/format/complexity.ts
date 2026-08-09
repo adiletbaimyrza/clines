@@ -1,12 +1,13 @@
-import type { FileComplexity } from "../../core/model.js";
-import { escapeHtml, formatNumber } from "./html.js";
+import type { ComplexityResult, FileComplexity } from "../../core/model.js";
+import { escapeHtml, excludedNotice, formatNumber } from "./html.js";
 
 export interface ComplexityHtmlOptions {
   title?: string;
   top?: number;
 }
 
-export function renderComplexity(files: FileComplexity[], topFiles: number = 20): string {
+export function renderComplexity(result: ComplexityResult, topFiles: number = 20): string {
+  const files = result.files;
   const total = files.reduce((sum, file) => sum + file.complexity, 0);
   const ranked = files.filter((file) => file.complexity > 0);
 
@@ -36,14 +37,20 @@ export function renderComplexity(files: FileComplexity[], topFiles: number = 20)
     out.push(`  … and ${formatNumber(hidden)} more files.`);
   }
 
+  const notice = excludedNotice(result.excluded);
+  if (notice !== "") {
+    out.push("", notice);
+  }
+
   out.push("", "Run with `--html <file>` for a full browsable report.");
   return out.join("\n");
 }
 
 export function renderComplexityHtml(
-  files: FileComplexity[],
+  result: ComplexityResult,
   options: ComplexityHtmlOptions = {},
 ): string {
+  const files = result.files;
   const title = options.title ?? "clines — complexity report";
   const top = options.top ?? 100;
 

@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { loadConfig, loadGitignoreGlobs, parseGitignore } from "../src/config/load.js";
+import {
+  loadConfig,
+  loadGitAttributes,
+  loadGitignoreGlobs,
+  parseGitignore,
+} from "../src/config/load.js";
 import { ClinesError } from "../src/util/errors.js";
 import { pathExists } from "../src/util/fs.js";
 import { TempProject } from "./helpers/tmp.js";
@@ -72,5 +77,25 @@ describe("loadGitignoreGlobs", () => {
 describe("parseGitignore", () => {
   it("strips anchors and expands directory patterns", () => {
     expect(parseGitignore("/build/\nsrc\n")).toEqual(["build/**", "src"]);
+  });
+});
+
+describe("loadGitAttributes", () => {
+  it("returns empty buckets when the file is absent", async () => {
+    expect(await loadGitAttributes(project.root)).toEqual({
+      generated: [],
+      vendored: [],
+      docs: [],
+    });
+  });
+
+  it("reads linguist markers from .gitattributes", async () => {
+    project.file(".gitattributes", "dist/** linguist-generated\n");
+
+    expect(await loadGitAttributes(project.root)).toEqual({
+      generated: ["dist/**"],
+      vendored: [],
+      docs: [],
+    });
   });
 });

@@ -1,3 +1,5 @@
+import type { FileRole } from "./files/roles.js";
+
 export type LineKind = "code" | "comment" | "blank";
 
 export interface LanguageSyntax {
@@ -26,11 +28,27 @@ export interface LanguageStat extends LineCounts {
   complexity: number;
 }
 
+export interface RoleSummary {
+  role: FileRole;
+  files: number;
+  code: number;
+}
+
+export interface Exclusions {
+  files: number;
+  roles: RoleSummary[];
+}
+
 export interface FileComplexity {
   path: string;
   complexity: number;
   code: number;
   language: string;
+}
+
+export interface ComplexityResult {
+  files: FileComplexity[];
+  excluded: Exclusions;
 }
 
 export interface FileContext {
@@ -54,6 +72,7 @@ export interface ContextResult {
   totalTokens: number;
   codeTokens: number;
   commentTokens: number;
+  excluded: Exclusions;
 }
 
 export interface Report {
@@ -64,4 +83,5 @@ export interface Report {
   totalFiles: number;
   totalComplexity: number;
   languages: LanguageStat[];
+  roles: RoleSummary[];
 }

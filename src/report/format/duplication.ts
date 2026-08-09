@@ -1,4 +1,5 @@
 import type { DuplicationResult } from "../../core/analyzers/duplication.js";
+import { excludedNotice } from "./html.js";
 
 export function renderDuplication(result: DuplicationResult, topFiles: number = 10): string {
   const out: string[] = [
@@ -7,6 +8,7 @@ export function renderDuplication(result: DuplicationResult, topFiles: number = 
 
   if (result.clones.length === 0) {
     out.push("", `No duplicate blocks of ${result.minLines}+ lines found.`);
+    pushNotice(out, result);
     return out.join("\n");
   }
 
@@ -25,8 +27,17 @@ export function renderDuplication(result: DuplicationResult, topFiles: number = 
     out.push(`  … and ${num(hidden)} more files.`);
   }
 
+  pushNotice(out, result);
+
   out.push("", "Run with `--html <file>` for a full browsable report with code snippets.");
   return out.join("\n");
+}
+
+function pushNotice(out: string[], result: DuplicationResult): void {
+  const notice = excludedNotice(result.excluded);
+  if (notice !== "") {
+    out.push("", notice);
+  }
 }
 
 function num(value: number): string {

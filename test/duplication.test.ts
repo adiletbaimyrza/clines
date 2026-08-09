@@ -47,6 +47,7 @@ describe("detectDuplication", () => {
       percentage: 0,
       clones: [],
       perFile: [],
+      excluded: { files: 0, roles: [] },
     });
   });
 

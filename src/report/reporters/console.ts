@@ -73,9 +73,25 @@ export const consoleReporter: Reporter = {
       renderCells((col) => col.pick(totalRow)),
       "",
       `Project size: ${size.text}`,
+      ...roleLines(report),
     ].join("\n");
   },
 };
+
+function roleLines(report: Report): string[] {
+  if (report.roles.length < 2) {
+    return [];
+  }
+  const parts = report.roles.map((r) => `${r.role} ${num(r.files)}`);
+  const lines = [`Files by role: ${parts.join("   ·   ")}`];
+
+  const source = report.roles.find((r) => r.role === "source");
+  const test = report.roles.find((r) => r.role === "test");
+  if (source !== undefined && test !== undefined && source.code > 0) {
+    lines.push(`Test-to-source: ${(test.code / source.code).toFixed(2)}:1 by code lines`);
+  }
+  return lines;
+}
 
 function num(value: number): string {
   return value.toLocaleString("en-US");

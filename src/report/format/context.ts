@@ -1,5 +1,5 @@
 import type { ContextResult, FileContext } from "../../core/model.js";
-import { escapeHtml, formatNumber } from "./html.js";
+import { escapeHtml, excludedNotice, formatNumber } from "./html.js";
 
 export const DEFAULT_WINDOW = 200000;
 
@@ -20,6 +20,7 @@ export function renderContext(
 
   if (result.files.length === 0) {
     out.push("", "No files to measure.");
+    pushNotice(out, result);
     return out.join("\n");
   }
 
@@ -42,6 +43,8 @@ export function renderContext(
   if (hidden > 0) {
     out.push(`  … and ${formatNumber(hidden)} more files.`);
   }
+
+  pushNotice(out, result);
 
   out.push("", "Run with `--html <file>` for a full browsable report.");
   return out.join("\n");
@@ -130,6 +133,13 @@ function filesTable(files: FileContext[]): string {
   return `<input id="filter" type="search" placeholder="Filter files by path…" />
 <table><thead><tr><th class="n">#</th><th>File</th><th>Language</th><th class="n">Tokens</th><th class="n">Code</th><th class="n">Comments</th><th class="n">Lines</th></tr></thead>
 <tbody id="rows">${rows}</tbody></table>`;
+}
+
+function pushNotice(out: string[], result: ContextResult): void {
+  const notice = excludedNotice(result.excluded);
+  if (notice !== "") {
+    out.push("", notice);
+  }
 }
 
 function table(headers: string[], rows: string[][]): string[] {

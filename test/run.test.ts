@@ -37,7 +37,7 @@ describe("run", () => {
     await run({ dir: project.root, readme: true }, io);
 
     expect(err.join("\n")).toContain("Updated");
-    expect(readFileSync(project.path("README.md"), "utf8")).toContain("**Lines of Code:** `2`");
+    expect(readFileSync(project.path("README.md"), "utf8")).toContain("**Lines of Code:** `1`");
   });
 
   it("warns when README is missing and readme is true", async () => {

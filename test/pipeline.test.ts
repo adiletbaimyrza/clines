@@ -39,7 +39,7 @@ describe("analyzeComplexity", () => {
     project.file("also.ts", "if (a) {}\n");
     project.file("data.json", '{ "a": 1 }\n');
 
-    const files = await analyzeComplexity(project.root, defaultConfig());
+    const { files } = await analyzeComplexity(project.root, defaultConfig());
 
     expect(files.map((f) => f.path)).toEqual(["hot.ts", "also.ts", "cool.ts", "data.json"]);
     expect(files[0]).toMatchObject({ complexity: 3, language: "TypeScript" });
@@ -96,6 +96,59 @@ describe("analyzeContext", () => {
     const result = await analyzeContext(project.root, defaultConfig());
 
     expect(result).toMatchObject({ files: [], dirs: [], totalTokens: 0 });
+  });
+});
+
+describe("file roles", () => {
+  it("excludes non-source files by default and reports what was excluded", async () => {
+    project.file("src/app.ts", "const a = 1;\n");
+    project.file("src/__tests__/app.test.ts", "const b = 2;\n");
+    project.file("README.md", "# hi\n");
+
+    const result = await analyzeContext(project.root, defaultConfig());
+
+    expect(result.files.map((f) => f.path)).toEqual(["src/app.ts"]);
+    expect(result.excluded.files).toBe(2);
+    expect(result.excluded.roles.map((r) => r.role).sort()).toEqual(["docs", "test"]);
+  });
+
+  it("includes every role when includeAll is set", async () => {
+    project.file("src/app.ts", "const a = 1;\n");
+    project.file("src/__tests__/app.test.ts", "const b = 2;\n");
+
+    const result = await analyzeContext(project.root, defaultConfig(), [], { includeAll: true });
+
+    expect(result.files).toHaveLength(2);
+    expect(result.excluded).toEqual({ files: 0, roles: [] });
+  });
+
+  it("reports per-role totals from count and honours includeAll", async () => {
+    project.file("src/app.ts", "const a = 1;\n");
+    project.file("src/__tests__/app.test.ts", "const b = 2;\n");
+
+    const report = await analyze(project.root, defaultConfig());
+    expect(report.totalFiles).toBe(1);
+    expect(report.roles).toEqual([
+      { role: "source", files: 1, code: 1 },
+      { role: "test", files: 1, code: 1 },
+    ]);
+
+    const all = await analyze(project.root, defaultConfig(), [], { includeAll: true });
+    expect(all.totalFiles).toBe(2);
+  });
+
+  it("excludes non-source files from duplication and complexity", async () => {
+    const block = "a1();\na2();\na3();\na4();\na5();\n";
+    project.file("a.ts", block);
+    project.file("__tests__/b.ts", block);
+
+    const dup = await analyzeDuplication(project.root, defaultConfig(), [], 5, 2);
+    expect(dup.clones).toHaveLength(0);
+    expect(dup.excluded.files).toBe(1);
+
+    const cx = await analyzeComplexity(project.root, defaultConfig());
+    expect(cx.files.map((f) => f.path)).toEqual(["a.ts"]);
+    expect(cx.excluded.files).toBe(1);
   });
 });
 

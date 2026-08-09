@@ -5,6 +5,7 @@ import { renderDuplicationHtml } from "../src/report/format/duplication-html.js"
 
 function result(over: Partial<DuplicationResult> = {}): DuplicationResult {
   return {
+    excluded: { files: 0, roles: [] },
     minLines: 5,
     totalLines: 1000,
     duplicatedLines: 120,
@@ -65,6 +66,19 @@ describe("renderDuplication (terminal)", () => {
   it("reports a clean result when there is no duplication", () => {
     const output = renderDuplication(result({ clones: [], perFile: [], minLines: 7 }));
     expect(output).toContain("No duplicate blocks of 7+ lines found.");
+  });
+});
+
+describe("renderDuplication exclusions", () => {
+  const excluded = { files: 7, roles: [{ role: "test" as const, files: 7, code: 210 }] };
+
+  it("names what was left out", () => {
+    expect(renderDuplication(result({ excluded }))).toContain("Excluded 7 files: 7 test");
+  });
+
+  it("names exclusions when there are no clones", () => {
+    const output = renderDuplication(result({ clones: [], perFile: [], excluded }));
+    expect(output).toContain("Excluded 7 files");
   });
 });
 
