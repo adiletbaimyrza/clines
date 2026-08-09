@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>clines vs cloc — clines</title>
+    <meta
+      name="description"
+      content="A measured comparison of clines and cloc: line counts agree to within 0.12% on a 6,914-file repository. What each tool is for, and how to reproduce the numbers."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A8%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --bg: #0a0e17;
+        --bg-soft: #111726;
+        --panel: #141b2d;
+        --border: #223049;
+        --text: #e6ecf5;
+        --muted: #9aa8bf;
+        --accent: #5ed0ff;
+        --accent-2: #a78bfa;
+        --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        color: var(--text);
+        background:
+          radial-gradient(1200px 600px at 80% -10%, rgba(94, 208, 255, 0.12), transparent 60%),
+          var(--bg);
+        line-height: 1.65;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .wrap {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      nav .brand {
+        font-family: var(--mono);
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: var(--text);
+      }
+      nav .brand::before {
+        content: "✨ ";
+      }
+      nav .links a {
+        color: var(--muted);
+        margin-left: 20px;
+        font-size: 14px;
+      }
+      nav .links a:hover {
+        color: var(--text);
+        text-decoration: none;
+      }
+      article {
+        padding: 40px 0 64px;
+      }
+      h1 {
+        font-size: clamp(26px, 4vw, 34px);
+        margin: 0 0 8px;
+        line-height: 1.25;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0 0 32px;
+      }
+      h2 {
+        font-size: 21px;
+        margin: 40px 0 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+      h3 {
+        font-size: 17px;
+        margin: 28px 0 4px;
+      }
+      p,
+      li {
+        color: #cdd6e6;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.9em;
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 1px 5px;
+      }
+      pre {
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: #cdd6e6;
+      }
+      pre code {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: inherit;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin: 16px 0;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      td.v {
+        font-family: var(--mono);
+        color: var(--accent);
+        white-space: nowrap;
+      }
+      td.n {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      blockquote {
+        margin: 20px 0;
+        padding: 12px 16px;
+        border-left: 3px solid var(--accent-2);
+        background: var(--panel);
+        border-radius: 0 8px 8px 0;
+        color: var(--muted);
+      }
+      blockquote p {
+        margin: 0;
+        color: var(--muted);
+      }
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 24px 0 40px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <span class="brand">clines</span>
+        <span class="links">
+          <a href="../index.html">Home</a>
+          <a href="../blog/index.html">Blog</a>
+          <a href="https://github.com/adiletbaimyrza/clines">GitHub</a>
+        </span>
+      </nav>
+    </div>
+
+    <div class="wrap">
+      <article>
+        <h1>clines vs cloc</h1>
+        <p class="meta">10 August 2026 · measured on facebook/react, 6,914 files</p>
+
+        <p>
+          <a href="https://github.com/AlDanial/cloc">cloc</a> has counted lines of code since 2006
+          and is the reference implementation for the job. Any tool claiming to replace it should
+          first demonstrate it agrees with it. So that is where this comparison starts, before
+          getting to what is different.
+        </p>
+
+        <h2>Do they agree?</h2>
+        <p>
+          Both tools were run over an identical file set — clines produced the list of 6,914 files,
+          which was then handed to cloc with <code>--list-file</code>, so neither tool chose its own
+          input. <code>--skip-uniqueness</code> was passed to cloc because it de-duplicates
+          identical files by default and clines does not.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <tr>
+              <th></th>
+              <th class="n">clines</th>
+              <th class="n">cloc</th>
+              <th class="n">difference</th>
+            </tr>
+            <tr>
+              <td>Code lines</td>
+              <td class="n">823,300</td>
+              <td class="n">822,301</td>
+              <td class="n">+0.12%</td>
+            </tr>
+            <tr>
+              <td>Blank lines</td>
+              <td class="n">103,919</td>
+              <td class="n">103,898</td>
+              <td class="n">+0.02%</td>
+            </tr>
+            <tr>
+              <td>Comment lines</td>
+              <td class="n">81,280</td>
+              <td class="n">81,960</td>
+              <td class="n">&minus;0.83%</td>
+            </tr>
+          </table>
+        </div>
+        <p>
+          The residual is not noise. JavaScript blank counts are <b>identical</b> at 64,438, and the
+          code and comment figures differ by exactly 548 in opposite directions — a set of lines one
+          tool reads as code and the other as comment, not lines that went missing. Rust differs by
+          exactly one line, in the same trade. HTML, CSS, YAML, CoffeeScript, TOML and JSX match
+          cell for cell.
+        </p>
+        <p>
+          On a small hand-checked fixture, with block comments, a keyword-bearing string and a
+          trailing comment, the two tools agree on every value.
+        </p>
+        <p>
+          cloc classified 6,895 of the 6,914 files and skipped 19 it did not recognise, which is
+          part of the code difference. clines folds unknown extensions into an <code>Other</code>
+          bucket rather than dropping them.
+        </p>
+
+        <h2>Reproducing it</h2>
+        <pre><code>clines count . --all
+cloc --skip-uniqueness .</code></pre>
+        <p>
+          The <code>--all</code> matters. Since 4.0.0 clines reports on source files only, excluding
+          tests, fixtures, generated and vendored code, so a like-for-like comparison with cloc
+          needs it. Without it clines reports 2,022 files rather than 6,914 — a difference of
+          intent, not of counting.
+        </p>
+        <p>
+          Run that way each tool picks its own input and the totals will differ a little, because
+          each has its own ignore rules. The figures above were produced by handing cloc clines'
+          exact file list through <code>--list-file</code>, so the only remaining variable was how
+          each tool classifies a line. That needed a short script against clines'
+          <code>collectFiles</code>, because there is no flag to print the file list — a reasonable
+          thing to add, and not something the tool does today.
+        </p>
+
+        <h2>Where cloc is the better choice</h2>
+        <ul>
+          <li>
+            <b>Language coverage.</b> cloc knows hundreds of languages. clines knows the common ones
+            and folds the rest into an <code>Other</code> bucket.
+          </li>
+          <li>
+            <b>Maturity.</b> Fifteen years of edge cases, from Perl POD to Visual Basic forms.
+          </li>
+          <li><b>Output formats.</b> XML, YAML, SQL, CSV. clines prints a table or writes HTML.</li>
+          <li>
+            <b>Diffing.</b> <code>cloc --diff</code> compares two trees. clines has no equivalent.
+          </li>
+        </ul>
+        <p>
+          If you want to count lines of code across an unusual language set, use cloc. It is better
+          at that, and clines does not try to beat it.
+        </p>
+
+        <h2>What clines adds</h2>
+        <p>
+          Counting is the starting point rather than the product. The other four commands answer
+          questions cloc does not attempt:
+        </p>
+        <div class="table-wrap">
+          <table>
+            <tr>
+              <th>command</th>
+              <th>question</th>
+            </tr>
+            <tr>
+              <td><code>dup</code></td>
+              <td>Which code is duplicated, and where are the copies?</td>
+            </tr>
+            <tr>
+              <td><code>cx</code></td>
+              <td>Which files carry the most decision points?</td>
+            </tr>
+            <tr>
+              <td><code>ctx</code></td>
+              <td>What does this repository cost a language model to read?</td>
+            </tr>
+            <tr>
+              <td><code>comments</code></td>
+              <td>Which comments has the code drifted away from?</td>
+            </tr>
+          </table>
+        </div>
+        <p>
+          There is also a difference in default. cloc counts what you point it at. Since 4.0.0
+          clines classifies every file as source, test, generated, vendored or documentation and
+          reports on source alone, because on react the other categories accounted for 59% of the
+          estimated token cost and 72% of all duplicated lines. Both defaults are defensible; they
+          answer different questions.
+        </p>
+
+        <h2>Which to use</h2>
+        <ul>
+          <li><b>Counting lines, many languages, scripting against the output:</b> cloc.</li>
+          <li>
+            <b
+              >Understanding a codebase you are about to work in — duplication, complexity, what it
+              costs an agent to read:</b
+            >
+            clines.
+          </li>
+          <li><b>Both:</b> they do not conflict, and now you know the counts agree.</li>
+        </ul>
+
+        <pre><code>npm install --save-dev clines</code></pre>
+      </article>
+    </div>
+
+    <div class="wrap">
+      <footer>
+        <p>MIT License © Adilet Baimyrza Uulu · <a href="../index.html">clines</a></p>
+      </footer>
+    </div>
+  </body>
+</html>

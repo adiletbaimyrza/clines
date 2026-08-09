@@ -21,7 +21,7 @@ It has five commands:
 
 Runtime dependencies are `commander` and `zod`. Test coverage is 100%.
 
-**[📖 Website & docs](https://adiletbaimyrza.github.io/clines/)**
+**[📖 Website & docs](https://adiletbaimyrza.github.io/clines/)** · **[clines vs cloc](https://adiletbaimyrza.github.io/clines/compare/cloc.html)**
 
 ## Installation
 
