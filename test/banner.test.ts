@@ -16,8 +16,8 @@ describe("renderBanner", () => {
     }
     expect(banner).toContain("lines, comments and blanks per language");
     expect(banner).toContain("duplicated code blocks");
-    expect(banner).toContain("complexity hotspots");
-    expect(banner).toContain("what the repo costs an AI agent to read");
+    expect(banner).toContain("files ranked by complexity");
+    expect(banner).toContain("estimated token cost to read the repo");
   });
 
   it("renders the ASCII art block", () => {

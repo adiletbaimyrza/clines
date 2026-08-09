@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>What changed in clines 4.x — clines</title>
+    <meta
+      name="description"
+      content="clines 4.x stopped counting everything by default, reframed token cost around an agent's working set, and added comment drift detection."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A8%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --bg: #0a0e17;
+        --bg-soft: #111726;
+        --panel: #141b2d;
+        --border: #223049;
+        --text: #e6ecf5;
+        --muted: #9aa8bf;
+        --accent: #5ed0ff;
+        --accent-2: #a78bfa;
+        --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        color: var(--text);
+        background:
+          radial-gradient(1200px 600px at 80% -10%, rgba(94, 208, 255, 0.12), transparent 60%),
+          var(--bg);
+        line-height: 1.65;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .wrap {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      nav .brand {
+        font-family: var(--mono);
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: var(--text);
+      }
+      nav .brand::before {
+        content: "✨ ";
+      }
+      nav .links a {
+        color: var(--muted);
+        margin-left: 20px;
+        font-size: 14px;
+      }
+      nav .links a:hover {
+        color: var(--text);
+        text-decoration: none;
+      }
+      article {
+        padding: 40px 0 64px;
+      }
+      h1 {
+        font-size: clamp(26px, 4vw, 34px);
+        margin: 0 0 8px;
+        line-height: 1.25;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0 0 32px;
+      }
+      h2 {
+        font-size: 21px;
+        margin: 40px 0 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+      h3 {
+        font-size: 17px;
+        margin: 28px 0 4px;
+      }
+      p,
+      li {
+        color: #cdd6e6;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.9em;
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 1px 5px;
+      }
+      pre {
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: #cdd6e6;
+      }
+      pre code {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: inherit;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin: 16px 0;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      td.v {
+        font-family: var(--mono);
+        color: var(--accent);
+        white-space: nowrap;
+      }
+      td.n {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      blockquote {
+        margin: 20px 0;
+        padding: 12px 16px;
+        border-left: 3px solid var(--accent-2);
+        background: var(--panel);
+        border-radius: 0 8px 8px 0;
+        color: var(--muted);
+      }
+      blockquote p {
+        margin: 0;
+        color: var(--muted);
+      }
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 24px 0 40px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <span class="brand">clines</span>
+        <span class="links">
+          <a href="../index.html">Home</a>
+          <a href="index.html">Blog</a>
+          <a href="https://github.com/adiletbaimyrza/clines">GitHub</a>
+        </span>
+      </nav>
+    </div>
+
+    <div class="wrap">
+      <article>
+        <h1>What changed in clines 4.x</h1>
+        <p class="meta">9 August 2026 · covers 4.0.0 through 4.3.0</p>
+
+        <p>
+          3.x measured a repository. 4.x tries to measure the right things, and two of the changes
+          are breaking. The short version: clines stopped counting everything by default, stopped
+          treating a context window as the unit of cost, and started checking whether comments are
+          telling the truth.
+        </p>
+
+        <h2>4.0.0 — source by default</h2>
+        <p>
+          Every file is now classified as <code>source</code>, <code>test</code>,
+          <code>generated</code>, <code>vendored</code> or <code>docs</code>, using
+          <code>.gitattributes</code> <code>linguist-*</code> markers,
+          <code>@generated</code> headers and path conventions, with
+          <code>clines.json</code> overrides on top. Headline figures cover source only; everything
+          else is named beneath the report.
+        </p>
+        <p>
+          This was worth breaking compatibility for. On <code>facebook/react</code>, tests, fixtures
+          and generated files accounted for <b>59%</b> of the estimated token cost and <b>72%</b> of
+          all duplicated lines — so the previous headline of "43.5% duplicated" was mostly
+          <code>__tests__</code>. It is now 28.4%.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <tr>
+              <th>react</th>
+              <th class="n">3.11</th>
+              <th class="n">4.x</th>
+              <th class="n">4.x <code>--all</code></th>
+            </tr>
+            <tr>
+              <td><code>ctx</code> tokens</td>
+              <td class="n">8,776,571</td>
+              <td class="n">3,303,084</td>
+              <td class="n">8,776,571</td>
+            </tr>
+            <tr>
+              <td><code>dup</code></td>
+              <td class="n">43.5%</td>
+              <td class="n">28.4%</td>
+              <td class="n">43.5%</td>
+            </tr>
+            <tr>
+              <td><code>count</code> files</td>
+              <td class="n">6,915</td>
+              <td class="n">2,022</td>
+              <td class="n">6,915</td>
+            </tr>
+          </table>
+        </div>
+        <p>
+          <code>--all</code> reproduces the old numbers exactly on every command, which is how the
+          change was verified. <code>count</code> also gained a per-role breakdown and a
+          test-to-source ratio — react runs at 1.32:1 by code lines.
+        </p>
+
+        <h2>4.1.0 — working set, not window</h2>
+        <p>
+          Reporting "2217% of a 200,000-token window" implies that fitting a repository into context
+          is the goal. It isn't. Accuracy degrades well before a window fills, and agents read files
+          one at a time, so the useful question is which files are too expensive to read at all.
+        </p>
+        <pre><code>Working set (50,000 tokens)
+      15 files exceed 50% of it on a single read   (&gt; 25,000 tokens)
+      32 files exceed 25% of it on a single read   (&gt; 12,500 tokens)
+     140 files exceed 10% of it on a single read   (&gt; 5,000 tokens)</code></pre>
+        <p>
+          react's median file is <b>411 tokens</b>. Fifteen files each consume half a working set on
+          one read. That distribution was invisible in the old percentage.
+        </p>
+        <p>
+          The same release added navigability — how many files share a basename, and how deep the
+          tree goes. react has 553 of 2,022 files (27%) sharing a name with another file, including
+          <code>index.js</code> 89 times. Agents mislocalize on name similarity, so an instruction
+          mentioning "the server index" has 89 candidates.
+        </p>
+
+        <h2>4.2.0 and 4.3.0 — comment drift</h2>
+        <p>
+          Language models treat comments as authoritative and do not separate them from the code, so
+          a comment that has stopped being true is worse than no comment at all.
+          <code>clines comments</code> uses <code>git blame</code> to compare, per comment block,
+          when the comment was last touched against when the code beneath it was.
+        </p>
+        <pre><code>Comment drift: 13% of comment blocks describe code that changed later
+  1,027 of 8,066 blocks across 50 files   ·   3-year threshold</code></pre>
+        <p>
+          The threshold matters. Flagging any block whose code is merely newer catches 52–68% of
+          them, which is noise — a comment describing unchanged intent legitimately outlives edits
+          below it. At a three-year gap the figure settles at 7–23% per file, which is a usable
+          suspicion signal rather than a verdict.
+        </p>
+        <p>
+          It shipped in 4.2.0 as <code>ctx --comments</code> and moved to its own command in 4.3.0,
+          the second breaking change. <code>git blame</code> is slow enough — around eight seconds
+          on react — that it did not belong on a command people run constantly.
+        </p>
+
+        <h2>Upgrading from 3.x</h2>
+        <ul>
+          <li>
+            Numbers will drop, because tests, fixtures and generated files no longer count. Add
+            <code>--all</code> to reproduce 3.x output.
+          </li>
+          <li>
+            If a directory is misclassified, override it in <code>clines.json</code> under
+            <code>roles</code>.
+          </li>
+          <li><code>ctx --comments</code> is gone; use <code>clines comments</code>.</li>
+          <li>
+            <code>clines.json</code> is otherwise unchanged, and <code>--readme</code> still writes
+            into the same markers.
+          </li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="wrap">
+      <footer>
+        <p>MIT License © Adilet Baimyrza Uulu · <a href="../index.html">clines</a></p>
+      </footer>
+    </div>
+  </body>
+</html>
