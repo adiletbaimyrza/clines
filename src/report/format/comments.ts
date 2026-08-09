@@ -1,5 +1,6 @@
 import type { CommentOutcome } from "../../core/analyzers/comments.js";
 import { formatNumber } from "./html.js";
+import { table } from "./text.js";
 
 export function renderComments(outcome: CommentOutcome, topFiles: number = 20): string {
   if (outcome.status === "no-comments") {
@@ -25,7 +26,7 @@ export function renderComments(outcome: CommentOutcome, topFiles: number = 20): 
   const rows = drifted
     .slice(0, topFiles)
     .map((file) => [
-      shorten(file.path),
+      file.path,
       formatNumber(file.drifted),
       formatNumber(file.blocks),
       `${((file.drifted / file.blocks) * 100).toFixed(0)}%`,
@@ -39,23 +40,4 @@ export function renderComments(outcome: CommentOutcome, topFiles: number = 20): 
   }
 
   return out.join("\n");
-}
-
-function table(headers: string[], rows: string[][]): string[] {
-  const widths = headers.map((header, column) =>
-    Math.max(header.length, ...rows.map((row) => (row[column] as string).length)),
-  );
-  const line = (cells: string[]): string =>
-    `  ${cells
-      .map((cell, column) =>
-        column === 0
-          ? cell.padEnd(widths[column] as number)
-          : cell.padStart(widths[column] as number),
-      )
-      .join("   ")}`;
-  return [line(headers), ...rows.map(line)];
-}
-
-function shorten(filePath: string, max: number = 68): string {
-  return filePath.length <= max ? filePath : `…${filePath.slice(filePath.length - max + 1)}`;
 }

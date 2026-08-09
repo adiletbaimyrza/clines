@@ -17,5 +17,5 @@ export function excludedNotice(excluded: Exclusions): string {
     return "";
   }
   const parts = excluded.roles.map((role) => `${formatNumber(role.files)} ${role.role}`);
-  return `Excluded ${formatNumber(excluded.files)} files: ${parts.join(" · ")}   (--all to include)`;
+  return `Excluded ${formatNumber(excluded.files)} files: ${parts.join(" · ")} (--all to include)`;
 }

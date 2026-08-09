@@ -1,5 +1,6 @@
 import type { DuplicationResult } from "../../core/analyzers/duplication.js";
 import { excludedNotice } from "./html.js";
+import { table, wrap } from "./text.js";
 
 export function renderDuplication(result: DuplicationResult, topFiles: number = 10): string {
   const out: string[] = [
@@ -12,15 +13,10 @@ export function renderDuplication(result: DuplicationResult, topFiles: number = 
     return out.join("\n");
   }
 
-  const files = result.perFile.slice(0, topFiles).map((f) => ({ ...f, path: shorten(f.path) }));
-  const width = Math.max(...files.map((f) => f.path.length), "File".length);
+  const files = result.perFile.slice(0, topFiles);
+  const rows = files.map((f) => [f.path, num(f.duplicatedLines), `${f.percentage.toFixed(0)}%`]);
 
-  out.push("", "Most duplicated files", `  ${"File".padEnd(width)}   Dup lines   % of file`);
-  for (const file of files) {
-    out.push(
-      `  ${file.path.padEnd(width)}   ${num(file.duplicatedLines).padStart(9)}   ${`${file.percentage.toFixed(0)}%`.padStart(9)}`,
-    );
-  }
+  out.push("", "Most duplicated files", ...table(["File", "Dup lines", "% of file"], rows));
 
   const hidden = result.perFile.length - files.length;
   if (hidden > 0) {
@@ -36,14 +32,10 @@ export function renderDuplication(result: DuplicationResult, topFiles: number = 
 function pushNotice(out: string[], result: DuplicationResult): void {
   const notice = excludedNotice(result.excluded);
   if (notice !== "") {
-    out.push("", notice);
+    out.push("", ...wrap(notice));
   }
 }
 
 function num(value: number): string {
   return value.toLocaleString("en-US");
-}
-
-function shorten(filePath: string, max: number = 68): string {
-  return filePath.length <= max ? filePath : `…${filePath.slice(filePath.length - max + 1)}`;
 }

@@ -99,6 +99,13 @@ describe("renderContext", () => {
     expect(output).toContain("src/small.ts");
   });
 
+  it("switches to a multiplier once the repo dwarfs the window", () => {
+    const output = renderContext(result(), 50);
+
+    expect(output).toContain("20.0× a 50-token window");
+    expect(output).not.toContain("of a 50-token window");
+  });
+
   it("renders a dash when the window is zero", () => {
     expect(renderContext(result(), 0)).toContain("— of a 0-token window");
   });
