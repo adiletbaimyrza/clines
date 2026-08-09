@@ -36,7 +36,7 @@ describe("renderDuplication (terminal)", () => {
     expect(output).toContain("Most duplicated files");
     expect(output).toContain("a.ts");
     expect(output).toContain("80%");
-    expect(output).toContain("--html");
+    expect(output).not.toContain("--html");
   });
 
   it("truncates long file paths", () => {

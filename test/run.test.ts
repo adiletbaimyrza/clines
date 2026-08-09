@@ -67,7 +67,7 @@ describe("runDup", () => {
     const opened: string[] = [];
 
     const code = await runDup(
-      { dir: project.root, minLines: 5, minCopies: 2, open: true },
+      { dir: project.root, top: 10, minLines: 5, minCopies: 2, open: true },
       io,
       (p) => opened.push(p),
     );
@@ -87,7 +87,7 @@ describe("runDup", () => {
     const opened: string[] = [];
 
     await runDup(
-      { dir: project.root, minLines: 5, minCopies: 2, open: true, html: htmlPath },
+      { dir: project.root, top: 10, minLines: 5, minCopies: 2, open: true, html: htmlPath },
       io,
       (p) => opened.push(p),
     );
@@ -105,7 +105,7 @@ describe("runDup", () => {
     const opened: string[] = [];
 
     await runDup(
-      { dir: project.root, minLines: 5, minCopies: 2, open: false, html: htmlPath },
+      { dir: project.root, top: 10, minLines: 5, minCopies: 2, open: false, html: htmlPath },
       io,
       (p) => opened.push(p),
     );
@@ -116,7 +116,11 @@ describe("runDup", () => {
   it("throws for a missing directory", async () => {
     const { io } = captureIO();
     await expect(
-      runDup({ dir: project.path("nope"), minLines: 5, minCopies: 2, open: true }, io, () => {}),
+      runDup(
+        { dir: project.path("nope"), top: 10, minLines: 5, minCopies: 2, open: true },
+        io,
+        () => {},
+      ),
     ).rejects.toBeInstanceOf(ClinesError);
   });
 });
@@ -263,7 +267,7 @@ describe("runComments", () => {
     project.file("a.ts", "// note\nconst a = 1;\n");
     const { io, out } = captureIO();
 
-    const code = await runComments({ dir: project.root, years: 3, files: 50 }, io, {
+    const code = await runComments({ dir: project.root, years: 3, top: 20, scan: 50 }, io, {
       blamer: async () => [0, 9 * 365 * 24 * 60 * 60],
     });
 
@@ -276,7 +280,7 @@ describe("runComments", () => {
     project.file("a.ts", "// note\nconst a = 1;\n");
     const { io, out } = captureIO();
 
-    await runComments({ dir: project.root, years: 3, files: 50 }, io, {
+    await runComments({ dir: project.root, years: 3, top: 20, scan: 50 }, io, {
       blamer: async () => undefined,
     });
 
@@ -287,7 +291,7 @@ describe("runComments", () => {
     project.file("a.ts", "const a = 1;\n");
     const { io, out } = captureIO();
 
-    await runComments({ dir: project.root, years: 3, files: 50 }, io, {
+    await runComments({ dir: project.root, years: 3, top: 20, scan: 50 }, io, {
       blamer: async () => [0],
     });
 
@@ -297,7 +301,7 @@ describe("runComments", () => {
   it("throws for a missing directory", async () => {
     const { io } = captureIO();
     await expect(
-      runComments({ dir: project.path("nope"), years: 3, files: 50 }, io),
+      runComments({ dir: project.path("nope"), years: 3, top: 20, scan: 50 }, io),
     ).rejects.toBeInstanceOf(ClinesError);
   });
 });

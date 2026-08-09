@@ -31,6 +31,7 @@ interface CountFlags {
 
 interface DupFlags {
   all?: boolean;
+  top: number;
   minLines: number;
   minCopies: number;
   open?: boolean;
@@ -60,7 +61,8 @@ interface ContextFlags {
 interface CommentsFlags {
   all?: boolean;
   years: number;
-  files: number;
+  top: number;
+  scan: number;
   config?: string;
 }
 
@@ -148,17 +150,19 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
       parsePositiveInt,
       2,
     )
+    .option("--top <n>", "files to list in the terminal", parsePositiveInt, 10)
     .option("--html <file>", "write a browsable HTML report to this path")
-    .option("--no-open", "do not open the HTML report in a browser")
+    .option("--open", "open the HTML report in a browser")
     .option("--all", "include test, generated, vendored and docs files")
     .option("--config <path>", "path to a config file")
     .action(async (dir: string, flags: DupFlags) => {
       const options: DupOptions = {
         dir,
+        top: flags.top,
         minLines: flags.minLines,
         all: flags.all === true,
         minCopies: flags.minCopies,
-        open: flags.open !== false,
+        open: flags.open === true,
         ...(flags.config !== undefined ? { config: flags.config } : {}),
         ...(flags.html !== undefined ? { html: flags.html } : {}),
       };
@@ -172,16 +176,16 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .description("Rank files by decision-point complexity.")
     .addHelpText("after", "\nExamples:\n  $ clines cx\n  $ clines cx --top 250 --html cx.html\n")
     .argument("[dir]", "directory to scan", ".")
-    .option("--top <n>", "number of files in the HTML report", parsePositiveInt, 100)
+    .option("--top <n>", "files to list in the terminal", parsePositiveInt, 20)
     .option("--html <file>", "write a browsable HTML report to this path")
-    .option("--no-open", "do not open the HTML report in a browser")
+    .option("--open", "open the HTML report in a browser")
     .option("--all", "include test, generated, vendored and docs files")
     .option("--config <path>", "path to a config file")
     .action(async (dir: string, flags: ComplexityFlags) => {
       const options: ComplexityOptions = {
         dir,
         top: flags.top,
-        open: flags.open !== false,
+        open: flags.open === true,
         all: flags.all === true,
         ...(flags.config !== undefined ? { config: flags.config } : {}),
         ...(flags.html !== undefined ? { html: flags.html } : {}),
@@ -202,9 +206,9 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .option("--window <n>", "context window to compare against", parseTokenCount, 200000)
     .option("--budget <n>", "working set a single read should fit inside", parseTokenCount, 50000)
     .option("--max <n>", "exit non-zero when the total exceeds this budget", parseTokenCount)
-    .option("--top <n>", "number of files in the HTML report", parsePositiveInt, 100)
+    .option("--top <n>", "files to list in the terminal", parsePositiveInt, 20)
     .option("--html <file>", "write a browsable HTML report to this path")
-    .option("--no-open", "do not open the HTML report in a browser")
+    .option("--open", "open the HTML report in a browser")
     .option("--all", "include test, generated, vendored and docs files")
     .option("--config <path>", "path to a config file")
     .action(async (dir: string, flags: ContextFlags) => {
@@ -214,7 +218,7 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
         budget: flags.budget,
         all: flags.all === true,
         top: flags.top,
-        open: flags.open !== false,
+        open: flags.open === true,
         ...(flags.max !== undefined ? { max: flags.max } : {}),
         ...(flags.config !== undefined ? { config: flags.config } : {}),
         ...(flags.html !== undefined ? { html: flags.html } : {}),
@@ -229,7 +233,7 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .description("Find comments the code has drifted away from (needs git).")
     .addHelpText(
       "after",
-      "\nExamples:\n  $ clines comments\n  $ clines comments --years 1 --files 200\n",
+      "\nExamples:\n  $ clines comments\n  $ clines comments --years 1 --scan 200\n",
     )
     .argument("[dir]", "directory to scan", ".")
     .option(
@@ -238,7 +242,8 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
       parsePositiveInt,
       3,
     )
-    .option("--files <n>", "how many of the most commented files to check", parsePositiveInt, 50)
+    .option("--top <n>", "files to list in the terminal", parsePositiveInt, 20)
+    .option("--scan <n>", "how many of the most commented files to blame", parsePositiveInt, 50)
     .option("--all", "include test, generated, vendored and docs files")
     .option("--config <path>", "path to a config file")
     .action(async (dir: string, flags: CommentsFlags) => {
@@ -246,7 +251,8 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
         dir,
         all: flags.all === true,
         years: flags.years,
-        files: flags.files,
+        top: flags.top,
+        scan: flags.scan,
         ...(flags.config !== undefined ? { config: flags.config } : {}),
       };
       await commentsRunner(options, io);

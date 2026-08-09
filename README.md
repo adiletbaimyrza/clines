@@ -52,6 +52,7 @@ Running `clines` on its own prints a banner with the version and available comma
 | Flag              | Description                                          |
 | ----------------- | ---------------------------------------------------- |
 | `--readme`        | Also write the report into `README.md` (see below).  |
+| `--all`           | Include test, generated, vendored and docs files.    |
 | `--config <path>` | Use a specific config file instead of `clines.json`. |
 | `--help`          | Show help.                                           |
 
@@ -110,8 +111,9 @@ duplication figure of 43.5% was mostly test code.
 npx clines dup                          # terminal summary
 npx clines dup --min-lines 8            # only flag larger clones
 npx clines dup --min-copies 3           # only blocks duplicated 3+ times
-npx clines dup --html dup-report.html   # + an HTML report (opens in your browser)
-npx clines dup --html dup-report.html --no-open   # write it without opening
+npx clines dup --top 25                 # list more files in the terminal
+npx clines dup --html dup-report.html   # + an HTML report
+npx clines dup --html d.html --open     # write it and open it in a browser
 ```
 
 ```text
@@ -135,9 +137,8 @@ Run with `--html <file>` for a full browsable report with code snippets.
 
 ```sh
 npx clines cx                           # terminal summary (top 20)
-npx clines cx --html cx-report.html     # + an HTML report of the top 100 (opens in your browser)
-npx clines cx --top 250 --html cx-report.html   # rank more files in the report
-npx clines cx --html cx-report.html --no-open    # write it without opening
+npx clines cx --top 50                  # list more files in the terminal
+npx clines cx --html cx-report.html     # + an HTML report of the full ranking
 ```
 
 ```text
@@ -159,7 +160,7 @@ Run with `--html <file>` for a full browsable report.
 npx clines ctx                          # terminal summary against a 200k window
 npx clines ctx --window 1m              # compare against a 1M-token window
 npx clines ctx --max 200k               # exit non-zero if the total exceeds the budget
-npx clines ctx --html ctx-report.html   # + an HTML report (opens in your browser)
+npx clines ctx --html ctx-report.html   # + an HTML report of the full ranking
 ```
 
 ```text
@@ -199,7 +200,8 @@ against when the code beneath it was last touched, using `git blame`.
 ```sh
 npx clines comments             # the 50 most commented files, 3-year threshold
 npx clines comments --years 1   # treat a one-year gap as suspect
-npx clines comments --files 200 # check more files (slower)
+npx clines comments --scan 200  # blame more files (slower)
+npx clines comments --top 50    # list more files in the terminal
 ```
 
 ```text
@@ -285,7 +287,12 @@ To change the defaults, add `clines.json` to the project root. Entries are layer
 - `unignore` removes entries from the defaults so they are counted, for example `package.json` or a `public/` directory.
 - `respectGitignore` defaults to `true`. Set it to `false` to stop honoring `.gitignore`.
 
-Every field is optional. The file is validated on load; unknown keys and wrong types are rejected with an error.
+Every field is optional. The file is validated on load, and mistakes are reported in place:
+
+```text
+Invalid config in /repo/clines.json:
+  Unknown key "ignor" — did you mean "ignore"?
+```
 
 ## How it works
 

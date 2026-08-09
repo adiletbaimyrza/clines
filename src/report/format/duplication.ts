@@ -1,6 +1,6 @@
 import type { DuplicationResult } from "../../core/analyzers/duplication.js";
 import { excludedNotice } from "./html.js";
-import { table, wrap } from "./text.js";
+import { pushHint, table, wrap } from "./text.js";
 
 export function renderDuplication(result: DuplicationResult, topFiles: number = 10): string {
   const out: string[] = [
@@ -25,7 +25,7 @@ export function renderDuplication(result: DuplicationResult, topFiles: number = 
 
   pushNotice(out, result);
 
-  out.push("", "Run with `--html <file>` for a full browsable report with code snippets.");
+  pushHint(out, "Run with `--html <file>` for a full browsable report with code snippets.");
   return out.join("\n");
 }
 

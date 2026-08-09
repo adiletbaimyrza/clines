@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { multiple, shorten, table, terminalWidth, wrap } from "../src/report/format/text.js";
+import {
+  multiple,
+  pushHint,
+  shorten,
+  table,
+  terminalWidth,
+  wrap,
+} from "../src/report/format/text.js";
 
 const original = process.stdout.columns;
 afterEach(() => {
@@ -117,5 +124,19 @@ describe("table", () => {
     const lines = table(["File", "Tokens"], [[long, "1"]], 20);
 
     expect((lines[1] as string).trim().split(/\s+/)[0]).toHaveLength(12);
+  });
+});
+
+describe("pushHint", () => {
+  it("adds advice for a human at a terminal", () => {
+    const out: string[] = ["report"];
+    pushHint(out, "Run with --html", true);
+    expect(out).toEqual(["report", "", "Run with --html"]);
+  });
+
+  it("stays quiet when the output is being piped", () => {
+    const out: string[] = ["report"];
+    pushHint(out, "Run with --html", false);
+    expect(out).toEqual(["report"]);
   });
 });

@@ -148,12 +148,25 @@ describe("renderContextHtml", () => {
     expect(html).toContain("Largest directories");
   });
 
-  it("caps the meter at 100% and truncates to top", () => {
-    const html = renderContextHtml(result(), { window: 100, top: 1 });
+  it("caps the meter at 100% and lists every file", () => {
+    const html = renderContextHtml(result(), { window: 100 });
 
     expect(html).toContain('style="width:100.0%"');
-    expect(html).toContain("… and 1 more files not shown.");
-    expect(html).not.toContain("src/small.ts");
+    expect(html).toContain("src/small.ts");
+    expect(html).not.toContain("more files not shown");
+  });
+
+  it("notes the remainder once the report exceeds its cap", () => {
+    const many = Array.from({ length: 1001 }, (_, i) => ({
+      path: `src/f${i}.ts`,
+      language: "TypeScript",
+      tokens: 1001 - i,
+      codeTokens: 1001 - i,
+      commentTokens: 0,
+      lines: 5,
+    }));
+
+    expect(renderContextHtml(result({ files: many }))).toContain("… and 1 more files not shown.");
   });
 
   it("shows empty states for a project with no files", () => {

@@ -75,9 +75,10 @@ describe("runCli", () => {
     expect(dupRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
       all: false,
+      top: 10,
       minLines: 5,
       minCopies: 2,
-      open: true,
+      open: false,
     });
   });
 
@@ -105,24 +106,26 @@ describe("runCli", () => {
     expect(dupRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
       all: false,
+      top: 10,
       minLines: 8,
       minCopies: 3,
-      open: true,
+      open: false,
       config: "c.json",
     });
   });
 
-  it("passes --html through to dup and opens by default", async () => {
+  it("passes --html through to dup and opens only when asked", async () => {
     const dupRunner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();
 
-    await runCli(["node", "clines", "dup", project.root, "--html", "report.html"], io, {
+    await runCli(["node", "clines", "dup", project.root, "--html", "report.html", "--open"], io, {
       dupRunner,
     });
 
     expect(dupRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
       all: false,
+      top: 10,
       minLines: 5,
       minCopies: 2,
       open: true,
@@ -130,17 +133,13 @@ describe("runCli", () => {
     });
   });
 
-  it("disables opening with --no-open", async () => {
+  it("does not open unless --open is given", async () => {
     const dupRunner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();
 
-    await runCli(
-      ["node", "clines", "dup", project.root, "--html", "report.html", "--no-open"],
-      io,
-      {
-        dupRunner,
-      },
-    );
+    await runCli(["node", "clines", "dup", project.root, "--html", "report.html"], io, {
+      dupRunner,
+    });
 
     expect(dupRunner.mock.calls[0]![0]).toMatchObject({ open: false, html: "report.html" });
   });
@@ -166,7 +165,7 @@ describe("runCli", () => {
     expect(out.join("\n")).toContain("Duplication:");
   });
 
-  it("runs complexity with default top 100 via the cx alias", async () => {
+  it("runs complexity with default top 20 via the cx alias", async () => {
     const complexityRunner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();
 
@@ -175,12 +174,12 @@ describe("runCli", () => {
     expect(complexityRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
       all: false,
-      top: 100,
-      open: true,
+      top: 20,
+      open: false,
     });
   });
 
-  it("parses --top, --html, --no-open and --config for complexity", async () => {
+  it("parses --top, --html, --open and --config for complexity", async () => {
     const complexityRunner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();
 
@@ -194,7 +193,6 @@ describe("runCli", () => {
         "25",
         "--html",
         "cx.html",
-        "--no-open",
         "--config",
         "c.json",
       ],
@@ -232,12 +230,12 @@ describe("runCli", () => {
       all: false,
       window: 200000,
       budget: 50000,
-      top: 100,
-      open: true,
+      top: 20,
+      open: false,
     });
   });
 
-  it("parses --window, --max, --top, --html, --no-open and --config for context", async () => {
+  it("parses --window, --max, --top, --html and --config for context", async () => {
     const contextRunner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();
 
@@ -255,7 +253,6 @@ describe("runCli", () => {
         "25",
         "--html",
         "ctx.html",
-        "--no-open",
         "--config",
         "c.json",
       ],
@@ -320,11 +317,12 @@ describe("runCli", () => {
       dir: project.root,
       all: false,
       years: 3,
-      files: 50,
+      top: 20,
+      scan: 50,
     });
   });
 
-  it("parses --years, --files, --all and --config for comments", async () => {
+  it("parses --years, --scan, --all and --config for comments", async () => {
     const commentsRunner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();
 
@@ -336,7 +334,7 @@ describe("runCli", () => {
         project.root,
         "--years",
         "1",
-        "--files",
+        "--scan",
         "10",
         "--all",
         "--config",
@@ -350,7 +348,8 @@ describe("runCli", () => {
       dir: project.root,
       all: true,
       years: 1,
-      files: 10,
+      top: 20,
+      scan: 10,
       config: "c.json",
     });
   });

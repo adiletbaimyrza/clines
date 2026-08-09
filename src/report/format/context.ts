@@ -1,6 +1,6 @@
 import type { ContextResult, FileContext } from "../../core/model.js";
 import { escapeHtml, excludedNotice, formatNumber } from "./html.js";
-import { multiple, table, wrap } from "./text.js";
+import { multiple, pushHint, table, wrap } from "./text.js";
 
 export const DEFAULT_WINDOW = 200000;
 export const DEFAULT_BUDGET = 50000;
@@ -26,10 +26,11 @@ export function budgetTiers(result: ContextResult, budget: number): BudgetTier[]
 
 export interface ContextHtmlOptions {
   title?: string;
-  top?: number;
   window?: number;
   budget?: number;
 }
+
+const HTML_CAP = 1000;
 
 export function renderContext(
   result: ContextResult,
@@ -71,13 +72,13 @@ export function renderContext(
 
   pushNotice(out, result);
 
-  out.push("", "Run with `--html <file>` for a full browsable report.");
+  pushHint(out, "Run with `--html <file>` for a full browsable report.");
   return out.join("\n");
 }
 
 export function renderContextHtml(result: ContextResult, options: ContextHtmlOptions = {}): string {
   const title = options.title ?? "clines — context report";
-  const top = options.top ?? 100;
+  const top = HTML_CAP;
   const window = options.window ?? DEFAULT_WINDOW;
   const budget = options.budget ?? DEFAULT_BUDGET;
 

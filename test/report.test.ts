@@ -82,9 +82,7 @@ describe("consoleReporter", () => {
 
   it("handles an empty report without throwing", () => {
     const output = consoleReporter.render(empty);
-    expect(output).toContain("Total");
-    expect(output).toContain("0.0%");
-    expect(output).toContain("Project size:");
+    expect(output).toContain("No files found.");
   });
 });
 
@@ -107,5 +105,35 @@ describe("injectReadme", () => {
   it("appends with a blank-line separator when content lacks a trailing newline", () => {
     const updated = injectReadme("# Title", report);
     expect(updated).toContain(`# Title\n\n${PLACEHOLDER_START}`);
+  });
+});
+
+describe("consoleReporter with no code lines", () => {
+  it("does not divide by zero when a file is all blanks", () => {
+    const blanks: Report = {
+      totalCode: 0,
+      totalComment: 0,
+      totalBlank: 3,
+      totalLines: 3,
+      totalFiles: 1,
+      totalComplexity: 0,
+      languages: [
+        {
+          language: "TypeScript",
+          files: 1,
+          code: 0,
+          comment: 0,
+          blank: 3,
+          total: 3,
+          complexity: 0,
+        },
+      ],
+      roles: [],
+    };
+
+    const output = consoleReporter.render(blanks);
+
+    expect(output).toContain("0.0%");
+    expect(output).not.toContain("NaN");
   });
 });

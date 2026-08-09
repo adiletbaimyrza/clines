@@ -1,3 +1,5 @@
+import { isInteractive } from "../../util/tty.js";
+
 const MIN_WIDTH = 60;
 const MAX_WIDTH = 120;
 const DEFAULT_WIDTH = 100;
@@ -75,4 +77,14 @@ export function table(
       })
       .join("   ")}`;
   return [line(headers), ...rows.map(line)];
+}
+
+export function pushHint(
+  out: string[],
+  hint: string,
+  interactive: boolean = isInteractive(),
+): void {
+  if (interactive) {
+    out.push("", hint);
+  }
 }
