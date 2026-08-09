@@ -21,11 +21,13 @@ export interface ProgramDeps {
 }
 
 interface CountFlags {
+  all?: boolean;
   readme?: boolean;
   config?: string;
 }
 
 interface DupFlags {
+  all?: boolean;
   minLines: number;
   minCopies: number;
   open?: boolean;
@@ -34,6 +36,7 @@ interface DupFlags {
 }
 
 interface ComplexityFlags {
+  all?: boolean;
   top: number;
   open?: boolean;
   config?: string;
@@ -41,6 +44,7 @@ interface ComplexityFlags {
 }
 
 interface ContextFlags {
+  all?: boolean;
   window: number;
   top: number;
   max?: number;
@@ -100,11 +104,13 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .description("Count lines of code and report per-language metrics.")
     .argument("[dir]", "directory to count", ".")
     .option("--readme", "also write the report into README.md")
+    .option("--all", "include test, generated, vendored and docs files")
     .option("--config <path>", "path to a config file")
     .action(async (dir: string, flags: CountFlags) => {
       const options: RunOptions = {
         dir,
         readme: Boolean(flags.readme),
+        all: flags.all === true,
         ...(flags.config !== undefined ? { config: flags.config } : {}),
       };
       await runner(options, io);
@@ -124,11 +130,13 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     )
     .option("--html <file>", "write a browsable HTML report to this path")
     .option("--no-open", "do not open the HTML report in a browser")
+    .option("--all", "include test, generated, vendored and docs files")
     .option("--config <path>", "path to a config file")
     .action(async (dir: string, flags: DupFlags) => {
       const options: DupOptions = {
         dir,
         minLines: flags.minLines,
+        all: flags.all === true,
         minCopies: flags.minCopies,
         open: flags.open !== false,
         ...(flags.config !== undefined ? { config: flags.config } : {}),
@@ -146,12 +154,14 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .option("--top <n>", "number of files in the HTML report", parsePositiveInt, 100)
     .option("--html <file>", "write a browsable HTML report to this path")
     .option("--no-open", "do not open the HTML report in a browser")
+    .option("--all", "include test, generated, vendored and docs files")
     .option("--config <path>", "path to a config file")
     .action(async (dir: string, flags: ComplexityFlags) => {
       const options: ComplexityOptions = {
         dir,
         top: flags.top,
         open: flags.open !== false,
+        all: flags.all === true,
         ...(flags.config !== undefined ? { config: flags.config } : {}),
         ...(flags.html !== undefined ? { html: flags.html } : {}),
       };
@@ -169,11 +179,13 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .option("--top <n>", "number of files in the HTML report", parsePositiveInt, 100)
     .option("--html <file>", "write a browsable HTML report to this path")
     .option("--no-open", "do not open the HTML report in a browser")
+    .option("--all", "include test, generated, vendored and docs files")
     .option("--config <path>", "path to a config file")
     .action(async (dir: string, flags: ContextFlags) => {
       const options: ContextOptions = {
         dir,
         window: flags.window,
+        all: flags.all === true,
         top: flags.top,
         open: flags.open !== false,
         ...(flags.max !== undefined ? { max: flags.max } : {}),

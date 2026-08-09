@@ -45,6 +45,7 @@ export const linesAnalyzer: Analyzer<Report> = {
       totalFiles: files.length,
       totalComplexity,
       languages: [...byLanguage.values()],
+      roles: [],
     };
   },
 };

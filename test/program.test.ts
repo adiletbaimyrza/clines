@@ -20,7 +20,7 @@ describe("runCli", () => {
     await runCli(["node", "clines", "count", project.root], io, { runner });
 
     const options = runner.mock.calls[0]![0] as RunOptions;
-    expect(options).toEqual({ dir: project.root, readme: false });
+    expect(options).toEqual({ dir: project.root, readme: false, all: false });
   });
 
   it("passes --readme and --config through", async () => {
@@ -74,6 +74,7 @@ describe("runCli", () => {
 
     expect(dupRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
+      all: false,
       minLines: 5,
       minCopies: 2,
       open: true,
@@ -103,6 +104,7 @@ describe("runCli", () => {
 
     expect(dupRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
+      all: false,
       minLines: 8,
       minCopies: 3,
       open: true,
@@ -120,6 +122,7 @@ describe("runCli", () => {
 
     expect(dupRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
+      all: false,
       minLines: 5,
       minCopies: 2,
       open: true,
@@ -171,6 +174,7 @@ describe("runCli", () => {
 
     expect(complexityRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
+      all: false,
       top: 100,
       open: true,
     });
@@ -200,6 +204,7 @@ describe("runCli", () => {
 
     expect(complexityRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
+      all: false,
       top: 25,
       open: false,
       html: "cx.html",
@@ -224,6 +229,7 @@ describe("runCli", () => {
 
     expect(contextRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
+      all: false,
       window: 200000,
       top: 100,
       open: true,
@@ -258,6 +264,7 @@ describe("runCli", () => {
 
     expect(contextRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
+      all: false,
       window: 1000000,
       max: 200000,
       top: 25,
@@ -282,6 +289,23 @@ describe("runCli", () => {
       ).rejects.toBeTruthy();
     }
     expect(contextRunner).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes --all through to every command", async () => {
+    const runner = vi.fn(async (): Promise<number> => 0);
+    const dupRunner = vi.fn(async (): Promise<number> => 0);
+    const complexityRunner = vi.fn(async (): Promise<number> => 0);
+    const contextRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+    const deps = { runner, dupRunner, complexityRunner, contextRunner };
+
+    for (const command of ["count", "dup", "cx", "ctx"]) {
+      await runCli(["node", "clines", command, project.root, "--all"], io, deps);
+    }
+
+    for (const fn of [runner, dupRunner, complexityRunner, contextRunner]) {
+      expect(fn.mock.calls[0]![0]).toMatchObject({ all: true });
+    }
   });
 
   it("wires the real context pipeline by default", async () => {

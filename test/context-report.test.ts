@@ -4,6 +4,7 @@ import { renderContext, renderContextHtml } from "../src/report/format/context.j
 
 function result(overrides: Partial<ContextResult> = {}): ContextResult {
   return {
+    excluded: { files: 0, roles: [] },
     files: [
       {
         path: "src/big.ts",
@@ -31,6 +32,7 @@ function result(overrides: Partial<ContextResult> = {}): ContextResult {
 }
 
 const empty: ContextResult = {
+  excluded: { files: 0, roles: [] },
   files: [],
   dirs: [],
   totalTokens: 0,
@@ -91,6 +93,31 @@ describe("renderContext", () => {
 
   it("renders a dash when the window is zero", () => {
     expect(renderContext(result(), 0)).toContain("— of a 0-token window");
+  });
+});
+
+describe("exclusion notice", () => {
+  const excluded = {
+    files: 12,
+    roles: [
+      { role: "test" as const, files: 10, code: 300 },
+      { role: "docs" as const, files: 2, code: 20 },
+    ],
+  };
+
+  it("names what was left out", () => {
+    const output = renderContext(result({ excluded }), 10000);
+
+    expect(output).toContain("Excluded 12 files: 10 test · 2 docs");
+    expect(output).toContain("--all to include");
+  });
+
+  it("names exclusions even when nothing was measured", () => {
+    expect(renderContext({ ...empty, excluded })).toContain("Excluded 12 files");
+  });
+
+  it("says nothing when nothing was excluded", () => {
+    expect(renderContext(result(), 10000)).not.toContain("Excluded");
   });
 });
 

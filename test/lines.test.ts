@@ -50,6 +50,7 @@ describe("linesAnalyzer", () => {
       totalFiles: 0,
       totalComplexity: 0,
       languages: [],
+      roles: [],
     });
   });
 
