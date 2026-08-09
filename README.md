@@ -6,10 +6,10 @@
 [![license](https://img.shields.io/npm/l/clines.svg)](./LICENSE)
 
 `clines` counts lines of code, comments and blanks per language, finds duplicate code, ranks files
-by complexity, and estimates what a repository costs a language model to read. It is a `cloc`
-alternative with three additional analyses built in.
+by complexity, estimates what a repository costs a language model to read, and finds comments the
+code has drifted away from. It is a `cloc` alternative with four additional analyses built in.
 
-It has four commands:
+It has five commands:
 
 | Command    | Output                                                                 |
 | ---------- | ---------------------------------------------------------------------- |

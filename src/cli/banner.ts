@@ -15,8 +15,8 @@ const ART: ArtLine[] = [
 const COMMANDS: [string, string][] = [
   ["count", "lines, comments and blanks per language"],
   ["dup", "duplicated code blocks"],
-  ["cx", "complexity hotspots"],
-  ["ctx", "what the repo costs an AI agent to read"],
+  ["cx", "files ranked by complexity"],
+  ["ctx", "estimated token cost to read the repo"],
   ["comments", "comments the code has drifted away from"],
 ];
 

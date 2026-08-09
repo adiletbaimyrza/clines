@@ -1,7 +1,7 @@
 {
   "name": "clines",
-  "version": "4.3.0",
-  "description": "Count lines of code, comments and blanks per language, find duplicate code, rank files by complexity, and estimate the token cost of a repository. A modern cloc alternative.",
+  "version": "4.3.1",
+  "description": "Count lines of code, comments and blanks per language, find duplicate code, rank files by complexity, estimate the token cost of a repository, and find stale comments. A modern cloc alternative.",
   "type": "module",
   "repository": {
     "type": "git",
@@ -46,6 +46,9 @@
     "duplicate-code",
     "tokens",
     "context-window",
+    "stale-comments",
+    "code-comments",
+    "git-blame",
     "ai",
     "project"
   ],

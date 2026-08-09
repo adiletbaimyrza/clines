@@ -105,7 +105,7 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
   program
     .name("clines")
     .description(
-      "Measure your codebase — lines per language, duplication, complexity and context cost.",
+      "Measure your codebase — lines per language, duplication, complexity, token cost and comment drift.",
     )
     .version(version)
     .showHelpAfterError("(run `clines --help` for usage)")
