@@ -1,7 +1,7 @@
 {
   "name": "clines",
-  "version": "3.11.1",
-  "description": "An industry-grade CLI that measures your codebase — lines per language, duplicate code, complexity hotspots, and what the repo costs an AI agent to read.",
+  "version": "3.11.2",
+  "description": "Count lines of code, comments and blanks per language, find duplicate code, rank files by complexity, and estimate the token cost of a repository. A modern cloc alternative.",
   "type": "module",
   "repository": {
     "type": "git",

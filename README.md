@@ -1,8 +1,15 @@
 # clines
 
-![clines](https://img.shields.io/badge/Code%20Lines-Counter-blue)
+[![npm version](https://img.shields.io/npm/v/clines.svg)](https://www.npmjs.com/package/clines)
+[![npm downloads](https://img.shields.io/npm/dm/clines.svg)](https://www.npmjs.com/package/clines)
+[![CI](https://github.com/adiletbaimyrza/clines/actions/workflows/ci.yml/badge.svg)](https://github.com/adiletbaimyrza/clines/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/clines.svg)](./LICENSE)
 
-`clines` is a command-line tool that measures a codebase. It has four commands:
+`clines` counts lines of code, comments and blanks per language, finds duplicate code, ranks files
+by complexity, and estimates what a repository costs a language model to read. It is a `cloc`
+alternative with three additional analyses built in.
+
+It has four commands:
 
 | Command | Output                                                                 |
 | ------- | ---------------------------------------------------------------------- |
