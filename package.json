@@ -1,7 +1,7 @@
 {
   "name": "clines",
   "version": "5.12.0",
-  "description": "Count lines of code per language, find code duplication, rank files by code complexity, and estimate the token count of a repository for AI agents. A modern cloc alternative.",
+  "description": "Count lines of code per language, find duplicate code, rank files by code complexity, estimate the token count of a repository for AI agents, find stale comments, and decide which files are worth refactoring. A modern cloc alternative.",
   "type": "module",
   "homepage": "https://adiletbaimyrza.github.io/clines/",
   "repository": {
@@ -32,8 +32,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "stage:list": "npm stage list clines",
-    "deploy": "npm stage approve",
+    "stage:list": "npx --yes npm@latest stage list clines",
+    "deploy": "npx --yes npm@latest stage approve",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -60,7 +60,18 @@
     "refactoring",
     "code-hotspots",
     "ai",
-    "cli"
+    "cli",
+    "code-quality",
+    "developer-tools",
+    "nodejs",
+    "tokens",
+    "typescript",
+    "comment-drift",
+    "token-estimate",
+    "code-churn",
+    "technical-debt",
+    "codebase-metrics",
+    "hotspots"
   ],
   "license": "MIT",
   "author": "Adilet Baimyrza Uulu",
