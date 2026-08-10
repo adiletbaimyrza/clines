@@ -61,6 +61,29 @@ describe("runCli", () => {
     expect((runner.mock.calls[0]![0] as RunOptions).dir).toBe(".");
   });
 
+  it("accepts -v, -V and --version alike", async () => {
+    for (const flag of ["-v", "-V", "--version"]) {
+      const { io } = captureIO();
+      let code: string | undefined;
+      try {
+        await runCli(["node", "clines", flag], io, { version: "9.9.9" });
+      } catch (error) {
+        code = (error as { code?: string }).code;
+      }
+
+      expect(code).toBe("commander.version");
+    }
+  });
+
+  it("leaves -v alone when it is an option value", async () => {
+    const runner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(["node", "clines", "count", project.root, "--config", "-v"], io, { runner });
+
+    expect((runner.mock.calls[0]![0] as RunOptions).config).toBe("-v");
+  });
+
   it("prints the banner for the bare command", async () => {
     const runner = vi.fn(async (): Promise<number> => 0);
     const { io, out } = captureIO();
