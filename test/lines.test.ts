@@ -57,6 +57,7 @@ describe("linesAnalyzer", () => {
       totalComplexity: 0,
       languages: [],
       concentration: { largestFiles: 0, share: 0, medianCode: 0, p90Code: 0 },
+      largestFiles: [],
       roles: [],
     });
   });
@@ -65,6 +66,24 @@ describe("linesAnalyzer", () => {
     const report = linesAnalyzer.analyze(files);
     expect(report.totalComment).toBe(3);
     expect(report.totalBlank).toBe(1);
+  });
+});
+
+describe("largest files", () => {
+  it("ranks by code lines, breaking ties on path", () => {
+    const report = linesAnalyzer.analyze([
+      { path: "small.ts", ext: ".ts", lineKinds: ["code"], complexity: 0 },
+      { path: "b.ts", ext: ".ts", lineKinds: ["code", "code"], complexity: 3 },
+      { path: "a.ts", ext: ".ts", lineKinds: ["code", "code"], complexity: 1 },
+    ]);
+
+    expect(report.largestFiles.map((f) => f.path)).toEqual(["a.ts", "b.ts", "small.ts"]);
+    expect(report.largestFiles[0]).toEqual({
+      path: "a.ts",
+      code: 2,
+      comment: 0,
+      complexity: 1,
+    });
   });
 });
 

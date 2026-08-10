@@ -29,7 +29,7 @@ export type Opener = (target: string) => void;
 export interface RunOptions {
   dir: string;
   all?: boolean;
-  verbose?: boolean;
+  distribution?: boolean;
   readme: boolean;
   config?: string;
 }
@@ -98,7 +98,7 @@ export async function run(options: RunOptions, io: IO): Promise<number> {
   } = await prepare(options.dir, options.config, options.all);
   const report = await analyze(rootDir, config, globs, opts);
 
-  io.out(consoleReporter.render(report, options.verbose === true));
+  io.out(consoleReporter.render(report, options.distribution === true));
 
   if (options.readme) {
     await updateReadme(rootDir, report, io);

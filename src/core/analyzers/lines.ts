@@ -1,6 +1,8 @@
-import type { Concentration, FileTokens, LanguageStat, Report } from "../model.js";
+import type { Concentration, FileTokens, LanguageStat, LargestFile, Report } from "../model.js";
 import { getLanguageName } from "../tokenizer/languages.js";
 import type { Analyzer } from "./analyzer.js";
+
+const LARGEST_FILES = 25;
 
 export const linesAnalyzer: Analyzer<Report> = {
   name: "lines",
@@ -8,6 +10,7 @@ export const linesAnalyzer: Analyzer<Report> = {
     const byLanguage = new Map<string, LanguageStat>();
     const codePerLanguage = new Map<string, number[]>();
     const allCode: number[] = [];
+    const perFile: LargestFile[] = [];
     let totalCode = 0;
     let totalComment = 0;
     let totalBlank = 0;
@@ -19,6 +22,12 @@ export const linesAnalyzer: Analyzer<Report> = {
       const stat = byLanguage.get(language) ?? emptyStat(language);
       const fileCode = file.lineKinds.filter((kind) => kind === "code").length;
       allCode.push(fileCode);
+      perFile.push({
+        path: file.path,
+        code: fileCode,
+        comment: file.lineKinds.filter((kind) => kind === "comment").length,
+        complexity: file.complexity,
+      });
       const sizes = codePerLanguage.get(language) ?? [];
       sizes.push(fileCode);
       codePerLanguage.set(language, sizes);
@@ -56,6 +65,9 @@ export const linesAnalyzer: Analyzer<Report> = {
         ...sizeStats(codePerLanguage.get(stat.language) as number[]),
       })),
       concentration: concentrationOf(allCode),
+      largestFiles: perFile
+        .sort((a, b) => b.code - a.code || a.path.localeCompare(b.path))
+        .slice(0, LARGEST_FILES),
       roles: [],
     };
   },

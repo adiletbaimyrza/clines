@@ -49,13 +49,13 @@ Running `clines` on its own prints a banner with the version and available comma
 
 `clines count` is read-only by default: it prints the report and does not modify any file.
 
-| Flag              | Description                                            |
-| ----------------- | ------------------------------------------------------ |
-| `--readme`        | Also write the report into `README.md` (see below).    |
-| `--all`           | Include test, generated, vendored and docs files.      |
-| `--verbose`       | Add file-size distribution, density and concentration. |
-| `--config <path>` | Use a specific config file instead of `clines.json`.   |
-| `--help`          | Show help.                                             |
+| Flag              | Description                                                |
+| ----------------- | ---------------------------------------------------------- |
+| `--readme`        | Also write the report into `README.md` (see below).        |
+| `--all`           | Include test, generated, vendored and docs files.          |
+| `--distribution`  | Add file-size distribution, density and the largest files. |
+| `--config <path>` | Use a specific config file instead of `clines.json`.       |
+| `--help`          | Show help.                                                 |
 
 Global: `clines --version`, `clines --help`.
 
@@ -65,7 +65,7 @@ Examples:
 npx clines count                      # report to the terminal
 npx clines count src --config c.json  # count src/ with an explicit config
 npx clines count --readme             # report + update README.md
-npx clines count --verbose            # + distribution, density and concentration
+npx clines count --distribution       # + distribution and the largest files
 ```
 
 ### What gets counted
@@ -239,10 +239,10 @@ Total            86   4,687  3,208        550     497          400   100.0%
 Project size: Asteroid ☄️
 ```
 
-#### `--verbose`
+#### `--distribution`
 
-The table reports totals, which answer "how much" and nothing else. `--verbose` adds the
-distribution underneath, without changing the table:
+The table reports totals, which answer "how much" and nothing else. `--distribution` (or `--dist`)
+adds the shape of the codebase underneath, without changing the table:
 
 ```text
 File size in code lines, and density per language
@@ -251,9 +251,19 @@ File size in code lines, and density per language
   Rust            257   1,417   6,662      7.9         9%
   TypeScript      118     666   4,176     13.9        15%
 
+Largest files
+  File                                                            Code   Comments   Cx/100
+  compiler/crates/react_compiler_lowering/src/build_hir.rs       6,662        436      5.0
+  packages/react-devtools-shared/src/backend/fiber/renderer.js   6,487      1,078     19.9
+  packages/react-dom-bindings/src/server/ReactFizzConfigDOM.js   5,929        812     18.6
+
 Concentration: the largest 101 files (5%) hold 49% of all code. Median file is 40 code lines,
   p90 is 355.
 ```
+
+The file list is the actionable half. `Cx/100` separates files that are merely long from files that
+are hard: `build_hir.rs` is the biggest file in react at 6,662 lines but scores 5.0, while
+`ReactFiberCommitWork.js` is smaller at 4,457 lines and scores 21.9.
 
 That is a different picture of react than `Total 341,054`: the median source file is 40 lines, and
 5% of the files hold half the code. Research on defect rates points at

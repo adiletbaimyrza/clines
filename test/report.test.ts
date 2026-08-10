@@ -10,6 +10,10 @@ import { buildReadmeSection, sortedLanguages } from "../src/report/format/table.
 
 const report: Report = {
   concentration: { largestFiles: 2, share: 60, medianCode: 40, p90Code: 300 },
+  largestFiles: [
+    { path: "src/big.ts", code: 400, comment: 40, complexity: 88 },
+    { path: "src/small.css", code: 5, comment: 2, complexity: 0 },
+  ],
   roles: [
     { role: "source", files: 3, code: 100 },
     { role: "test", files: 2, code: 40 },
@@ -49,6 +53,7 @@ const report: Report = {
 };
 
 const empty: Report = {
+  largestFiles: [],
   concentration: { largestFiles: 0, share: 0, medianCode: 0, p90Code: 0 },
   roles: [],
   totalCode: 0,
@@ -67,6 +72,7 @@ describe("sortedLanguages", () => {
 
   it("breaks ties by language name", () => {
     const tie: Report = {
+      largestFiles: [],
       concentration: { largestFiles: 0, share: 0, medianCode: 0, p90Code: 0 },
       roles: [],
       ...empty,
@@ -177,6 +183,7 @@ describe("consoleReporter with no code lines", () => {
       ],
       roles: [],
       concentration: { largestFiles: 1, share: 0, medianCode: 0, p90Code: 0 },
+      largestFiles: [],
     };
 
     const output = consoleReporter.render(blanks);
@@ -186,13 +193,16 @@ describe("consoleReporter with no code lines", () => {
   });
 });
 
-describe("consoleReporter --verbose", () => {
+describe("consoleReporter --distribution", () => {
   it("appends distribution, density and concentration", () => {
     const output = consoleReporter.render(report, true);
 
     expect(output).toContain("File size in code lines");
     expect(output).toContain("Median");
     expect(output).toContain("Cx/100");
+    expect(output).toContain("Largest files");
+    expect(output).toContain("src/big.ts");
+    expect(output).toContain("22.0");
     expect(output).toContain("Concentration: the largest 2 files (5%) hold 60% of all code");
     expect(output).toContain("Median file is 40 code lines");
     expect(output.replace(/\s+/g, " ")).toContain("p90 is 300.");
@@ -225,6 +235,25 @@ describe("consoleReporter --verbose", () => {
       true,
     );
 
+    expect(output).toContain("—");
+  });
+});
+
+describe("consoleReporter largest files", () => {
+  it("omits the section when there are no files to list", () => {
+    const output = consoleReporter.render({ ...report, largestFiles: [] }, true);
+
+    expect(output).toContain("File size in code lines");
+    expect(output).not.toContain("Largest files");
+  });
+
+  it("shows a dash for a file with no code lines", () => {
+    const output = consoleReporter.render(
+      { ...report, largestFiles: [{ path: "a.json", code: 0, comment: 0, complexity: 0 }] },
+      true,
+    );
+
+    expect(output).toContain("a.json");
     expect(output).toContain("—");
   });
 });

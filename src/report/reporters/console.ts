@@ -84,6 +84,8 @@ export const consoleReporter: Reporter = {
   },
 };
 
+const LARGEST_SHOWN = 15;
+
 function detailLines(report: Report): string[] {
   const rows = sortedLanguages(report).map((l) => [
     l.language,
@@ -95,10 +97,21 @@ function detailLines(report: Report): string[] {
   ]);
 
   const { concentration } = report;
+  const largest = report.largestFiles.slice(0, LARGEST_SHOWN);
+  const files = largest.map((f) => [
+    f.path,
+    num(f.code),
+    num(f.comment),
+    f.code === 0 ? "—" : ((f.complexity / f.code) * 100).toFixed(1),
+  ]);
+
   return [
     "",
     "File size in code lines, and density per language",
     ...table(["Language", "Median", "p90", "Max", "Cx/100", "Comments"], rows),
+    ...(files.length === 0
+      ? []
+      : ["", "Largest files", ...table(["File", "Code", "Comments", "Cx/100"], files)]),
     "",
     ...wrap(
       `Concentration: the largest ${num(concentration.largestFiles)} files (5%) hold ` +

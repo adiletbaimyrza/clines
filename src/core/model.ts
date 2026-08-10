@@ -31,6 +31,13 @@ export interface LanguageStat extends LineCounts {
   maxCode: number;
 }
 
+export interface LargestFile {
+  path: string;
+  code: number;
+  comment: number;
+  complexity: number;
+}
+
 export interface Concentration {
   largestFiles: number;
   share: number;
@@ -108,5 +115,6 @@ export interface Report {
   totalComplexity: number;
   languages: LanguageStat[];
   concentration: Concentration;
+  largestFiles: LargestFile[];
   roles: RoleSummary[];
 }

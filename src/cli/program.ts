@@ -1,4 +1,4 @@
-import { Command, InvalidArgumentError } from "commander";
+import { Command, InvalidArgumentError, Option } from "commander";
 import { renderBanner } from "./banner.js";
 import type { IO } from "./io.js";
 import {
@@ -26,7 +26,8 @@ export interface ProgramDeps {
 interface CountFlags {
   all?: boolean;
   readme?: boolean;
-  verbose?: boolean;
+  distribution?: boolean;
+  dist?: boolean;
   config?: string;
 }
 
@@ -72,7 +73,7 @@ Examples:
   $ clines                    show this banner
   $ clines count              report the current directory
   $ clines count --readme     report and update README.md
-  $ clines count --verbose    add file-size distribution and density
+  $ clines count --dist       add distribution and the largest files
   $ clines dup                find duplicated code blocks
   $ clines dup --min-lines 8  raise the clone threshold
   $ clines cx --html cx.html  rank files by complexity
@@ -120,18 +121,19 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .description("Count lines of code and report per-language metrics.")
     .addHelpText(
       "after",
-      "\nExamples:\n  $ clines count\n  $ clines count --verbose\n  $ clines count src --readme\n  $ clines count --all\n",
+      "\nExamples:\n  $ clines count\n  $ clines count --distribution\n  $ clines count src --readme\n  $ clines count --all\n",
     )
     .argument("[dir]", "directory to count", ".")
     .option("--readme", "also write the report into README.md")
-    .option("--verbose", "also show file-size distribution and complexity density")
+    .option("--distribution", "also show file-size distribution, density and the largest files")
+    .addOption(new Option("--dist").hideHelp())
     .option("--all", "include test, generated, vendored and docs files")
     .option("--config <path>", "path to a config file")
     .action(async (dir: string, flags: CountFlags) => {
       const options: RunOptions = {
         dir,
         readme: Boolean(flags.readme),
-        verbose: flags.verbose === true,
+        distribution: flags.distribution === true || flags.dist === true,
         all: flags.all === true,
         ...(flags.config !== undefined ? { config: flags.config } : {}),
       };
