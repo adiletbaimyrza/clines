@@ -9,7 +9,12 @@ import {
   type FileDrift,
 } from "./analyzers/comments.js";
 import { linesAnalyzer } from "./analyzers/lines.js";
-import { detectDuplication, toDupFile, type DuplicationResult } from "./analyzers/duplication.js";
+import {
+  detectDuplication,
+  normalizeRenamed,
+  toDupFile,
+  type DuplicationResult,
+} from "./analyzers/duplication.js";
 import { collectFiles } from "./files/collector.js";
 import {
   classifyRole,
@@ -43,6 +48,8 @@ import { estimateTokens } from "./tokenizer/tokens.js";
 export interface AnalyzeOptions {
   attributes?: RoleAttributes;
   includeAll?: boolean;
+  crossFileOnly?: boolean;
+  renamed?: boolean;
 }
 
 export interface CommentOptions {
@@ -246,6 +253,26 @@ export async function analyzeContext(
   };
 }
 
+export interface CloneChurn {
+  path: string;
+  lastChange: number;
+}
+
+export async function analyzeCloneChurn(
+  rootDir: string,
+  files: string[],
+  blamer: Blamer = blameFile,
+): Promise<Map<string, number>> {
+  const ages = new Map<string, number>();
+  for (const file of files) {
+    const times = await blamer(rootDir, file);
+    if (times !== undefined && times.length > 0) {
+      ages.set(file, Math.max(...times));
+    }
+  }
+  return ages;
+}
+
 export async function analyzeComments(
   rootDir: string,
   files: RoledFile[],
@@ -288,5 +315,17 @@ export async function analyzeDuplication(
   const collected = await collectRoledFiles(rootDir, config, extraGlobs, options);
   const { included, excluded } = partition(collected, options.includeAll === true);
   const dupFiles = included.map((file) => toDupFile(file.path, file.content, file.kinds));
-  return { ...detectDuplication(dupFiles, minLines, minCopies), excluded };
+  const exact = detectDuplication(dupFiles, minLines, minCopies, {
+    ...(options.crossFileOnly === true ? { crossFileOnly: true } : {}),
+  });
+
+  const renamed =
+    options.renamed === true
+      ? detectDuplication(dupFiles, minLines, minCopies, {
+          normalizer: normalizeRenamed,
+          ...(options.crossFileOnly === true ? { crossFileOnly: true } : {}),
+        }).clones.length
+      : 0;
+
+  return { ...exact, renamedGroups: Math.max(0, renamed - exact.clones.length), excluded };
 }

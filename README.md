@@ -21,7 +21,7 @@ It has five commands:
 
 Runtime dependencies are `commander` and `zod`. Test coverage is 100%.
 
-**[📖 Website & docs](https://adiletbaimyrza.github.io/clines/)**
+**[📖 Website & docs](https://adiletbaimyrza.github.io/clines/)** · **[clines vs cloc](https://adiletbaimyrza.github.io/clines/compare/cloc.html)**
 
 ## Installation
 
@@ -49,12 +49,13 @@ Running `clines` on its own prints a banner with the version and available comma
 
 `clines count` is read-only by default: it prints the report and does not modify any file.
 
-| Flag              | Description                                          |
-| ----------------- | ---------------------------------------------------- |
-| `--readme`        | Also write the report into `README.md` (see below).  |
-| `--all`           | Include test, generated, vendored and docs files.    |
-| `--config <path>` | Use a specific config file instead of `clines.json`. |
-| `--help`          | Show help.                                           |
+| Flag              | Description                                                |
+| ----------------- | ---------------------------------------------------------- |
+| `--readme`        | Also write the report into `README.md` (see below).        |
+| `--all`           | Include test, generated, vendored and docs files.          |
+| `--distribution`  | Add file-size distribution, density and the largest files. |
+| `--config <path>` | Use a specific config file instead of `clines.json`.       |
+| `--help`          | Show help.                                                 |
 
 Global: `clines --version`, `clines --help`.
 
@@ -64,6 +65,7 @@ Examples:
 npx clines count                      # report to the terminal
 npx clines count src --config c.json  # count src/ with an explicit config
 npx clines count --readme             # report + update README.md
+npx clines count --distribution       # + distribution and the largest files
 ```
 
 ### What gets counted
@@ -111,10 +113,43 @@ duplication figure of 43.5% was mostly test code.
 npx clines dup                          # terminal summary
 npx clines dup --min-lines 8            # only flag larger clones
 npx clines dup --min-copies 3           # only blocks duplicated 3+ times
-npx clines dup --top 25                 # list more files in the terminal
+npx clines dup --cross-file             # ignore duplication inside a single file
+npx clines dup --renamed                # also count clones that differ only in names
+npx clines dup --churn                  # show when each clone was last touched
+npx clines dup --top 25                 # list more groups and files
 npx clines dup --html dup-report.html   # + an HTML report
-npx clines dup --html d.html --open     # write it and open it in a browser
 ```
+
+Every run opens with the shape of the duplication and the groups worth refactoring:
+
+```text
+Duplication shape
+  5,397 clone groups   ·   91,157 lines removable if each were deduped once
+  Size       81% under 10 lines   ·   median 6   ·   largest 350
+  Location   60% within one file   ·   20% across packages   ·   14% same directory
+  Spread     top 10 groups hold 5% of what is removable — duplication is diffuse
+
+Biggest refactor opportunities
+  Where                                                          Lines   Copies   Removable
+  compiler/crates/react_compiler_ast/src/visitor.rs  +82             5      147         730
+  packages/react-server-dom-esm/src/ReactFlightESMNodeLoader.js  +2  350        3         700
+```
+
+A single percentage implies a fixable problem. On react the top ten groups account for 5% of what
+could be removed, so no small set of refactors moves the number — that is worth knowing before
+anyone is asked to act on 28.4%. Equally, 60% of the clones sit inside one file, which is repeated
+branches rather than a missing module. `--cross-file` drops those.
+
+The ranking is by **removable lines** (`lines × (copies − 1)`), which is the actionable unit. It
+separates two very different findings that a file-based ranking blurs together: a 5-line pattern
+repeated 147 times across 83 files is a missing abstraction, while a 350-line block copied three
+times is a missing module.
+
+`--renamed` runs a second pass with identifiers masked, catching clones that differ only in naming
+(type-2). `--churn` uses `git blame` to show when each clone was last touched — research finds
+clones are [not universally harmful](https://link.springer.com/article/10.1007/s10664-008-9076-6)
+and that under 15% of defects relate to cloned code; the ones that cost you are those whose copies
+keep being edited together.
 
 ```text
 Duplication: 4.2%   1,240 duplicated lines   ·   12 clones
@@ -264,6 +299,40 @@ Total            86   4,687  3,208        550     497          400   100.0%
 
 Project size: Asteroid ☄️
 ```
+
+#### `--distribution`
+
+The table reports totals, which answer "how much" and nothing else. `--distribution` (or `--dist`)
+adds the shape of the codebase underneath, without changing the table:
+
+```text
+File size in code lines, and density per language
+  Language     Median     p90     Max   Cx/100   Comments
+  JavaScript       33     292   6,487     13.2        15%
+  Rust            257   1,417   6,662      7.9         9%
+  TypeScript      118     666   4,176     13.9        15%
+
+Largest files
+  File                                                            Code   Comments   Cx/100
+  compiler/crates/react_compiler_lowering/src/build_hir.rs       6,662        436      5.0
+  packages/react-devtools-shared/src/backend/fiber/renderer.js   6,487      1,078     19.9
+  packages/react-dom-bindings/src/server/ReactFizzConfigDOM.js   5,929        812     18.6
+
+Concentration: the largest 101 files (5%) hold 49% of all code. Median file is 40 code lines,
+  p90 is 355.
+```
+
+The file list is the actionable half. `Cx/100` separates files that are merely long from files that
+are hard: `build_hir.rs` is the biggest file in react at 6,662 lines but scores 5.0, while
+`ReactFiberCommitWork.js` is smaller at 4,457 lines and scores 21.9.
+
+That is a different picture of react than `Total 341,054`: the median source file is 40 lines, and
+5% of the files hold half the code. Research on defect rates points at
+[file size distribution rather than totals](https://codescene.com/blog/code-biomarkers/), and notes
+that averages hide exactly the large files that carry the risk.
+
+`Cx/100` is complexity per 100 code lines. The raw Complexity column is not comparable between
+languages, because it mostly tracks volume — normalised, JavaScript runs at 13.2 and Rust at 7.9.
 
 The Complexity column is a decision-point count, following the approach used by `scc`: occurrences of branch and loop keywords (`if`, `for`, `while`, `case`, `catch`, …) and logical operators (`&&`, `||`), counted per language with comments and string contents excluded.
 

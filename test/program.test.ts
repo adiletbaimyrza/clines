@@ -20,7 +20,22 @@ describe("runCli", () => {
     await runCli(["node", "clines", "count", project.root], io, { runner });
 
     const options = runner.mock.calls[0]![0] as RunOptions;
-    expect(options).toEqual({ dir: project.root, readme: false, all: false });
+    expect(options).toEqual({
+      dir: project.root,
+      readme: false,
+      all: false,
+      distribution: false,
+    });
+  });
+
+  it("accepts --distribution and its --dist alias", async () => {
+    const { io } = captureIO();
+
+    for (const flag of ["--distribution", "--dist"]) {
+      const runner = vi.fn(async (): Promise<number> => 0);
+      await runCli(["node", "clines", "count", project.root, flag], io, { runner });
+      expect(runner.mock.calls[0]![0]).toMatchObject({ distribution: true });
+    }
   });
 
   it("passes --readme and --config through", async () => {
@@ -76,6 +91,9 @@ describe("runCli", () => {
       dir: project.root,
       all: false,
       top: 10,
+      crossFile: false,
+      renamed: false,
+      churn: false,
       minLines: 5,
       minCopies: 2,
       open: false,
@@ -107,6 +125,9 @@ describe("runCli", () => {
       dir: project.root,
       all: false,
       top: 10,
+      crossFile: false,
+      renamed: false,
+      churn: false,
       minLines: 8,
       minCopies: 3,
       open: false,
@@ -126,6 +147,9 @@ describe("runCli", () => {
       dir: project.root,
       all: false,
       top: 10,
+      crossFile: false,
+      renamed: false,
+      churn: false,
       minLines: 5,
       minCopies: 2,
       open: true,
