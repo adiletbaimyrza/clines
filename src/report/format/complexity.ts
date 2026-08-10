@@ -106,6 +106,7 @@ export function renderComplexityHtml(
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="generator" content="clines" />
 <title>${escapeHtml(title)}</title>
 <style>${STYLE}</style>
 </head>

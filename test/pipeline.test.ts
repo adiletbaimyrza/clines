@@ -137,6 +137,24 @@ describe("analyzeComplexity detail", () => {
   });
 });
 
+describe("self-pollution", () => {
+  it("ignores a report clines wrote into the repository it measures", async () => {
+    project.file("a.ts", "const a = 1;\n");
+    const before = await analyze(project.root, defaultConfig());
+
+    project.file(
+      "dup.html",
+      '<!doctype html>\n<html>\n<head>\n<meta name="generator" content="clines" />\n' +
+        "<title>clines — duplication report</title>\n</head>\n<body>x</body>\n</html>\n",
+    );
+    const after = await analyze(project.root, defaultConfig());
+
+    expect(after.totalCode).toBe(before.totalCode);
+    expect(after.totalFiles).toBe(before.totalFiles);
+    expect(after.roles.find((r) => r.role === "generated")?.files).toBe(1);
+  });
+});
+
 describe("file roles", () => {
   it("excludes non-source files by default and reports what was excluded", async () => {
     project.file("src/app.ts", "const a = 1;\n");
