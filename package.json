@@ -1,8 +1,9 @@
 {
   "name": "clines",
-  "version": "5.3.0",
+  "version": "5.3.1",
   "description": "Count lines of code, comments and blanks per language, find duplicate code, rank files by complexity, estimate the token cost of a repository, and find stale comments. A modern cloc alternative.",
   "type": "module",
+  "homepage": "https://adiletbaimyrza.github.io/clines/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/adiletbaimyrza/clines.git"
