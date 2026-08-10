@@ -46,6 +46,9 @@ interface DupFlags {
 
 interface ComplexityFlags {
   all?: boolean;
+  sort: "raw" | "density";
+  minLines: number;
+  explain?: boolean;
   top: number;
   open?: boolean;
   config?: string;
@@ -189,7 +192,17 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .command("complexity")
     .alias("cx")
     .description("Rank files by decision-point complexity.")
-    .addHelpText("after", "\nExamples:\n  $ clines cx\n  $ clines cx --top 250 --html cx.html\n")
+    .addOption(
+      new Option("--sort <order>", "rank by raw complexity or by density")
+        .choices(["raw", "density"])
+        .default("raw"),
+    )
+    .option("--min-lines <n>", "ignore files below this many code lines", parsePositiveInt, 1)
+    .option("--explain", "add the branch, loop and boolean breakdown")
+    .addHelpText(
+      "after",
+      "\nExamples:\n  $ clines cx\n  $ clines cx --explain\n  $ clines cx --sort density --min-lines 100\n",
+    )
     .argument("[dir]", "directory to scan", ".")
     .option("--top <n>", "files to list in the terminal", parsePositiveInt, 20)
     .option("--html <file>", "write a browsable HTML report to this path")
@@ -199,6 +212,9 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .action(async (dir: string, flags: ComplexityFlags) => {
       const options: ComplexityOptions = {
         dir,
+        sort: flags.sort,
+        minLines: flags.minLines,
+        explain: flags.explain === true,
         top: flags.top,
         open: flags.open === true,
         all: flags.all === true,

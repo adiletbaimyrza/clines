@@ -61,6 +61,11 @@ export interface FileComplexity {
   complexity: number;
   code: number;
   language: string;
+  density: number;
+  concentration: number;
+  branch: number;
+  loop: number;
+  bool: number;
 }
 
 export interface ComplexityResult {

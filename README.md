@@ -171,21 +171,49 @@ Run with `--html <file>` for a full browsable report with code snippets.
 `clines complexity` (alias `cx`) ranks files by decision-point count. The terminal output lists the top 20; `--html` writes the top 100, adjustable with `--top`. The HTML report contains the ranking only, without code snippets.
 
 ```sh
-npx clines cx                           # terminal summary (top 20)
-npx clines cx --top 50                  # list more files in the terminal
-npx clines cx --html cx-report.html     # + an HTML report of the full ranking
+npx clines cx                                 # terminal summary (top 20)
+npx clines cx --explain                       # + the branch/loop/boolean breakdown
+npx clines cx --sort density --min-lines 200  # rank by density, ignoring small files
+npx clines cx --html cx-report.html           # + an HTML report of the full ranking
 ```
 
 ```text
 Complexity: 40,872 total   ·   1,159 files with complexity
 
 Most complex files
-  File                                              Complexity   Code
-  packages/react-devtools-shared/.../renderer.js         1,292   6,487
-  packages/react-dom-bindings/.../ReactFizzConfigDOM.js  1,102   5,929
-
-Run with `--html <file>` for a full browsable report.
+  File                                            Complexity   Cx/100   Densest    Code
+  packages/react-devtools-shared/…/renderer.js         1,292     19.9        2%   6,487
+  packages/react-dom-bindings/…/ReactFizzConfigDOM.js  1,102     18.6        3%   5,929
 ```
+
+Raw complexity mostly tracks file size, so two extra columns give it meaning.
+
+**`Cx/100`** is complexity per 100 code lines — whether a file is complex or merely large. In
+bootstrap `dropdown.js` and `tooltip.js` both score 59, but one runs at 17.9 and the other at 12.5.
+
+**`Densest`** is the share of the file's complexity that falls in its worst 40 lines, which
+separates two situations needing opposite responses. `renderer.js` concentrates 2% of its
+complexity in any one stretch — it is uniformly complex across 6,487 lines and wants decomposition,
+not a local fix. `dropdown.js` concentrates 29%, so there is somewhere specific to look.
+
+`--explain` adds the split between branching, loops and boolean operators:
+
+```text
+  File                          Complexity   Cx/100   Densest   Code   Branch   Loop   Bool
+  js/src/dropdown.js                    59     17.9       29%    329      58%     5%    37%
+  js/src/dom/event-handler.js           47     19.5       26%    241      45%    13%    43%
+  js/src/carousel.js                    45     13.4       20%    335      73%     4%    22%
+```
+
+Files with similar scores can be hard for different reasons. A 73%-branch file often wants a lookup
+table; a 43%-boolean file usually wants its predicates named. The columns are deliberately raw
+numbers rather than a one-word verdict — see below.
+
+**On what this cannot tell you.** For files above a few thousand lines the honest answer to "why is
+this complex" is "all of it, everywhere": react's largest files are deep, branchy, loopy and dense
+at once, and no single 40-line stretch holds more than 4% of the total. Attributing complexity to a
+cause needs function boundaries, which needs a parser clines does not have. `cx` will tell you that
+such a file needs splitting, not where to cut it.
 
 ### Measuring context cost
 

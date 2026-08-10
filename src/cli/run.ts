@@ -52,6 +52,9 @@ export interface DupOptions {
 export interface ComplexityOptions {
   dir: string;
   all?: boolean;
+  sort: "raw" | "density";
+  minLines: number;
+  explain?: boolean;
   top: number;
   open: boolean;
   config?: string;
@@ -174,7 +177,14 @@ export async function runComplexity(
     options: opts,
   } = await prepare(options.dir, options.config, options.all);
   const result = await analyzeComplexity(rootDir, config, globs, opts);
-  io.out(renderComplexity(result, options.top));
+  io.out(
+    renderComplexity(result, {
+      top: options.top,
+      sort: options.sort,
+      minLines: options.minLines,
+      explain: options.explain === true,
+    }),
+  );
 
   if (options.html !== undefined) {
     const htmlPath = path.resolve(options.html);

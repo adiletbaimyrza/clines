@@ -35,8 +35,14 @@ import type {
   Report,
   RoleSummary,
 } from "./model.js";
-import { getLanguageName, getLanguageSyntax } from "./tokenizer/languages.js";
-import { classifyContent, splitLines, tokenize } from "./tokenizer/tokenizer.js";
+import { getComplexityChecks, getLanguageName, getLanguageSyntax } from "./tokenizer/languages.js";
+import {
+  classifyContent,
+  measureComplexity,
+  sanitizeCode,
+  splitLines,
+  tokenize,
+} from "./tokenizer/tokenizer.js";
 import { estimateTokens } from "./tokenizer/tokens.js";
 
 export interface AnalyzeOptions {
@@ -132,12 +138,21 @@ export async function analyzeComplexity(
   const { included, excluded } = partition(files, options.includeAll === true);
 
   const result = included.map((file) => {
-    const tokens = tokenize(file.path, file.content, file.kinds);
+    const ext = path.extname(file.path) || "no_ext";
+    const detail = measureComplexity(
+      sanitizeCode(file.content, getLanguageSyntax(ext)),
+      getComplexityChecks(ext),
+    );
     return {
-      path: tokens.path,
-      complexity: tokens.complexity,
+      path: file.path,
+      complexity: detail.total,
       code: file.code,
-      language: getLanguageName(tokens.ext),
+      language: getLanguageName(ext),
+      density: file.code === 0 ? 0 : (detail.total / file.code) * 100,
+      concentration: detail.total === 0 ? 0 : (detail.densest / detail.total) * 100,
+      branch: detail.branch,
+      loop: detail.loop,
+      bool: detail.bool,
     };
   });
   result.sort((a, b) => b.complexity - a.complexity || a.path.localeCompare(b.path));
