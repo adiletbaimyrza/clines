@@ -20,7 +20,7 @@ describe("runCli", () => {
     await runCli(["node", "clines", "count", project.root], io, { runner });
 
     const options = runner.mock.calls[0]![0] as RunOptions;
-    expect(options).toEqual({ dir: project.root, readme: false, all: false });
+    expect(options).toEqual({ dir: project.root, readme: false, all: false, verbose: false });
   });
 
   it("passes --readme and --config through", async () => {

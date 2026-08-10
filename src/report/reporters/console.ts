@@ -2,7 +2,7 @@ import type { Report } from "../../core/model.js";
 import type { Reporter } from "../reporter.js";
 import { getProjectSize } from "../format/size-label.js";
 import { sortedLanguages } from "../format/table.js";
-import { wrap } from "../format/text.js";
+import { table, wrap } from "../format/text.js";
 
 type Align = "left" | "right";
 
@@ -18,7 +18,7 @@ interface RowSource {
 
 export const consoleReporter: Reporter = {
   name: "console",
-  render(report: Report): string {
+  render(report: Report, verbose: boolean = false): string {
     if (report.totalFiles === 0) {
       return "No files found. Everything was ignored, or the directory has no source files.";
     }
@@ -79,9 +79,35 @@ export const consoleReporter: Reporter = {
       "",
       `Project size: ${size.text}`,
       ...roleLines(report),
+      ...(verbose ? detailLines(report) : []),
     ].join("\n");
   },
 };
+
+function detailLines(report: Report): string[] {
+  const rows = sortedLanguages(report).map((l) => [
+    l.language,
+    num(l.medianCode),
+    num(l.p90Code),
+    num(l.maxCode),
+    l.code === 0 ? "—" : ((l.complexity / l.code) * 100).toFixed(1),
+    l.code + l.comment === 0 ? "—" : `${((l.comment / (l.code + l.comment)) * 100).toFixed(0)}%`,
+  ]);
+
+  const { concentration } = report;
+  return [
+    "",
+    "File size in code lines, and density per language",
+    ...table(["Language", "Median", "p90", "Max", "Cx/100", "Comments"], rows),
+    "",
+    ...wrap(
+      `Concentration: the largest ${num(concentration.largestFiles)} files (5%) hold ` +
+        `${concentration.share.toFixed(0)}% of all code. Median file is ` +
+        `${num(concentration.medianCode)} code lines, p90 is ${num(concentration.p90Code)}.`,
+      "  ",
+    ),
+  ];
+}
 
 function roleLines(report: Report): string[] {
   if (report.roles.length < 2) {

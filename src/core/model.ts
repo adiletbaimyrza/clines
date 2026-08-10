@@ -26,6 +26,16 @@ export interface LanguageStat extends LineCounts {
   language: string;
   files: number;
   complexity: number;
+  medianCode: number;
+  p90Code: number;
+  maxCode: number;
+}
+
+export interface Concentration {
+  largestFiles: number;
+  share: number;
+  medianCode: number;
+  p90Code: number;
 }
 
 export interface RoleSummary {
@@ -97,5 +107,6 @@ export interface Report {
   totalFiles: number;
   totalComplexity: number;
   languages: LanguageStat[];
+  concentration: Concentration;
   roles: RoleSummary[];
 }

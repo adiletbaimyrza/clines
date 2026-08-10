@@ -49,12 +49,13 @@ Running `clines` on its own prints a banner with the version and available comma
 
 `clines count` is read-only by default: it prints the report and does not modify any file.
 
-| Flag              | Description                                          |
-| ----------------- | ---------------------------------------------------- |
-| `--readme`        | Also write the report into `README.md` (see below).  |
-| `--all`           | Include test, generated, vendored and docs files.    |
-| `--config <path>` | Use a specific config file instead of `clines.json`. |
-| `--help`          | Show help.                                           |
+| Flag              | Description                                            |
+| ----------------- | ------------------------------------------------------ |
+| `--readme`        | Also write the report into `README.md` (see below).    |
+| `--all`           | Include test, generated, vendored and docs files.      |
+| `--verbose`       | Add file-size distribution, density and concentration. |
+| `--config <path>` | Use a specific config file instead of `clines.json`.   |
+| `--help`          | Show help.                                             |
 
 Global: `clines --version`, `clines --help`.
 
@@ -64,6 +65,7 @@ Examples:
 npx clines count                      # report to the terminal
 npx clines count src --config c.json  # count src/ with an explicit config
 npx clines count --readme             # report + update README.md
+npx clines count --verbose            # + distribution, density and concentration
 ```
 
 ### What gets counted
@@ -236,6 +238,30 @@ Total            86   4,687  3,208        550     497          400   100.0%
 
 Project size: Asteroid ☄️
 ```
+
+#### `--verbose`
+
+The table reports totals, which answer "how much" and nothing else. `--verbose` adds the
+distribution underneath, without changing the table:
+
+```text
+File size in code lines, and density per language
+  Language     Median     p90     Max   Cx/100   Comments
+  JavaScript       33     292   6,487     13.2        15%
+  Rust            257   1,417   6,662      7.9         9%
+  TypeScript      118     666   4,176     13.9        15%
+
+Concentration: the largest 101 files (5%) hold 49% of all code. Median file is 40 code lines,
+  p90 is 355.
+```
+
+That is a different picture of react than `Total 341,054`: the median source file is 40 lines, and
+5% of the files hold half the code. Research on defect rates points at
+[file size distribution rather than totals](https://codescene.com/blog/code-biomarkers/), and notes
+that averages hide exactly the large files that carry the risk.
+
+`Cx/100` is complexity per 100 code lines. The raw Complexity column is not comparable between
+languages, because it mostly tracks volume — normalised, JavaScript runs at 13.2 and Rust at 7.9.
 
 The Complexity column is a decision-point count, following the approach used by `scc`: occurrences of branch and loop keywords (`if`, `for`, `while`, `case`, `catch`, …) and logical operators (`&&`, `||`), counted per language with comments and string contents excluded.
 

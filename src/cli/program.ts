@@ -26,6 +26,7 @@ export interface ProgramDeps {
 interface CountFlags {
   all?: boolean;
   readme?: boolean;
+  verbose?: boolean;
   config?: string;
 }
 
@@ -71,6 +72,7 @@ Examples:
   $ clines                    show this banner
   $ clines count              report the current directory
   $ clines count --readme     report and update README.md
+  $ clines count --verbose    add file-size distribution and density
   $ clines dup                find duplicated code blocks
   $ clines dup --min-lines 8  raise the clone threshold
   $ clines cx --html cx.html  rank files by complexity
@@ -118,16 +120,18 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .description("Count lines of code and report per-language metrics.")
     .addHelpText(
       "after",
-      "\nExamples:\n  $ clines count\n  $ clines count src --readme\n  $ clines count --all\n",
+      "\nExamples:\n  $ clines count\n  $ clines count --verbose\n  $ clines count src --readme\n  $ clines count --all\n",
     )
     .argument("[dir]", "directory to count", ".")
     .option("--readme", "also write the report into README.md")
+    .option("--verbose", "also show file-size distribution and complexity density")
     .option("--all", "include test, generated, vendored and docs files")
     .option("--config <path>", "path to a config file")
     .action(async (dir: string, flags: CountFlags) => {
       const options: RunOptions = {
         dir,
         readme: Boolean(flags.readme),
+        verbose: flags.verbose === true,
         all: flags.all === true,
         ...(flags.config !== undefined ? { config: flags.config } : {}),
       };

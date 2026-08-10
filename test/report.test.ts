@@ -9,6 +9,7 @@ import {
 import { buildReadmeSection, sortedLanguages } from "../src/report/format/table.js";
 
 const report: Report = {
+  concentration: { largestFiles: 2, share: 60, medianCode: 40, p90Code: 300 },
   roles: [
     { role: "source", files: 3, code: 100 },
     { role: "test", files: 2, code: 40 },
@@ -20,12 +21,35 @@ const report: Report = {
   totalFiles: 3,
   totalComplexity: 12,
   languages: [
-    { language: "CSS", files: 1, code: 5, comment: 2, blank: 3, total: 10, complexity: 0 },
-    { language: "TypeScript", files: 2, code: 25, comment: 8, blank: 7, total: 40, complexity: 12 },
+    {
+      language: "CSS",
+      files: 1,
+      code: 5,
+      comment: 2,
+      blank: 3,
+      total: 10,
+      complexity: 0,
+      medianCode: 5,
+      p90Code: 5,
+      maxCode: 5,
+    },
+    {
+      language: "TypeScript",
+      files: 2,
+      code: 25,
+      comment: 8,
+      blank: 7,
+      total: 40,
+      complexity: 12,
+      medianCode: 12,
+      p90Code: 20,
+      maxCode: 20,
+    },
   ],
 };
 
 const empty: Report = {
+  concentration: { largestFiles: 0, share: 0, medianCode: 0, p90Code: 0 },
   roles: [],
   totalCode: 0,
   totalComment: 0,
@@ -43,11 +67,34 @@ describe("sortedLanguages", () => {
 
   it("breaks ties by language name", () => {
     const tie: Report = {
+      concentration: { largestFiles: 0, share: 0, medianCode: 0, p90Code: 0 },
       roles: [],
       ...empty,
       languages: [
-        { language: "Bash", files: 1, code: 5, comment: 0, blank: 0, total: 5, complexity: 0 },
-        { language: "Awk", files: 1, code: 5, comment: 0, blank: 0, total: 5, complexity: 0 },
+        {
+          language: "Bash",
+          files: 1,
+          code: 5,
+          comment: 0,
+          blank: 0,
+          total: 5,
+          complexity: 0,
+          medianCode: 0,
+          p90Code: 0,
+          maxCode: 0,
+        },
+        {
+          language: "Awk",
+          files: 1,
+          code: 5,
+          comment: 0,
+          blank: 0,
+          total: 5,
+          complexity: 0,
+          medianCode: 0,
+          p90Code: 0,
+          maxCode: 0,
+        },
       ],
     };
     expect(sortedLanguages(tie).map((l) => l.language)).toEqual(["Awk", "Bash"]);
@@ -129,11 +176,55 @@ describe("consoleReporter with no code lines", () => {
         },
       ],
       roles: [],
+      concentration: { largestFiles: 1, share: 0, medianCode: 0, p90Code: 0 },
     };
 
     const output = consoleReporter.render(blanks);
 
     expect(output).toContain("0.0%");
     expect(output).not.toContain("NaN");
+  });
+});
+
+describe("consoleReporter --verbose", () => {
+  it("appends distribution, density and concentration", () => {
+    const output = consoleReporter.render(report, true);
+
+    expect(output).toContain("File size in code lines");
+    expect(output).toContain("Median");
+    expect(output).toContain("Cx/100");
+    expect(output).toContain("Concentration: the largest 2 files (5%) hold 60% of all code");
+    expect(output).toContain("Median file is 40 code lines");
+    expect(output.replace(/\s+/g, " ")).toContain("p90 is 300.");
+  });
+
+  it("leaves the default output untouched", () => {
+    expect(consoleReporter.render(report)).not.toContain("File size in code lines");
+    expect(consoleReporter.render(report)).not.toContain("Concentration:");
+  });
+
+  it("uses a dash where a language has no code", () => {
+    const output = consoleReporter.render(
+      {
+        ...report,
+        languages: [
+          {
+            language: "JSON",
+            files: 1,
+            code: 0,
+            comment: 0,
+            blank: 2,
+            total: 2,
+            complexity: 0,
+            medianCode: 0,
+            p90Code: 0,
+            maxCode: 0,
+          },
+        ],
+      },
+      true,
+    );
+
+    expect(output).toContain("—");
   });
 });
