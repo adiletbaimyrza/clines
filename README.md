@@ -159,6 +159,7 @@ Duplication shape
 
 Biggest refactor opportunities
   Where                                                          Lines   Copies   Removable
+  ─────────────────────────────────────────────────────────────────────────────────────────
   compiler/crates/react_compiler_ast/src/visitor.rs  +82             5      147         730
   packages/react-server-dom-esm/src/ReactFlightESMNodeLoader.js  +2  350        3         700
 ```
@@ -184,6 +185,7 @@ Duplication: 4.2%   1,240 duplicated lines   ·   12 clones
 
 Most duplicated files
   File                 Dup lines   % of file
+  ──────────────────────────────────────────
   src/legacy/api.ts          220         64%
   src/legacy/api.old.ts      220         71%
 
@@ -210,6 +212,7 @@ Complexity: 40,872 total   ·   1,159 files with complexity
 
 Most complex files
   File                                            Complexity   Cx/100   Densest    Code
+  ─────────────────────────────────────────────────────────────────────────────────────
   packages/react-devtools-shared/…/renderer.js         1,292     19.9        2%   6,487
   packages/react-dom-bindings/…/ReactFizzConfigDOM.js  1,102     18.6        3%   5,929
 ```
@@ -228,6 +231,7 @@ not a local fix. `dropdown.js` concentrates 29%, so there is somewhere specific 
 
 ```text
   File                          Complexity   Cx/100   Densest   Code   Branch   Loop   Bool
+  ─────────────────────────────────────────────────────────────────────────────────────────
   js/src/dropdown.js                    59     17.9       29%    329      58%     5%    37%
   js/src/dom/event-handler.js           47     19.5       26%    241      45%    13%    43%
   js/src/carousel.js                    45     13.4       20%    335      73%     4%    22%
@@ -259,11 +263,13 @@ Context: 3,303,084 tokens   ·   330.3% of a 1,000,000-token window   ·   19% c
 
 Largest directories
   Directory     Tokens   Files
+  ────────────────────────────
   packages   1,904,551     893
   compiler   1,201,364   1,003
 
 Biggest files
   File                                                        Tokens     Code   Comments
+  ──────────────────────────────────────────────────────────────────────────────────────
   packages/react-devtools-shared/src/backend/fiber/renderer.js 64,222   48,348     15,874
   compiler/crates/react_compiler_lowering/src/build_hir.rs      59,223   52,970      6,253
 
@@ -301,6 +307,7 @@ Comment drift: 13% of comment blocks describe code that changed later
 
 Most drifted files
   File                                                            Drifted   Blocks     %
+  ──────────────────────────────────────────────────────────────────────────────────────
   packages/eslint-plugin-react-hooks/src/rules/ExhaustiveDeps.ts       94      150   63%
   packages/eslint-plugin-react-hooks/src/rules/RulesOfHooks.ts         36       73   49%
 ```
@@ -341,6 +348,7 @@ means 2,420 tokens.
 
 Ranked by what re-reading them has cost, in tokens
   File                                        Verdict   Changes   Cx/100   Tokens   Re-read     Cost
+  ──────────────────────────────────────────────────────────────────────────────────────────────────
   packages/react-…ackend/fiber/renderer.js   refactor       151     20.0      64k      9.6M   $28.83
   packages/react-…src/ReactFlightServer.js   refactor       134     17.3      56k      7.5M   $22.41
   packages/react-…t/ReactFiberConfigDOM.js   refactor       114     16.7      54k      6.1M   $18.39
@@ -360,11 +368,11 @@ quartile. Requires a git repository.
 
 ```text
 Language      Files   Lines   Code   Comments   Blank   Complexity        %
-──────────────────────────────────────────────────────────────────────────
+───────────────────────────────────────────────────────────────────────────
 TypeScript       62   3,210  2,510        420     280          312    78.2%
 JavaScript       18     935    720         90     125           88    22.4%
 CSS               6     542    410         40      92            0    12.8%
-──────────────────────────────────────────────────────────────────────────
+───────────────────────────────────────────────────────────────────────────
 Total            86   4,687  3,208        550     497          400   100.0%
 
 Project size: Asteroid ☄️
@@ -378,12 +386,14 @@ adds the shape of the codebase underneath, without changing the table:
 ```text
 File size in code lines, and density per language
   Language     Median     p90     Max   Cx/100   Comments
+  ───────────────────────────────────────────────────────
   JavaScript       33     292   6,487     13.2        15%
   Rust            257   1,417   6,662      7.9         9%
   TypeScript      118     666   4,176     13.9        15%
 
 Largest files
   File                                                            Code   Comments   Cx/100
+  ────────────────────────────────────────────────────────────────────────────────────────
   compiler/crates/react_compiler_lowering/src/build_hir.rs       6,662        436      5.0
   packages/react-devtools-shared/src/backend/fiber/renderer.js   6,487      1,078     19.9
   packages/react-dom-bindings/src/server/ReactFizzConfigDOM.js   5,929        812     18.6
