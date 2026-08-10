@@ -1,6 +1,76 @@
-import type { DuplicationResult } from "../../core/analyzers/duplication.js";
+import type { CloneLocation, DuplicationResult } from "../../core/analyzers/duplication.js";
 import { excludedNotice } from "./html.js";
 import { pushHint, table, wrap } from "./text.js";
+
+const LOCATION_LABEL: Record<CloneLocation, string> = {
+  "within-file": "within one file",
+  "same-directory": "same directory",
+  "same-package": "same package",
+  "cross-package": "across packages",
+};
+
+export function renderDuplicationInsight(
+  result: DuplicationResult,
+  topGroups: number = 10,
+  churn?: Map<string, number>,
+): string[] {
+  const { shape, ranked } = result;
+  if (shape.groups === 0) {
+    return [];
+  }
+
+  const out: string[] = [
+    "Duplication shape",
+    `  ${num(shape.groups)} clone groups   ·   ${num(shape.removable)} lines removable if each were deduped once`,
+    `  Size       ${shape.underTen.toFixed(0)}% under 10 lines   ·   median ${num(shape.medianLines)}   ·   largest ${num(shape.maxLines)}`,
+    `  Location   ${locationSummary(shape.byLocation, shape.groups)}`,
+    `  Spread     top 10 groups hold ${shape.topTenShare.toFixed(0)}% of what is removable${shape.topTenShare < 20 ? " — duplication is diffuse" : ""}`,
+  ];
+
+  if (result.renamedGroups > 0) {
+    out.push(
+      `  Renamed    ${num(result.renamedGroups)} further groups match only once identifiers are ignored`,
+    );
+  }
+
+  const rows = ranked
+    .slice(0, topGroups)
+    .map((clone) => [
+      clone.files.length === 1
+        ? (clone.files[0] as string)
+        : `${clone.files[0] as string}  +${num(clone.files.length - 1)}`,
+      num(clone.lineCount),
+      num(clone.copies),
+      num(clone.removable),
+      ...(churn === undefined ? [] : [ageLabel(churn, clone.files)]),
+    ]);
+
+  const headers = ["Where", "Lines", "Copies", "Removable"];
+  out.push(
+    "",
+    "Biggest refactor opportunities",
+    ...table(churn === undefined ? headers : [...headers, "Last touched"], rows),
+  );
+
+  return out;
+}
+
+function locationSummary(byLocation: Record<CloneLocation, number>, groups: number): string {
+  return (Object.entries(byLocation) as [CloneLocation, number][])
+    .filter(([, count]) => count > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([key, count]) => `${((count / groups) * 100).toFixed(0)}% ${LOCATION_LABEL[key]}`)
+    .join("   ·   ");
+}
+
+function ageLabel(churn: Map<string, number>, files: string[]): string {
+  const times = files.map((file) => churn.get(file)).filter((t): t is number => t !== undefined);
+  if (times.length === 0) {
+    return "—";
+  }
+  const years = (Date.now() / 1000 - Math.max(...times)) / (365 * 24 * 60 * 60);
+  return years < 1 ? `${Math.max(1, Math.round(years * 12))}mo` : `${years.toFixed(1)}y`;
+}
 
 export function renderDuplication(result: DuplicationResult, topFiles: number = 10): string {
   const out: string[] = [

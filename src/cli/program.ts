@@ -31,6 +31,9 @@ interface CountFlags {
 
 interface DupFlags {
   all?: boolean;
+  crossFile?: boolean;
+  renamed?: boolean;
+  churn?: boolean;
   top: number;
   minLines: number;
   minCopies: number;
@@ -150,7 +153,10 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
       parsePositiveInt,
       2,
     )
-    .option("--top <n>", "files to list in the terminal", parsePositiveInt, 10)
+    .option("--top <n>", "clone groups and files to list in the terminal", parsePositiveInt, 10)
+    .option("--cross-file", "ignore duplication that sits inside a single file")
+    .option("--renamed", "also count clones that match once identifiers are ignored")
+    .option("--churn", "show when each clone was last touched (needs git)")
     .option("--html <file>", "write a browsable HTML report to this path")
     .option("--open", "open the HTML report in a browser")
     .option("--all", "include test, generated, vendored and docs files")
@@ -159,6 +165,9 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
       const options: DupOptions = {
         dir,
         top: flags.top,
+        crossFile: flags.crossFile === true,
+        renamed: flags.renamed === true,
+        churn: flags.churn === true,
         minLines: flags.minLines,
         all: flags.all === true,
         minCopies: flags.minCopies,

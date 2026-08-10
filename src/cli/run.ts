@@ -6,6 +6,7 @@ import {
   analyzeComplexity,
   analyzeContext,
   analyzeComments,
+  analyzeCloneChurn,
   analyzeDuplication,
   collectRoledFiles,
   partition,
@@ -15,7 +16,7 @@ import {
 import { renderComplexity, renderComplexityHtml } from "../report/format/complexity.js";
 import { renderComments } from "../report/format/comments.js";
 import { renderContext, renderContextHtml } from "../report/format/context.js";
-import { renderDuplication } from "../report/format/duplication.js";
+import { renderDuplication, renderDuplicationInsight } from "../report/format/duplication.js";
 import { renderDuplicationHtml } from "../report/format/duplication-html.js";
 import { consoleReporter } from "../report/reporters/console.js";
 import { injectReadme } from "../report/reporters/readme.js";
@@ -36,6 +37,9 @@ export interface RunOptions {
 export interface DupOptions {
   dir: string;
   all?: boolean;
+  crossFile?: boolean;
+  renamed?: boolean;
+  churn?: boolean;
   top: number;
   minLines: number;
   minCopies: number;
@@ -110,6 +114,7 @@ export async function runDup(
   options: DupOptions,
   io: IO,
   opener: Opener = openInBrowser,
+  commentOptions: CommentOptions = {},
 ): Promise<number> {
   const {
     rootDir,
@@ -123,8 +128,25 @@ export async function runDup(
     globs,
     options.minLines,
     options.minCopies,
-    opts,
+    {
+      ...opts,
+      ...(options.crossFile === true ? { crossFileOnly: true } : {}),
+      ...(options.renamed === true ? { renamed: true } : {}),
+    },
   );
+
+  let churn: Map<string, number> | undefined;
+  if (options.churn === true) {
+    const files = [...new Set(result.ranked.slice(0, options.top).flatMap((c) => c.files))];
+    io.err(`Blaming ${files.length.toLocaleString("en-US")} files with git…`);
+    churn = await analyzeCloneChurn(rootDir, files, commentOptions.blamer);
+  }
+
+  const insight = renderDuplicationInsight(result, options.top, churn);
+  if (insight.length > 0) {
+    io.out(insight.join("\n"));
+    io.out("");
+  }
   io.out(renderDuplication(result, options.top));
 
   if (options.html !== undefined) {
