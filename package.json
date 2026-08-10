@@ -1,7 +1,7 @@
 {
   "name": "clines",
-  "version": "5.3.1",
-  "description": "Count lines of code, comments and blanks per language, find duplicate code, rank files by complexity, estimate the token cost of a repository, and find stale comments. A modern cloc alternative.",
+  "version": "5.4.0",
+  "description": "Count lines of code per language, find code duplication, rank files by code complexity, and estimate the token count of a repository for AI agents. A modern cloc alternative.",
   "type": "module",
   "homepage": "https://adiletbaimyrza.github.io/clines/",
   "repository": {
@@ -39,19 +39,26 @@
   "keywords": [
     "count",
     "lines",
+    "lines-of-code",
     "loc",
     "cloc",
+    "cloc-alternative",
     "code-metrics",
     "static-analysis",
     "complexity",
+    "code-complexity",
+    "duplication",
+    "code-duplication",
     "duplicate-code",
-    "tokens",
+    "copy-paste-detector",
+    "token",
+    "token-count",
     "context-window",
     "stale-comments",
     "code-comments",
     "git-blame",
     "ai",
-    "project"
+    "cli"
   ],
   "license": "MIT",
   "author": "Adilet Baimyrza Uulu",
