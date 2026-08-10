@@ -8,10 +8,37 @@ export interface ComplexityHtmlOptions {
 
 const HTML_CAP = 1000;
 
-export function renderComplexity(result: ComplexityResult, topFiles: number = 20): string {
+export type ComplexitySort = "raw" | "density";
+
+export interface ComplexityOptions {
+  top?: number;
+  sort?: ComplexitySort;
+  minLines?: number;
+  explain?: boolean;
+}
+
+export function rankComplexity(
+  files: FileComplexity[],
+  sort: ComplexitySort,
+  minLines: number,
+): FileComplexity[] {
+  const ranked = files.filter((file) => file.complexity > 0 && file.code >= minLines);
+  return sort === "density"
+    ? [...ranked].sort((a, b) => b.density - a.density || a.path.localeCompare(b.path))
+    : ranked;
+}
+
+export function renderComplexity(
+  result: ComplexityResult,
+  options: ComplexityOptions = {},
+): string {
+  const topFiles = options.top ?? 20;
+  const sort = options.sort ?? "raw";
+  const minLines = options.minLines ?? 0;
+  const explain = options.explain === true;
   const files = result.files;
   const total = files.reduce((sum, file) => sum + file.complexity, 0);
-  const ranked = files.filter((file) => file.complexity > 0);
+  const ranked = rankComplexity(files, sort, minLines);
 
   const out: string[] = [
     `Complexity: ${formatNumber(total)} total   ·   ${formatNumber(ranked.length)} files with complexity`,
@@ -23,13 +50,29 @@ export function renderComplexity(result: ComplexityResult, topFiles: number = 20
   }
 
   const shown = ranked.slice(0, topFiles);
+  const share = (part: number, whole: number): string => `${Math.round((part / whole) * 100)}%`;
+
   const rows = shown.map((file) => [
     file.path,
     formatNumber(file.complexity),
+    file.density.toFixed(1),
+    `${Math.round(file.concentration)}%`,
     formatNumber(file.code),
+    ...(explain
+      ? [
+          share(file.branch, file.complexity),
+          share(file.loop, file.complexity),
+          share(file.bool, file.complexity),
+        ]
+      : []),
   ]);
 
-  out.push("", "Most complex files", ...table(["File", "Complexity", "Code"], rows));
+  const headers = ["File", "Complexity", "Cx/100", "Densest", "Code"];
+  out.push(
+    "",
+    sort === "density" ? "Densest files" : "Most complex files",
+    ...table(explain ? [...headers, "Branch", "Loop", "Bool"] : headers, rows),
+  );
 
   const hidden = ranked.length - shown.length;
   if (hidden > 0) {

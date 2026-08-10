@@ -7,6 +7,7 @@ import {
 import {
   classifyContent,
   countComplexity,
+  measureComplexity,
   sanitizeCode,
   tokenize,
 } from "../src/core/tokenizer/tokenizer.js";
@@ -140,5 +141,34 @@ describe("getLanguageName", () => {
     expect(getLanguageName("no_ext")).toBe("Other");
     expect(getLanguageName(".xyz")).toBe("Other");
     expect(getLanguageName(".invalid-rules-of-hooks-f6f37b63b2d4")).toBe("Other");
+  });
+});
+
+describe("measureComplexity", () => {
+  it("splits decision points into branch, loop and boolean", () => {
+    const detail = measureComplexity("if (a && b) {\nfor (x) {}\n}", getComplexityChecks(".ts"));
+
+    expect(detail).toMatchObject({ branch: 1, loop: 1, bool: 1, total: 3 });
+  });
+
+  it("treats python and/or as boolean rather than branching", () => {
+    const detail = measureComplexity("if a and b or c:", getComplexityChecks(".py"));
+
+    expect(detail).toMatchObject({ branch: 1, bool: 2, loop: 0 });
+  });
+
+  it("finds the densest window", () => {
+    const dense = `if (a) {}\n`.repeat(3) + "x;\n".repeat(100) + `if (b) {}\n`.repeat(2);
+    const detail = measureComplexity(dense, getComplexityChecks(".ts"));
+
+    expect(detail.total).toBe(5);
+    expect(detail.densest).toBe(3);
+  });
+
+  it("reports nothing for a language without a complexity dialect", () => {
+    expect(measureComplexity("a { b: c }", getComplexityChecks(".css"))).toMatchObject({
+      total: 0,
+      densest: 0,
+    });
   });
 });

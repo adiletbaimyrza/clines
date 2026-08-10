@@ -106,15 +106,62 @@ export function sanitizeCode(content: string, syntax: LanguageSyntax): string {
     .join("\n");
 }
 
-export function countComplexity(code: string, checks: ComplexityChecks): number {
-  let total = 0;
+const LOOP_KEYWORDS = new Set(["for", "while", "until", "loop"]);
+const BOOL_KEYWORDS = new Set(["and", "or"]);
+
+export const DENSEST_WINDOW = 40;
+
+export interface ComplexityDetail {
+  total: number;
+  branch: number;
+  loop: number;
+  bool: number;
+  densest: number;
+}
+
+export function measureComplexity(code: string, checks: ComplexityChecks): ComplexityDetail {
+  const lines = splitLines(code);
+  const perLine = new Array<number>(lines.length).fill(0);
+  const detail: ComplexityDetail = { total: 0, branch: 0, loop: 0, bool: 0, densest: 0 };
+
   for (const keyword of checks.keywords) {
-    total += code.match(new RegExp(`\\b${keyword}\\b`, "g"))?.length ?? 0;
+    const pattern = new RegExp(`\\b${keyword}\\b`, "g");
+    const bucket = LOOP_KEYWORDS.has(keyword)
+      ? "loop"
+      : BOOL_KEYWORDS.has(keyword)
+        ? "bool"
+        : "branch";
+    for (let i = 0; i < lines.length; i++) {
+      const hits = (lines[i] as string).match(pattern)?.length ?? 0;
+      perLine[i] = (perLine[i] as number) + hits;
+      detail[bucket] += hits;
+      detail.total += hits;
+    }
   }
+
   for (const operator of checks.operators) {
-    total += code.split(operator).length - 1;
+    for (let i = 0; i < lines.length; i++) {
+      const hits = (lines[i] as string).split(operator).length - 1;
+      perLine[i] = (perLine[i] as number) + hits;
+      detail.bool += hits;
+      detail.total += hits;
+    }
   }
-  return total;
+
+  let run = 0;
+  for (let i = 0; i < perLine.length; i++) {
+    run += perLine[i] as number;
+    if (i >= DENSEST_WINDOW) {
+      run -= perLine[i - DENSEST_WINDOW] as number;
+    }
+    detail.densest = Math.max(detail.densest, run);
+  }
+
+  return detail;
+}
+
+export function countComplexity(code: string, checks: ComplexityChecks): number {
+  return measureComplexity(code, checks).total;
 }
 
 export function tokenize(filePath: string, content: string, kinds?: LineKind[]): FileTokens {

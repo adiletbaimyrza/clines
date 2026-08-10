@@ -10,9 +10,39 @@ function files(over: FileComplexity[] = []): FileComplexity[] {
   return over.length > 0
     ? over
     : [
-        { path: "src/big.ts", complexity: 120, code: 400, language: "TypeScript" },
-        { path: "src/small.py", complexity: 8, code: 30, language: "Python" },
-        { path: "src/data.json", complexity: 0, code: 12, language: "JSON" },
+        {
+          path: "src/big.ts",
+          complexity: 120,
+          code: 400,
+          language: "TypeScript",
+          density: 30.0,
+          concentration: 50,
+          branch: 120,
+          loop: 0,
+          bool: 0,
+        },
+        {
+          path: "src/small.py",
+          complexity: 8,
+          code: 30,
+          language: "Python",
+          density: 26.7,
+          concentration: 50,
+          branch: 8,
+          loop: 0,
+          bool: 0,
+        },
+        {
+          path: "src/data.json",
+          complexity: 0,
+          code: 12,
+          language: "JSON",
+          density: 0.0,
+          concentration: 50,
+          branch: 0,
+          loop: 0,
+          bool: 0,
+        },
       ];
 }
 
@@ -34,14 +64,31 @@ describe("renderComplexity (terminal)", () => {
       complexity: 15 - i,
       code: 10,
       language: "TypeScript",
+      density: (15 - i) * 10,
+      concentration: 100,
+      branch: 15 - i,
+      loop: 0,
+      bool: 0,
     }));
-    expect(renderComplexity(wrap(many), 3)).toContain("… and 12 more files.");
+    expect(renderComplexity(wrap(many), { top: 3 })).toContain("… and 12 more files.");
   });
 
   it("truncates long file paths", () => {
     const longPath = "a/very/deeply/nested/module.ts".padStart(90, "x");
     const output = renderComplexity(
-      wrap([{ path: longPath, complexity: 5, code: 10, language: "TypeScript" }]),
+      wrap([
+        {
+          path: longPath,
+          complexity: 5,
+          code: 10,
+          language: "TypeScript",
+          density: 50,
+          concentration: 100,
+          branch: 5,
+          loop: 0,
+          bool: 0,
+        },
+      ]),
     );
     expect(output).toContain("…");
     expect(output).not.toContain(longPath);
@@ -49,7 +96,19 @@ describe("renderComplexity (terminal)", () => {
 
   it("reports a clean result when nothing has complexity", () => {
     const output = renderComplexity(
-      wrap([{ path: "data.json", complexity: 0, code: 5, language: "JSON" }]),
+      wrap([
+        {
+          path: "data.json",
+          complexity: 0,
+          code: 5,
+          language: "JSON",
+          density: 0.0,
+          concentration: 50,
+          branch: 0,
+          loop: 0,
+          bool: 0,
+        },
+      ]),
     );
     expect(output).toContain("No complexity detected.");
   });
@@ -81,7 +140,19 @@ describe("renderComplexityHtml", () => {
 
   it("escapes HTML in file paths", () => {
     const html = renderComplexityHtml(
-      wrap([{ path: "src/<x>&.ts", complexity: 3, code: 5, language: "TypeScript" }]),
+      wrap([
+        {
+          path: "src/<x>&.ts",
+          complexity: 3,
+          code: 5,
+          language: "TypeScript",
+          density: 60.0,
+          concentration: 50,
+          branch: 3,
+          loop: 0,
+          bool: 0,
+        },
+      ]),
     );
     expect(html).toContain("&lt;x&gt;&amp;");
   });
@@ -107,8 +178,109 @@ describe("renderComplexityHtml", () => {
 
   it("shows an empty state when nothing has complexity", () => {
     const html = renderComplexityHtml(
-      wrap([{ path: "a.json", complexity: 0, code: 4, language: "JSON" }]),
+      wrap([
+        {
+          path: "a.json",
+          complexity: 0,
+          code: 4,
+          language: "JSON",
+          density: 0.0,
+          concentration: 50,
+          branch: 0,
+          loop: 0,
+          bool: 0,
+        },
+      ]),
     );
     expect(html).toContain("No complexity detected.");
+  });
+});
+
+describe("complexity detail", () => {
+  const detailed = wrap([
+    {
+      path: "src/spread.ts",
+      complexity: 100,
+      code: 1000,
+      language: "TypeScript",
+      density: 10,
+      concentration: 2,
+      branch: 60,
+      loop: 10,
+      bool: 30,
+    },
+    {
+      path: "src/tight.ts",
+      complexity: 40,
+      code: 100,
+      language: "TypeScript",
+      density: 40,
+      concentration: 80,
+      branch: 10,
+      loop: 0,
+      bool: 30,
+    },
+  ]);
+
+  it("shows density and concentration by default", () => {
+    const output = renderComplexity(detailed);
+
+    expect(output).toContain("Cx/100");
+    expect(output).toContain("Densest");
+    expect(output).toContain("10.0");
+    expect(output).toContain("2%");
+    expect(output).not.toContain("Branch");
+  });
+
+  it("adds the breakdown with explain", () => {
+    const output = renderComplexity(detailed, { explain: true });
+
+    expect(output).toContain("Branch");
+    expect(output).toContain("60%");
+    expect(output).toContain("30%");
+  });
+
+  it("ranks by density when asked, and retitles the section", () => {
+    const output = renderComplexity(detailed, { sort: "density" });
+
+    expect(output).toContain("Densest files");
+    expect(output.indexOf("src/tight.ts")).toBeLessThan(output.indexOf("src/spread.ts"));
+  });
+
+  it("drops files below the line floor", () => {
+    const output = renderComplexity(detailed, { sort: "density", minLines: 500 });
+
+    expect(output).toContain("src/spread.ts");
+    expect(output).not.toContain("src/tight.ts");
+  });
+
+  it("breaks density ties on path", () => {
+    const tied = wrap([
+      {
+        path: "z.ts",
+        complexity: 10,
+        code: 100,
+        language: "TypeScript",
+        density: 10,
+        concentration: 50,
+        branch: 10,
+        loop: 0,
+        bool: 0,
+      },
+      {
+        path: "a.ts",
+        complexity: 10,
+        code: 100,
+        language: "TypeScript",
+        density: 10,
+        concentration: 50,
+        branch: 10,
+        loop: 0,
+        bool: 0,
+      },
+    ]);
+
+    const output = renderComplexity(tied, { sort: "density" });
+    expect(output.indexOf("a.ts")).toBeLessThan(output.indexOf("z.ts"));
   });
 });

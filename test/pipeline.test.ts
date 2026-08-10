@@ -101,6 +101,42 @@ describe("analyzeContext", () => {
   });
 });
 
+describe("analyzeComplexity detail", () => {
+  it("reports zero density and concentration for a file with no complexity", async () => {
+    project.file("data.json", '{ "a": 1 }\n');
+
+    const { files } = await analyzeComplexity(project.root, defaultConfig());
+
+    expect(files[0]).toMatchObject({ complexity: 0, density: 0, concentration: 0 });
+  });
+
+  it("reports zero density for a file with no code lines at all", async () => {
+    project.file("notes.ts", "// just a note\n// and another\n");
+
+    const { files } = await analyzeComplexity(project.root, defaultConfig());
+
+    expect(files[0]).toMatchObject({ code: 0, density: 0 });
+  });
+
+  it("measures a file that has no extension", async () => {
+    project.file("Makefile", "if x\nfor y\n");
+
+    const { files } = await analyzeComplexity(project.root, defaultConfig());
+
+    expect(files[0]?.path).toBe("Makefile");
+    expect(files[0]?.complexity).toBeGreaterThan(0);
+  });
+
+  it("splits decision points and finds the densest stretch", async () => {
+    project.file("a.ts", "if (a && b) {\n  for (const x of y) {}\n}\n");
+
+    const { files } = await analyzeComplexity(project.root, defaultConfig());
+
+    expect(files[0]).toMatchObject({ branch: 1, loop: 1, bool: 1 });
+    expect(files[0]!.concentration).toBe(100);
+  });
+});
+
 describe("file roles", () => {
   it("excludes non-source files by default and reports what was excluded", async () => {
     project.file("src/app.ts", "const a = 1;\n");

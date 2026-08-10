@@ -174,6 +174,9 @@ describe("runCli", () => {
     expect(complexityRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
       all: false,
+      sort: "raw",
+      minLines: 1,
+      explain: false,
       top: 20,
       open: false,
     });
@@ -203,6 +206,9 @@ describe("runCli", () => {
     expect(complexityRunner.mock.calls[0]![0]).toEqual({
       dir: project.root,
       all: false,
+      sort: "raw",
+      minLines: 1,
+      explain: false,
       top: 25,
       open: false,
       html: "cx.html",
