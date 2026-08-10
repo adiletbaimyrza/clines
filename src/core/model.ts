@@ -2,10 +2,16 @@ import type { FileRole } from "./files/roles.js";
 
 export type LineKind = "code" | "comment" | "blank";
 
+export interface BlockComment {
+  start: string;
+  end: string;
+}
+
 export interface LanguageSyntax {
   singleComment?: string;
   blockCommentStart?: string;
   blockCommentEnd?: string;
+  blocks?: BlockComment[];
 }
 
 export interface FileTokens {

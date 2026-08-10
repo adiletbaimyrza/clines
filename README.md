@@ -82,6 +82,10 @@ By default `clines` reports on **source files only**. Every file is classified i
 | `vendored`  | `linguist-vendored`, `vendor/`, `third_party/`, `flow-typed/`                                                                              |
 | `docs`      | `linguist-documentation`, `docs/`, `.md`, `.txt`, `.rst`                                                                                   |
 
+Comments are recognised per language, including block comments that span lines. In Python,
+`"""` and `'''` blocks count as comments, which is what `cloc` does and what PEP 257 docstrings
+are for — on `pallets/flask` that is 3,662 comment lines rather than 784.
+
 Non-source files are excluded from headline figures and named underneath:
 
 ```text
