@@ -510,6 +510,23 @@ Project size: <span class="size">Solar System ☀️</span></pre>
             </p>
           </div>
           <div class="card">
+            <div class="ico">🔎</div>
+            <h3>Scroll long output</h3>
+            <p>
+              Output taller than the terminal opens in a built-in scroller — arrows or
+              <code>j</code>/<code>k</code>, space to page, <code>q</code> or <code>Esc</code> to
+              leave. <span class="cmd">--top all</span> lists every file instead of truncating.
+            </p>
+          </div>
+          <div class="card">
+            <div class="ico">🎨</div>
+            <h3>Readable in colour</h3>
+            <p>
+              Bold headings, dim table rules, and <span class="cmd">refactor</span> verdicts by
+              severity. Piped output stays plain, so redirecting to a file is unchanged.
+            </p>
+          </div>
+          <div class="card">
             <div class="ico">✅</div>
             <h3>100% tested</h3>
             <p>
@@ -558,6 +575,9 @@ $ npx clines refactor
 
 <span style="color: var(--muted)"># ...priced at $3 per million tokens</span>
 $ npx clines refactor --price 3
+
+<span style="color: var(--muted)"># list every file, scrolling instead of truncating</span>
+$ npx clines cx --top all
 
 <span style="color: var(--muted)"># the bare command prints a banner + version</span>
 $ npx clines</pre>

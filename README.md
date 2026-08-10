@@ -6,9 +6,9 @@
 [![license](https://img.shields.io/npm/l/clines.svg)](./LICENSE)
 
 `clines` counts lines of code, comments and blanks per language, finds duplicate code, ranks files
-by complexity, estimates what a repository costs a language model to read, finds comments the code
-has drifted away from, and says which files are worth refactoring. It is a `cloc` alternative with
-five additional analyses built in.
+by complexity, estimates the token count a language model reads for the whole repository, finds
+comments the code has drifted away from, and says which files are worth refactoring. It is a `cloc`
+alternative with five additional analyses built in.
 
 It has six commands:
 
@@ -64,6 +64,9 @@ Global: `clines -v` (or `-V`, `--version`), `clines --help`.
 Output is coloured when it is going to a terminal: bold headings, dim table headers, and
 `refactor` verdicts by severity. Set `NO_COLOR` to turn it off, or `FORCE_COLOR` to keep colour
 through a pipe. Piped and redirected output is plain by default, so `clines … > file` is unchanged.
+
+`--html <file>` writes a browsable report from `dup`, `cx` and `ctx`; add `--open` to open it
+in your browser straight away.
 
 Every listing is capped by `--top <n>`. Pass `--top all` (or `--top 0`) to list everything instead
 of ending on `… and 1,093 more files.`
@@ -255,6 +258,7 @@ such a file needs splitting, not where to cut it.
 npx clines ctx                          # terminal summary against a 200k window
 npx clines ctx --window 1m              # compare against a 1M-token window
 npx clines ctx --max 200k               # exit non-zero if the total exceeds the budget
+npx clines ctx --budget 100k            # size the working set a single read should fit
 npx clines ctx --html ctx-report.html   # + an HTML report of the full ranking
 ```
 
