@@ -61,6 +61,10 @@ Running `clines` on its own prints a banner with the version and available comma
 
 Global: `clines -v` (or `-V`, `--version`), `clines --help`.
 
+Output is coloured when it is going to a terminal: bold headings, dim table headers, and
+`refactor` verdicts by severity. Set `NO_COLOR` to turn it off, or `FORCE_COLOR` to keep colour
+through a pipe. Piped and redirected output is plain by default, so `clines … > file` is unchanged.
+
 Examples:
 
 ```sh

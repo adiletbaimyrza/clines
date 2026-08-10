@@ -1,8 +1,13 @@
+function set(name: string): boolean {
+  const value = process.env[name];
+  return value !== undefined && value !== "" && value !== "0";
+}
+
 export function useColor(stream: NodeJS.WriteStream = process.stdout): boolean {
-  if (process.env["NO_COLOR"] !== undefined && process.env["NO_COLOR"] !== "") {
+  if (set("NO_COLOR")) {
     return false;
   }
-  return stream.isTTY === true;
+  return set("FORCE_COLOR") || stream.isTTY === true;
 }
 
 export function isInteractive(stream: NodeJS.WriteStream = process.stdout): boolean {

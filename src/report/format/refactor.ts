@@ -5,9 +5,22 @@ import {
   type Verdict,
 } from "../../core/analyzers/refactor.js";
 import { formatNumber } from "./html.js";
-import { pushHint, table, wrap } from "./text.js";
+import { painter, type Ink, type Painter } from "./paint.js";
+import { heading, pushHint, table, wrap } from "./text.js";
 
 const VERDICT_ORDER: Verdict[] = ["refactor", "split", "watch", "quiet", "inert"];
+
+const VERDICT_INK: Record<Verdict, Ink> = {
+  refactor: "red",
+  split: "yellow",
+  watch: "cyan",
+  quiet: "dim",
+  inert: "dim",
+};
+
+function verdictInk(cell: string): Ink | undefined {
+  return VERDICT_INK[cell as Verdict];
+}
 
 export interface RefactorOptions {
   top?: number;
@@ -23,8 +36,12 @@ export function renderRefactor(
   }
 
   const top = options.top ?? 20;
+  const paint = painter();
   const out: string[] = [
-    `Refactor: ${formatNumber(report.measured)} files weighed against ${formatNumber(report.commits)} commits since ${report.since}`,
+    heading(
+      `Refactor: ${formatNumber(report.measured)} files weighed against ${formatNumber(report.commits)} commits since ${report.since}`,
+      paint,
+    ),
   ];
 
   if (report.measured === 0) {
@@ -40,7 +57,7 @@ export function renderRefactor(
       "",
     ),
     "",
-    ...verdictLines(report.candidates),
+    ...verdictLines(report.candidates, paint),
   );
 
   const active = report.candidates.filter((file) => file.changes > 0);
@@ -63,8 +80,11 @@ export function renderRefactor(
 
   out.push(
     "",
-    "Ranked by what re-reading them has cost, in tokens",
-    ...table(options.price === undefined ? headers : [...headers, "Cost"], rows),
+    heading("Ranked by what re-reading them has cost, in tokens", paint),
+    ...table(options.price === undefined ? headers : [...headers, "Cost"], rows, {
+      paint,
+      ink: (cell, column) => (column === 1 ? verdictInk(cell) : undefined),
+    }),
   );
 
   const hidden = active.length - shown.length;
@@ -85,13 +105,13 @@ export function renderRefactor(
   return out.join("\n");
 }
 
-function verdictLines(candidates: RefactorCandidate[]): string[] {
+function verdictLines(candidates: RefactorCandidate[], paint: Painter): string[] {
   const width = Math.max(...VERDICT_ORDER.map((verdict) => verdict.length));
   return VERDICT_ORDER.map((verdict) => {
     const count = candidates.filter((file) => file.verdict === verdict).length;
     return count === 0
       ? undefined
-      : `  ${verdict.padEnd(width)}   ${formatNumber(count).padStart(5)} files   ${VERDICT_REASON[verdict]}`;
+      : `  ${paint(verdict.padEnd(width), VERDICT_INK[verdict])}   ${formatNumber(count).padStart(5)} files   ${paint(VERDICT_REASON[verdict], "dim")}`;
   }).filter((line): line is string => line !== undefined);
 }
 

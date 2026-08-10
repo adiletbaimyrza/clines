@@ -101,7 +101,7 @@ describe("table", () => {
         ["a.ts", "1"],
         ["bb.ts", "22"],
       ],
-      40,
+      { width: 40 },
     );
 
     expect(lines[0]).toBe("  File     N");
@@ -111,7 +111,7 @@ describe("table", () => {
 
   it("shrinks the first column to fit the width", () => {
     const long = "packages/react-dom/src/server/ReactFizzConfigDOM.js";
-    const lines = table(["File", "Tokens"], [[long, "1,000"]], 40);
+    const lines = table(["File", "Tokens"], [[long, "1,000"]], { width: 40 });
 
     for (const line of lines) {
       expect([...line].length).toBeLessThanOrEqual(40);
@@ -121,7 +121,7 @@ describe("table", () => {
 
   it("never shrinks the first column below a readable floor", () => {
     const long = "a".repeat(200);
-    const lines = table(["File", "Tokens"], [[long, "1"]], 20);
+    const lines = table(["File", "Tokens"], [[long, "1"]], { width: 20 });
 
     expect((lines[1] as string).trim().split(/\s+/)[0]).toHaveLength(12);
   });

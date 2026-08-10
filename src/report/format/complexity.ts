@@ -1,6 +1,7 @@
 import type { ComplexityResult, FileComplexity } from "../../core/model.js";
 import { escapeHtml, excludedNotice, formatNumber } from "./html.js";
-import { pushHint, table, wrap } from "./text.js";
+import { painter } from "./paint.js";
+import { heading, pushHint, table, wrap } from "./text.js";
 
 export interface ComplexityHtmlOptions {
   title?: string;
@@ -40,8 +41,12 @@ export function renderComplexity(
   const total = files.reduce((sum, file) => sum + file.complexity, 0);
   const ranked = rankComplexity(files, sort, minLines);
 
+  const paint = painter();
   const out: string[] = [
-    `Complexity: ${formatNumber(total)} total   ·   ${formatNumber(ranked.length)} files with complexity`,
+    heading(
+      `Complexity: ${formatNumber(total)} total   ·   ${formatNumber(ranked.length)} files with complexity`,
+      paint,
+    ),
   ];
 
   if (ranked.length === 0) {
@@ -70,8 +75,8 @@ export function renderComplexity(
   const headers = ["File", "Complexity", "Cx/100", "Densest", "Code"];
   out.push(
     "",
-    sort === "density" ? "Densest files" : "Most complex files",
-    ...table(explain ? [...headers, "Branch", "Loop", "Bool"] : headers, rows),
+    heading(sort === "density" ? "Densest files" : "Most complex files", paint),
+    ...table(explain ? [...headers, "Branch", "Loop", "Bool"] : headers, rows, { paint }),
   );
 
   const hidden = ranked.length - shown.length;

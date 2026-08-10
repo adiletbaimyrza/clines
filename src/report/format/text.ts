@@ -1,4 +1,5 @@
 import { isInteractive } from "../../util/tty.js";
+import { painter, type Ink, type Painter } from "./paint.js";
 
 const MIN_WIDTH = 60;
 const MAX_WIDTH = 120;
@@ -54,11 +55,20 @@ export function wrap(text: string, indent: string = "", width: number = terminal
   return lines.map((line, index) => (index === 0 ? line : `${indent}${line}`));
 }
 
-export function table(
-  headers: string[],
-  rows: string[][],
-  width: number = terminalWidth(),
-): string[] {
+export interface TableOptions {
+  width?: number;
+  ink?: (cell: string, column: number) => Ink | undefined;
+  paint?: Painter;
+}
+
+export function heading(text: string, paint: Painter = painter()): string {
+  return paint(text, "bold");
+}
+
+export function table(headers: string[], rows: string[][], options: TableOptions = {}): string[] {
+  const width = options.width ?? terminalWidth();
+  const paint = options.paint ?? painter();
+  const ink = options.ink;
   const natural = headers.map((header, column) =>
     Math.max(header.length, ...rows.map((row) => (row[column] as string).length)),
   );
@@ -69,22 +79,24 @@ export function table(
     widths[0] = Math.max(12, (natural[0] as number) - overflow);
   }
 
-  const line = (cells: string[]): string =>
+  const line = (cells: string[], header: boolean): string =>
     `  ${cells
       .map((cell, column) => {
         const w = widths[column] as number;
-        return column === 0 ? shorten(cell, w).padEnd(w) : cell.padStart(w);
+        const padded = column === 0 ? shorten(cell, w).padEnd(w) : cell.padStart(w);
+        return paint(padded, header ? "dim" : ink?.(cell, column));
       })
       .join("   ")}`;
-  return [line(headers), ...rows.map(line)];
+  return [line(headers, true), ...rows.map((row) => line(row, false))];
 }
 
 export function pushHint(
   out: string[],
   hint: string,
   interactive: boolean = isInteractive(),
+  paint: Painter = painter(),
 ): void {
   if (interactive) {
-    out.push("", hint);
+    out.push("", paint(hint, "dim"));
   }
 }
