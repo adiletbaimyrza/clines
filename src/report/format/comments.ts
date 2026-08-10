@@ -1,6 +1,7 @@
 import type { CommentOutcome } from "../../core/analyzers/comments.js";
 import { formatNumber } from "./html.js";
-import { table } from "./text.js";
+import { painter } from "./paint.js";
+import { heading, table } from "./text.js";
 
 export function renderComments(outcome: CommentOutcome, topFiles: number = 20): string {
   if (outcome.status === "no-comments") {
@@ -12,8 +13,12 @@ export function renderComments(outcome: CommentOutcome, topFiles: number = 20): 
 
   const { health } = outcome;
   const share = (health.drifted / health.blocks) * 100;
+  const paint = painter();
   const out: string[] = [
-    `Comment drift: ${share.toFixed(0)}% of comment blocks describe code that changed later`,
+    heading(
+      `Comment drift: ${share.toFixed(0)}% of comment blocks describe code that changed later`,
+      paint,
+    ),
     `  ${formatNumber(health.drifted)} of ${formatNumber(health.blocks)} blocks across ${formatNumber(health.filesChecked)} files   ·   ${health.years}-year threshold`,
   ];
 
@@ -32,7 +37,11 @@ export function renderComments(outcome: CommentOutcome, topFiles: number = 20): 
       `${((file.drifted / file.blocks) * 100).toFixed(0)}%`,
     ]);
 
-  out.push("", "Most drifted files", ...table(["File", "Drifted", "Blocks", "%"], rows));
+  out.push(
+    "",
+    heading("Most drifted files", paint),
+    ...table(["File", "Drifted", "Blocks", "%"], rows, { paint }),
+  );
 
   const hidden = drifted.length - rows.length;
   if (hidden > 0) {

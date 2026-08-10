@@ -1,6 +1,7 @@
 import type { CloneLocation, DuplicationResult } from "../../core/analyzers/duplication.js";
 import { excludedNotice } from "./html.js";
-import { pushHint, table, wrap } from "./text.js";
+import { painter } from "./paint.js";
+import { heading, pushHint, table, wrap } from "./text.js";
 
 const LOCATION_LABEL: Record<CloneLocation, string> = {
   "within-file": "within one file",
@@ -19,8 +20,9 @@ export function renderDuplicationInsight(
     return [];
   }
 
+  const paint = painter();
   const out: string[] = [
-    "Duplication shape",
+    heading("Duplication shape", paint),
     `  ${num(shape.groups)} clone groups   ·   ${num(shape.removable)} lines removable if each were deduped once`,
     `  Size       ${shape.underTen.toFixed(0)}% under 10 lines   ·   median ${num(shape.medianLines)}   ·   largest ${num(shape.maxLines)}`,
     `  Location   ${locationSummary(shape.byLocation, shape.groups)}`,
@@ -48,8 +50,8 @@ export function renderDuplicationInsight(
   const headers = ["Where", "Lines", "Copies", "Removable"];
   out.push(
     "",
-    "Biggest refactor opportunities",
-    ...table(churn === undefined ? headers : [...headers, "Last touched"], rows),
+    heading("Biggest refactor opportunities", paint),
+    ...table(churn === undefined ? headers : [...headers, "Last touched"], rows, { paint }),
   );
 
   return out;
@@ -73,8 +75,12 @@ function ageLabel(churn: Map<string, number>, files: string[]): string {
 }
 
 export function renderDuplication(result: DuplicationResult, topFiles: number = 10): string {
+  const paint = painter();
   const out: string[] = [
-    `Duplication: ${result.percentage.toFixed(1)}%   ${num(result.duplicatedLines)} duplicated lines   ·   ${num(result.clones.length)} clones`,
+    heading(
+      `Duplication: ${result.percentage.toFixed(1)}%   ${num(result.duplicatedLines)} duplicated lines   ·   ${num(result.clones.length)} clones`,
+      paint,
+    ),
   ];
 
   if (result.clones.length === 0) {
@@ -86,7 +92,11 @@ export function renderDuplication(result: DuplicationResult, topFiles: number = 
   const files = result.perFile.slice(0, topFiles);
   const rows = files.map((f) => [f.path, num(f.duplicatedLines), `${f.percentage.toFixed(0)}%`]);
 
-  out.push("", "Most duplicated files", ...table(["File", "Dup lines", "% of file"], rows));
+  out.push(
+    "",
+    heading("Most duplicated files", paint),
+    ...table(["File", "Dup lines", "% of file"], rows, { paint }),
+  );
 
   const hidden = result.perFile.length - files.length;
   if (hidden > 0) {

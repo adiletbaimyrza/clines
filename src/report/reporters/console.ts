@@ -2,7 +2,8 @@ import type { Report } from "../../core/model.js";
 import type { Reporter } from "../reporter.js";
 import { getProjectSize } from "../format/size-label.js";
 import { sortedLanguages } from "../format/table.js";
-import { table, wrap } from "../format/text.js";
+import { painter, type Ink } from "../format/paint.js";
+import { heading, table, wrap } from "../format/text.js";
 
 type Align = "left" | "right";
 
@@ -59,25 +60,39 @@ export const consoleReporter: Reporter = {
       width: Math.max(col.header.length, ...[...rows, totalRow].map((r) => col.pick(r).length)),
     }));
 
-    const renderCells = (cells: (col: (typeof sized)[number]) => string): string =>
+    const paint = painter();
+    const renderCells = (
+      cells: (col: (typeof sized)[number]) => string,
+      ink?: (col: (typeof sized)[number]) => Ink | undefined,
+    ): string =>
       sized
         .map((col) => {
           const value = cells(col);
-          return col.align === "left" ? value.padEnd(col.width) : value.padStart(col.width);
+          const padded = col.align === "left" ? value.padEnd(col.width) : value.padStart(col.width);
+          return paint(padded, ink?.(col));
         })
         .join("  ");
 
     const divider = "─".repeat(sized.reduce((sum, c) => sum + c.width, 0) + 2 * (sized.length - 1));
     const size = getProjectSize(report.totalCode);
 
+    const faint = (col: (typeof sized)[number]): Ink | undefined =>
+      col.header === "%" ? "dim" : undefined;
+
     return [
-      renderCells((col) => col.header),
-      divider,
-      ...rows.map((row) => renderCells((col) => col.pick(row))),
-      divider,
-      renderCells((col) => col.pick(totalRow)),
+      renderCells(
+        (col) => col.header,
+        () => "dim",
+      ),
+      paint(divider, "dim"),
+      ...rows.map((row) => renderCells((col) => col.pick(row), faint)),
+      paint(divider, "dim"),
+      renderCells(
+        (col) => col.pick(totalRow),
+        (col) => (col.header === "%" ? "dim" : "bold"),
+      ),
       "",
-      `Project size: ${size.text}`,
+      `${heading("Project size:", paint)} ${size.text}`,
       ...roleLines(report),
       ...(verbose ? detailLines(report) : []),
     ].join("\n");
@@ -87,6 +102,7 @@ export const consoleReporter: Reporter = {
 const LARGEST_SHOWN = 15;
 
 function detailLines(report: Report): string[] {
+  const paint = painter();
   const rows = sortedLanguages(report).map((l) => [
     l.language,
     num(l.medianCode),
@@ -107,11 +123,15 @@ function detailLines(report: Report): string[] {
 
   return [
     "",
-    "File size in code lines, and density per language",
-    ...table(["Language", "Median", "p90", "Max", "Cx/100", "Comments"], rows),
+    heading("File size in code lines, and density per language", paint),
+    ...table(["Language", "Median", "p90", "Max", "Cx/100", "Comments"], rows, { paint }),
     ...(files.length === 0
       ? []
-      : ["", "Largest files", ...table(["File", "Code", "Comments", "Cx/100"], files)]),
+      : [
+          "",
+          heading("Largest files", paint),
+          ...table(["File", "Code", "Comments", "Cx/100"], files, { paint }),
+        ]),
     "",
     ...wrap(
       `Concentration: the largest ${num(concentration.largestFiles)} files (5%) hold ` +

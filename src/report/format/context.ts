@@ -1,6 +1,7 @@
 import type { ContextResult, FileContext } from "../../core/model.js";
 import { escapeHtml, excludedNotice, formatNumber } from "./html.js";
-import { multiple, pushHint, table, wrap } from "./text.js";
+import { painter } from "./paint.js";
+import { heading, multiple, pushHint, table, wrap } from "./text.js";
 
 export const DEFAULT_WINDOW = 200000;
 export const DEFAULT_BUDGET = 50000;
@@ -38,8 +39,12 @@ export function renderContext(
   budget: number = DEFAULT_BUDGET,
   topFiles: number = 20,
 ): string {
+  const paint = painter();
   const out: string[] = [
-    `Context: ${formatNumber(result.totalTokens)} tokens   ·   ${windowPhrase(result.totalTokens, window)}   ·   ${share(result.commentTokens, result.totalTokens)} comments`,
+    heading(
+      `Context: ${formatNumber(result.totalTokens)} tokens   ·   ${windowPhrase(result.totalTokens, window)}   ·   ${share(result.commentTokens, result.totalTokens)} comments`,
+      paint,
+    ),
   ];
 
   if (result.files.length === 0) {
@@ -51,7 +56,11 @@ export function renderContext(
   const dirs = result.dirs
     .slice(0, topFiles)
     .map((dir) => [dir.dir, formatNumber(dir.tokens), formatNumber(dir.files)]);
-  out.push("", "Largest directories", ...table(["Directory", "Tokens", "Files"], dirs));
+  out.push(
+    "",
+    heading("Largest directories", paint),
+    ...table(["Directory", "Tokens", "Files"], dirs, { paint }),
+  );
 
   const files = result.files
     .slice(0, topFiles)
@@ -61,7 +70,11 @@ export function renderContext(
       formatNumber(file.codeTokens),
       formatNumber(file.commentTokens),
     ]);
-  out.push("", "Biggest files", ...table(["File", "Tokens", "Code", "Comments"], files));
+  out.push(
+    "",
+    heading("Biggest files", paint),
+    ...table(["File", "Tokens", "Code", "Comments"], files, { paint }),
+  );
 
   const hidden = result.files.length - files.length;
   if (hidden > 0) {
