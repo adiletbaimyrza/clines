@@ -8,6 +8,7 @@ import {
   analyzeComments,
   analyzeCloneChurn,
   analyzeDuplication,
+  analyzeRefactor,
   collectRoledFiles,
   partition,
   type AnalyzeOptions,
@@ -15,12 +16,14 @@ import {
 } from "../core/pipeline.js";
 import { renderComplexity, renderComplexityHtml } from "../report/format/complexity.js";
 import { renderComments } from "../report/format/comments.js";
+import { renderRefactor } from "../report/format/refactor.js";
 import { renderContext, renderContextHtml } from "../report/format/context.js";
 import { renderDuplication, renderDuplicationInsight } from "../report/format/duplication.js";
 import { renderDuplicationHtml } from "../report/format/duplication-html.js";
 import { consoleReporter } from "../report/reporters/console.js";
 import { injectReadme } from "../report/reporters/readme.js";
 import { ClinesError } from "../util/errors.js";
+import type { ChangeReader } from "../util/git.js";
 import { pathExists, readText, writeText } from "../util/fs.js";
 import { openInBrowser } from "../util/open.js";
 import type { IO } from "./io.js";
@@ -67,6 +70,15 @@ export interface CommentsOptions {
   top: number;
   scan: number;
   years: number;
+  config?: string;
+}
+
+export interface RefactorOptions {
+  dir: string;
+  all?: boolean;
+  since: string;
+  top: number;
+  price?: number;
   config?: string;
 }
 
@@ -230,6 +242,33 @@ export async function runContext(
     );
   }
 
+  return 0;
+}
+
+export async function runRefactor(
+  options: RefactorOptions,
+  io: IO,
+  reader?: ChangeReader,
+): Promise<number> {
+  const {
+    rootDir,
+    config,
+    globs,
+    options: opts,
+  } = await prepare(options.dir, options.config, options.all);
+  io.err(`Reading git history since ${options.since}…`);
+  const report = await analyzeRefactor(rootDir, config, globs, {
+    ...opts,
+    since: options.since,
+    ...(reader !== undefined ? { reader } : {}),
+  });
+
+  io.out(
+    renderRefactor(report, {
+      top: options.top,
+      ...(options.price !== undefined ? { price: options.price } : {}),
+    }),
+  );
   return 0;
 }
 

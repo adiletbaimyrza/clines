@@ -6,10 +6,11 @@
 [![license](https://img.shields.io/npm/l/clines.svg)](./LICENSE)
 
 `clines` counts lines of code, comments and blanks per language, finds duplicate code, ranks files
-by complexity, estimates what a repository costs a language model to read, and finds comments the
-code has drifted away from. It is a `cloc` alternative with four additional analyses built in.
+by complexity, estimates what a repository costs a language model to read, finds comments the code
+has drifted away from, and says which files are worth refactoring. It is a `cloc` alternative with
+five additional analyses built in.
 
-It has five commands:
+It has six commands:
 
 | Command    | Output                                                                 |
 | ---------- | ---------------------------------------------------------------------- |
@@ -18,6 +19,7 @@ It has five commands:
 | `cx`       | Files ranked by decision-point complexity.                             |
 | `ctx`      | Estimated token cost, with an optional budget check for CI.            |
 | `comments` | Comment blocks the code has drifted away from.                         |
+| `refactor` | A verdict per file, from how complex it is and how often it changes.   |
 
 Runtime dependencies are `commander` and `zod`. Test coverage is 100%.
 
@@ -289,6 +291,48 @@ matter — so a stale comment is worse than no comment.
 It is a suspicion signal, not proof: a comment describing unchanged intent can legitimately outlive
 edits below it. Only the most-commented files are checked, because `git blame` is slow — react
 takes about eight seconds. Requires a git repository with tracked files.
+
+### Deciding what to refactor
+
+Complexity on its own is a poor priority list: it ranks a file you never open above one you edit
+every week. `clines refactor` (alias `rf`) reads `git log --name-only` once, joins the change count
+to complexity density and token cost, and returns a verdict per file.
+
+```sh
+npx clines refactor                      # last 2 years
+npx clines refactor --since '6 months'   # a shorter window
+npx clines refactor --price 3            # cost the re-reads at $3 per million tokens
+npx clines refactor --top 50             # list more files
+```
+
+```text
+Refactor: 1,113 files weighed against 2,367 commits since 2 years ago
+
+Judged against this repo: changed often means 3+ changes, dense means 16.7 cx per 100 lines, costly
+means 2,420 tokens.
+
+  refactor     122 files   complex and changed often — you pay for this repeatedly
+  split        162 files   expensive to read and changed often, though the logic is simple
+  watch        257 files   changed often but cheap to read
+  quiet        322 files   rarely touched
+  inert        250 files   untouched in this window — leave it alone
+
+Ranked by what re-reading them has cost, in tokens
+  File                                        Verdict   Changes   Cx/100   Tokens   Re-read     Cost
+  packages/react-…ackend/fiber/renderer.js   refactor       151     20.0      64k      9.6M   $28.83
+  packages/react-…src/ReactFlightServer.js   refactor       134     17.3      56k      7.5M   $22.41
+  packages/react-…t/ReactFiberConfigDOM.js   refactor       114     16.7      54k      6.1M   $18.39
+```
+
+`Re-read` is tokens × changes: what reading that file for every change to it has cost so far, and
+what it will keep costing. On react, 250 of the 1,113 files with any complexity did not change at
+all in two years — a complexity ranking puts many of them near the top, and this one drops them to
+the bottom where they belong.
+
+The thresholds are quantiles of the repository itself, not fixed numbers: `dense` and `costly` are
+the 75th percentile of density and tokens, and `changed often` is the median change count among
+files that changed, floored at 2. Verdicts are therefore relative — every repository has a top
+quartile. Requires a git repository.
 
 ## Example output
 

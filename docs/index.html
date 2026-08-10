@@ -6,7 +6,7 @@
     <title>clines — measure your codebase</title>
     <meta
       name="description"
-      content="clines is a command-line tool that measures a codebase: lines per language, duplicate code, complexity ranking, estimated token cost, and comments the code has drifted away from."
+      content="clines is a command-line tool that measures a codebase: lines per language, duplicate code, complexity ranking, estimated token cost, comment drift, and a refactor verdict per file."
     />
     <link
       rel="icon"
@@ -361,8 +361,8 @@
         <div class="tagline">Measure your codebase from the terminal.</div>
         <p class="subtag">
           A CLI that counts code, comments and blanks per language, finds duplicate code, ranks
-          files by complexity, estimates token cost, and finds comments the code has moved away
-          from.
+          files by complexity, estimates token cost, decides what is worth refactoring, and finds
+          comments the code has moved away from.
         </p>
         <div class="cta">
           <a class="btn primary" href="#usage">Get started</a>
@@ -486,6 +486,15 @@ Project size: <span class="size">Solar System ☀️</span></pre>
             </p>
           </div>
           <div class="card">
+            <div class="ico">⚖️</div>
+            <h3>Refactor verdict</h3>
+            <p>
+              <span class="cmd">clines refactor</span> joins complexity to how often each file
+              changes in git, and ranks by tokens &times; changes — what re-reading it keeps
+              costing.
+            </p>
+          </div>
+          <div class="card">
             <div class="ico">✅</div>
             <h3>100% tested</h3>
             <p>
@@ -528,6 +537,12 @@ $ npx clines ctx --max 200k
 
 <span style="color: var(--muted)"># find comments the code has drifted away from</span>
 $ npx clines comments
+
+<span style="color: var(--muted)"># decide which files are worth refactoring</span>
+$ npx clines refactor
+
+<span style="color: var(--muted)"># ...priced at $3 per million tokens</span>
+$ npx clines refactor --price 3
 
 <span style="color: var(--muted)"># the bare command prints a banner + version</span>
 $ npx clines</pre>

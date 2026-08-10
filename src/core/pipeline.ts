@@ -1,7 +1,14 @@
 import path from "node:path";
 import type { Config } from "../config/schema.js";
 import { readText } from "../util/fs.js";
-import { blameFile, type Blamer } from "../util/git.js";
+import {
+  blameFile,
+  changeLog,
+  countCommits,
+  parseChangeLog,
+  type Blamer,
+  type ChangeReader,
+} from "../util/git.js";
 import {
   measureDrift,
   summarizeDrift,
@@ -9,6 +16,7 @@ import {
   type FileDrift,
 } from "./analyzers/comments.js";
 import { linesAnalyzer } from "./analyzers/lines.js";
+import { judge, type RefactorReport } from "./analyzers/refactor.js";
 import {
   detectDuplication,
   normalizeRenamed,
@@ -302,6 +310,46 @@ export async function analyzeComments(
     return { status: "unavailable" };
   }
   return { status: "ok", health: summarizeDrift(drifts, years) };
+}
+
+export interface RefactorOptions extends AnalyzeOptions {
+  since?: string;
+  reader?: ChangeReader;
+}
+
+export async function analyzeRefactor(
+  rootDir: string,
+  config: Config,
+  extraGlobs: string[] = [],
+  options: RefactorOptions = {},
+): Promise<RefactorReport | undefined> {
+  const since = options.since ?? "2 years ago";
+  const log = await (options.reader ?? changeLog)(rootDir, since);
+  if (log === undefined) {
+    return undefined;
+  }
+
+  const collected = await collectRoledFiles(rootDir, config, extraGlobs, options);
+  const { included } = partition(collected, options.includeAll === true);
+  const counts = parseChangeLog(log);
+
+  const files = included.map((file) => {
+    const ext = path.extname(file.path) || "no_ext";
+    const detail = measureComplexity(
+      sanitizeCode(file.content, getLanguageSyntax(ext)),
+      getComplexityChecks(ext),
+    );
+    return {
+      path: file.path,
+      complexity: detail.total,
+      code: file.code,
+      density: file.code === 0 ? 0 : (detail.total / file.code) * 100,
+      tokens: measureContext(file).tokens,
+      changes: counts.get(file.path) ?? 0,
+    };
+  });
+
+  return judge(files, since, countCommits(log));
 }
 
 export async function analyzeDuplication(

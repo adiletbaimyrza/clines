@@ -1,6 +1,6 @@
 {
   "name": "clines",
-  "version": "5.5.0",
+  "version": "5.6.0",
   "description": "Count lines of code per language, find code duplication, rank files by code complexity, and estimate the token count of a repository for AI agents. A modern cloc alternative.",
   "type": "module",
   "homepage": "https://adiletbaimyrza.github.io/clines/",
@@ -57,6 +57,8 @@
     "stale-comments",
     "code-comments",
     "git-blame",
+    "refactoring",
+    "code-hotspots",
     "ai",
     "cli"
   ],
