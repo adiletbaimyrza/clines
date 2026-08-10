@@ -1,6 +1,6 @@
 {
   "name": "clines",
-  "version": "5.12.1",
+  "version": "5.12.2",
   "description": "Count lines of code per language, find duplicate code, rank files by code complexity, estimate the token count of a repository for AI agents, find stale comments, and decide which files are worth refactoring. A modern cloc alternative.",
   "type": "module",
   "homepage": "https://adiletbaimyrza.github.io/clines/",
@@ -33,7 +33,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "stage:list": "npx --yes npm@latest stage list clines",
-    "deploy": "npx --yes npm@latest stage approve",
+    "deploy": "node scripts/approve.mjs",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
