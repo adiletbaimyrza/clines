@@ -1,6 +1,7 @@
 import { Command, InvalidArgumentError, Option } from "commander";
 import { renderBanner } from "./banner.js";
 import type { IO } from "./io.js";
+import { collect, flush, type FlushOptions } from "./pager.js";
 import {
   run,
   runComments,
@@ -23,6 +24,7 @@ export interface ProgramDeps {
   contextRunner?: (options: ContextOptions, io: IO) => Promise<number>;
   commentsRunner?: (options: CommentsOptions, io: IO) => Promise<number>;
   refactorRunner?: (options: RefactorOptions, io: IO) => Promise<number>;
+  flush?: FlushOptions;
   version?: string;
 }
 
@@ -98,7 +100,18 @@ Examples:
   $ clines ctx --max 200k     fail CI above a token budget
   $ clines comments           find comments the code moved away from
   $ clines refactor           decide which files are worth refactoring
+  $ clines cx --top all       list every file, through your pager
 `;
+
+const UNLIMITED = Number.MAX_SAFE_INTEGER;
+
+function parseRowCount(value: string): number {
+  const trimmed = value.trim().toLowerCase();
+  if (trimmed === "all" || trimmed === "0") {
+    return UNLIMITED;
+  }
+  return parsePositiveInt(value);
+}
 
 function parsePrice(value: string): number {
   const parsed = Number(value);
@@ -139,6 +152,7 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
       "Measure your codebase — lines per language, duplication, complexity, token cost and comment drift.",
     )
     .version(version)
+    .option("--no-pager", "print long output directly instead of through a pager")
     .showHelpAfterError("(run `clines --help` for usage)")
     .addHelpText("after", EXAMPLES);
 
@@ -182,7 +196,7 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
       parsePositiveInt,
       2,
     )
-    .option("--top <n>", "clone groups and files to list in the terminal", parsePositiveInt, 10)
+    .option("--top <n>", "clone groups and files to list, or `all`", parseRowCount, 10)
     .option("--cross-file", "ignore duplication that sits inside a single file")
     .option("--renamed", "also count clones that match once identifiers are ignored")
     .option("--churn", "show when each clone was last touched (needs git)")
@@ -224,7 +238,7 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
       "\nExamples:\n  $ clines cx\n  $ clines cx --explain\n  $ clines cx --sort density --min-lines 100\n",
     )
     .argument("[dir]", "directory to scan", ".")
-    .option("--top <n>", "files to list in the terminal", parsePositiveInt, 20)
+    .option("--top <n>", "files to list, or `all`", parseRowCount, 20)
     .option("--html <file>", "write a browsable HTML report to this path")
     .option("--open", "open the HTML report in a browser")
     .option("--all", "include test, generated, vendored and docs files")
@@ -257,7 +271,7 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .option("--window <n>", "context window to compare against", parseTokenCount, 200000)
     .option("--budget <n>", "working set a single read should fit inside", parseTokenCount, 50000)
     .option("--max <n>", "exit non-zero when the total exceeds this budget", parseTokenCount)
-    .option("--top <n>", "files to list in the terminal", parsePositiveInt, 20)
+    .option("--top <n>", "files to list, or `all`", parseRowCount, 20)
     .option("--html <file>", "write a browsable HTML report to this path")
     .option("--open", "open the HTML report in a browser")
     .option("--all", "include test, generated, vendored and docs files")
@@ -289,7 +303,7 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
     .argument("[dir]", "directory to scan", ".")
     .option("--since <when>", "how far back to read git history", "2 years ago")
     .option("--price <usd>", "price per million tokens, to cost the re-reads", parsePrice)
-    .option("--top <n>", "files to list in the terminal", parsePositiveInt, 20)
+    .option("--top <n>", "files to list, or `all`", parseRowCount, 20)
     .option("--all", "include test, generated, vendored and docs files")
     .option("--config <path>", "path to a config file")
     .action(async (dir: string, flags: RefactorFlags) => {
@@ -320,7 +334,7 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
       parsePositiveInt,
       3,
     )
-    .option("--top <n>", "files to list in the terminal", parsePositiveInt, 20)
+    .option("--top <n>", "files to list, or `all`", parseRowCount, 20)
     .option("--scan <n>", "how many of the most commented files to blame", parsePositiveInt, 50)
     .option("--all", "include test, generated, vendored and docs files")
     .option("--config <path>", "path to a config file")
@@ -341,15 +355,25 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
 
 export async function runCli(argv: string[], io: IO, deps: ProgramDeps = {}): Promise<void> {
   const version = deps.version ?? "0.0.0";
-  const args = argv.slice(2);
+  const paged = !argv.includes("--no-pager");
+  const stripped = paged ? argv : argv.filter((arg) => arg !== "--no-pager");
+  const args = stripped.slice(2);
   if (args.length === 0) {
     io.out(renderBanner(version));
     return;
   }
-  const program = buildProgram(io, deps);
+
+  const collected = collect(io);
+  const program = buildProgram(collected.io, deps);
   program.exitOverride();
   // -v is what people type; commander reserves -V. Only the global position is rewritten,
   // so a literal "-v" passed as an option value is untouched.
-  const normalized = args[0] === "-v" ? [...argv.slice(0, 2), "--version", ...args.slice(1)] : argv;
-  await program.parseAsync(normalized);
+  const normalized =
+    args[0] === "-v" ? [...stripped.slice(0, 2), "--version", ...args.slice(1)] : stripped;
+
+  try {
+    await program.parseAsync(normalized);
+  } finally {
+    await flush(collected.text(), io, { paged, ...deps.flush });
+  }
 }

@@ -360,6 +360,32 @@ describe("runCli", () => {
     }
   });
 
+  it("treats --top all and --top 0 as no limit", async () => {
+    const complexityRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(["node", "clines", "cx", project.root, "--top", "all"], io, { complexityRunner });
+    await runCli(["node", "clines", "cx", project.root, "--top", "0"], io, { complexityRunner });
+    await runCli(["node", "clines", "cx", project.root, "--top", "ALL"], io, { complexityRunner });
+
+    for (const call of complexityRunner.mock.calls) {
+      expect(call[0]).toMatchObject({ top: Number.MAX_SAFE_INTEGER });
+    }
+  });
+
+  it("strips --no-pager wherever it appears", async () => {
+    const complexityRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(["node", "clines", "--no-pager", "cx", project.root], io, { complexityRunner });
+    await runCli(["node", "clines", "cx", project.root, "--no-pager"], io, { complexityRunner });
+
+    expect(complexityRunner).toHaveBeenCalledTimes(2);
+    for (const call of complexityRunner.mock.calls) {
+      expect(call[0]).toMatchObject({ dir: project.root });
+    }
+  });
+
   it("runs refactor with defaults via the rf alias", async () => {
     const refactorRunner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();

@@ -65,6 +65,11 @@ Output is coloured when it is going to a terminal: bold headings, dim table head
 `refactor` verdicts by severity. Set `NO_COLOR` to turn it off, or `FORCE_COLOR` to keep colour
 through a pipe. Piped and redirected output is plain by default, so `clines … > file` is unchanged.
 
+Every listing is capped by `--top <n>`. Pass `--top all` (or `--top 0`) to list everything instead
+of ending on `… and 1,093 more files.` When output is longer than the terminal and stdout is a
+terminal, it is handed to your pager — `$CLINES_PAGER`, else `$PAGER`, else `less -R -F -X` —
+keeping the colour. `--no-pager`, `PAGER=cat` or `PAGER=` prints it straight through.
+
 Examples:
 
 ```sh
