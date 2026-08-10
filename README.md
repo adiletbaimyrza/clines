@@ -72,13 +72,13 @@ npx clines count --distribution       # + distribution and the largest files
 
 By default `clines` reports on **source files only**. Every file is classified into one role:
 
-| Role        | Detected by                                                                                                  |
-| ----------- | ------------------------------------------------------------------------------------------------------------ |
-| `source`    | anything not matched below                                                                                   |
-| `test`      | `__tests__/`, `test/`, `spec/`, `fixtures/`, `benchmarks/`, `*.test.*`, `*.spec.*`                           |
-| `generated` | `linguist-generated` in `.gitattributes`, a `@generated` or `DO NOT EDIT` header, `*.min.*`, `*.generated.*` |
-| `vendored`  | `linguist-vendored`, `vendor/`, `third_party/`, `flow-typed/`                                                |
-| `docs`      | `linguist-documentation`, `docs/`, `.md`, `.txt`, `.rst`                                                     |
+| Role        | Detected by                                                                                                                                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `source`    | anything not matched below                                                                                                                 |
+| `test`      | `__tests__/`, `test/`, `spec/`, `fixtures/`, `benchmarks/`, `*.test.*`, `*.spec.*`                                                         |
+| `generated` | `linguist-generated` in `.gitattributes`, a `@generated` or `DO NOT EDIT` header, `*.min.*`, `*.generated.*`, and clines' own HTML reports |
+| `vendored`  | `linguist-vendored`, `vendor/`, `third_party/`, `flow-typed/`                                                                              |
+| `docs`      | `linguist-documentation`, `docs/`, `.md`, `.txt`, `.rst`                                                                                   |
 
 Non-source files are excluded from headline figures and named underneath:
 
@@ -88,6 +88,10 @@ Excluded 4,892 files: 4,699 test · 20 generated · 13 vendored · 160 docs   (-
 
 `--all` restores the pre-4.0 behaviour of counting everything. `count` always prints a per-role
 breakdown and a test-to-source ratio regardless.
+
+clines recognises its own HTML reports, so writing one into the repository you are measuring does
+not change the next measurement. Left unhandled this is a real trap: a `dup --html dup.html` report
+of the react repository is 1.2 MB, which added 11,403 phantom code lines to the following run.
 
 Roles can be overridden in `clines.json`, which takes precedence over every heuristic:
 

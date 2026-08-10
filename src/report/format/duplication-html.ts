@@ -29,6 +29,7 @@ export function renderDuplicationHtml(
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="generator" content="clines" />
 <title>${esc(title)}</title>
 <link rel="stylesheet" href="${HLJS_CSS}" />
 <style>${STYLE}</style>

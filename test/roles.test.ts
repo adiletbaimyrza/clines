@@ -68,6 +68,20 @@ describe("classifyRole", () => {
     expect(classify("src/a.ts", "const a = 1;\n")).toBe("source");
   });
 
+  it("recognises clines' own HTML reports", () => {
+    expect(classify("dup.html", '<meta name="generator" content="clines" />')).toBe("generated");
+    expect(classify("cx.html", "<title>clines — complexity report</title>")).toBe("generated");
+    expect(classify("ctx.html", "<title>clines — context report</title>")).toBe("generated");
+  });
+
+  it("does not mistake an unrelated page that merely mentions clines", () => {
+    expect(classify("index.html", "<title>My project</title><p>built with clines</p>")).toBe(
+      "source",
+    );
+    expect(classify("app.html", "<title>clines usage guide</title>")).toBe("source");
+    expect(classify("post.html", "<title>clines — the reporting story</title>")).toBe("source");
+  });
+
   it("detects docs by extension and directory", () => {
     expect(classify("README.md")).toBe("docs");
     expect(classify("NOTES.txt")).toBe("docs");
