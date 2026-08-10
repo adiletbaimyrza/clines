@@ -33,3 +33,35 @@ export async function blameFile(
     );
   });
 }
+
+export type ChangeReader = (rootDir: string, since: string) => Promise<string | undefined>;
+
+const COMMIT = /^[0-9a-f]{40}$/;
+
+export function parseChangeLog(output: string): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const line of output.split("\n")) {
+    if (line === "" || COMMIT.test(line)) {
+      continue;
+    }
+    counts.set(line, (counts.get(line) ?? 0) + 1);
+  }
+  return counts;
+}
+
+export function countCommits(output: string): number {
+  return output.split("\n").filter((line) => COMMIT.test(line)).length;
+}
+
+export async function changeLog(rootDir: string, since: string): Promise<string | undefined> {
+  return new Promise((resolve) => {
+    execFile(
+      "git",
+      ["log", `--since=${since}`, "--name-only", "--pretty=format:%H", "--no-merges"],
+      { cwd: rootDir, maxBuffer: MAX_BUFFER },
+      (error, stdout) => {
+        resolve(error === null ? stdout : undefined);
+      },
+    );
+  });
+}

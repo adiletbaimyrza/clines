@@ -20,6 +20,7 @@ const COMMANDS: [string, string][] = [
   ["cx", "files ranked by complexity"],
   ["ctx", "estimated token cost to read the repo"],
   ["comments", "comments the code has drifted away from"],
+  ["refactor", "which files are worth refactoring"],
 ];
 
 const ESC = String.fromCharCode(27);

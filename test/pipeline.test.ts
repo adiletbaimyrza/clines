@@ -6,6 +6,7 @@ import {
   analyzeComments,
   analyzeContext,
   analyzeDuplication,
+  analyzeRefactor,
   collectRoledFiles,
 } from "../src/core/pipeline.js";
 import { TempProject } from "./helpers/tmp.js";
@@ -47,6 +48,33 @@ describe("analyzeComplexity", () => {
     expect(files[0]).toMatchObject({ complexity: 3, language: "TypeScript" });
     expect(files[3]!.complexity).toBe(0);
     expect(files[0]!.code).toBe(3);
+  });
+});
+
+describe("analyzeRefactor", () => {
+  it("joins complexity and tokens to the change log, extensionless files included", async () => {
+    project.file("hot.ts", "if (a) { b(); }\nif (c) { d(); }\n");
+    project.file("Makefile", "if a\n");
+    project.file("empty.ts", "");
+    const log = ["a".repeat(40), "hot.ts", "", "b".repeat(40), "hot.ts", "Makefile"].join("\n");
+
+    const report = await analyzeRefactor(project.root, defaultConfig(), [], {
+      reader: async (_root, since) => (since === "2 years ago" ? log : undefined),
+    });
+
+    const byPath = new Map(report?.candidates.map((c) => [c.path, c]));
+    expect(report?.commits).toBe(2);
+    expect(byPath.get("hot.ts")?.changes).toBe(2);
+    expect(byPath.get("hot.ts")?.density).toBe(100);
+    expect(byPath.get("empty.ts")).toBeUndefined();
+  });
+
+  it("returns nothing when git history is unavailable", async () => {
+    project.file("a.ts", "if (a) { b(); }\n");
+
+    expect(
+      await analyzeRefactor(project.root, defaultConfig(), [], { reader: async () => undefined }),
+    ).toBeUndefined();
   });
 });
 

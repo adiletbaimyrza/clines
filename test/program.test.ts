@@ -360,6 +360,66 @@ describe("runCli", () => {
     }
   });
 
+  it("runs refactor with defaults via the rf alias", async () => {
+    const refactorRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(["node", "clines", "rf", project.root], io, { refactorRunner });
+
+    expect(refactorRunner.mock.calls[0]![0]).toEqual({
+      dir: project.root,
+      all: false,
+      since: "2 years ago",
+      top: 20,
+    });
+  });
+
+  it("parses --since, --price, --top, --all and --config for refactor", async () => {
+    const refactorRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await runCli(
+      [
+        "node",
+        "clines",
+        "refactor",
+        project.root,
+        "--since",
+        "6 months ago",
+        "--price",
+        "0.25",
+        "--top",
+        "5",
+        "--all",
+        "--config",
+        "c.json",
+      ],
+      io,
+      { refactorRunner },
+    );
+
+    expect(refactorRunner.mock.calls[0]![0]).toEqual({
+      dir: project.root,
+      all: true,
+      since: "6 months ago",
+      price: 0.25,
+      top: 5,
+      config: "c.json",
+    });
+  });
+
+  it("rejects a price that is not a positive number", async () => {
+    const refactorRunner = vi.fn(async (): Promise<number> => 0);
+    const { io } = captureIO();
+
+    await expect(
+      runCli(["node", "clines", "refactor", "--price", "0"], io, { refactorRunner }),
+    ).rejects.toThrow();
+    await expect(
+      runCli(["node", "clines", "refactor", "--price", "nope"], io, { refactorRunner }),
+    ).rejects.toThrow();
+  });
+
   it("runs comments with defaults via the cm alias", async () => {
     const commentsRunner = vi.fn(async (): Promise<number> => 0);
     const { io } = captureIO();

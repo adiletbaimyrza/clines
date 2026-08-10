@@ -1,6 +1,13 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { run, runComments, runComplexity, runContext, runDup } from "../src/cli/run.js";
+import {
+  run,
+  runComments,
+  runComplexity,
+  runContext,
+  runDup,
+  runRefactor,
+} from "../src/cli/run.js";
 import { ClinesError } from "../src/util/errors.js";
 import { pathExists } from "../src/util/fs.js";
 import { captureIO, TempProject } from "./helpers/tmp.js";
@@ -259,6 +266,50 @@ describe("runComplexity", () => {
     await expect(
       runComplexity({ dir: project.path("nope"), top: 100, open: true }, io, () => {}),
     ).rejects.toBeInstanceOf(ClinesError);
+  });
+});
+
+describe("runRefactor", () => {
+  const options = { dir: "", since: "2 years ago", top: 20 };
+
+  it("weighs complexity against the change log", async () => {
+    project.file("hot.ts", `${"if (a) { b(); }\n".repeat(40)}`);
+    project.file("cold.ts", "if (a) { b(); }\n");
+    const { io, out, err } = captureIO();
+
+    const code = await runRefactor({ ...options, dir: project.root, price: 3 }, io, async () =>
+      ["a".repeat(40), "hot.ts", "", "b".repeat(40), "hot.ts"].join("\n"),
+    );
+
+    expect(code).toBe(0);
+    expect(err.join("\n")).toContain("Reading git history since 2 years ago…");
+    expect(out.join("\n")).toContain("2 commits since 2 years ago");
+    expect(out.join("\n")).toContain("hot.ts");
+    expect(out.join("\n")).toContain("Cost");
+  });
+
+  it("says so when git history cannot be read", async () => {
+    project.file("a.ts", "if (a) { b(); }\n");
+    const { io, out } = captureIO();
+
+    await runRefactor({ ...options, dir: project.root }, io, async () => undefined);
+
+    expect(out.join("\n")).toContain("need git history");
+  });
+
+  it("reads git itself when no reader is injected", async () => {
+    project.file("a.ts", "if (a) { b(); }\n");
+    const { io, out } = captureIO();
+
+    expect(await runRefactor({ ...options, dir: project.root }, io)).toBe(0);
+    expect(out.join("\n")).toContain("need git history");
+  });
+
+  it("throws for a missing directory", async () => {
+    const { io } = captureIO();
+    await expect(runRefactor({ ...options, dir: project.path("nope") }, io)).rejects.toBeInstanceOf(
+      ClinesError,
+    );
   });
 });
 

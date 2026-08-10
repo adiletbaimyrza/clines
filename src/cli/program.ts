@@ -7,10 +7,12 @@ import {
   runComplexity,
   runContext,
   runDup,
+  runRefactor,
   type CommentsOptions,
   type ComplexityOptions,
   type ContextOptions,
   type DupOptions,
+  type RefactorOptions,
   type RunOptions,
 } from "./run.js";
 
@@ -20,6 +22,7 @@ export interface ProgramDeps {
   complexityRunner?: (options: ComplexityOptions, io: IO) => Promise<number>;
   contextRunner?: (options: ContextOptions, io: IO) => Promise<number>;
   commentsRunner?: (options: CommentsOptions, io: IO) => Promise<number>;
+  refactorRunner?: (options: RefactorOptions, io: IO) => Promise<number>;
   version?: string;
 }
 
@@ -66,6 +69,14 @@ interface ContextFlags {
   html?: string;
 }
 
+interface RefactorFlags {
+  all?: boolean;
+  since: string;
+  top: number;
+  price?: number;
+  config?: string;
+}
+
 interface CommentsFlags {
   all?: boolean;
   years: number;
@@ -86,7 +97,16 @@ Examples:
   $ clines ctx --window 1m    fit the repo to a context window
   $ clines ctx --max 200k     fail CI above a token budget
   $ clines comments           find comments the code moved away from
+  $ clines refactor           decide which files are worth refactoring
 `;
+
+function parsePrice(value: string): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new InvalidArgumentError("must be a price per million tokens, e.g. 3 or 0.25");
+  }
+  return parsed;
+}
 
 function parsePositiveInt(value: string): number {
   const parsed = Number(value);
@@ -255,6 +275,33 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
         ...(flags.html !== undefined ? { html: flags.html } : {}),
       };
       await contextRunner(options, io);
+    });
+
+  const refactorRunner = deps.refactorRunner ?? runRefactor;
+  program
+    .command("refactor")
+    .alias("rf")
+    .description("Decide which files are worth refactoring, by cost and change rate (needs git).")
+    .addHelpText(
+      "after",
+      "\nExamples:\n  $ clines refactor\n  $ clines refactor --since '6 months ago'\n  $ clines refactor --price 3\n",
+    )
+    .argument("[dir]", "directory to scan", ".")
+    .option("--since <when>", "how far back to read git history", "2 years ago")
+    .option("--price <usd>", "price per million tokens, to cost the re-reads", parsePrice)
+    .option("--top <n>", "files to list in the terminal", parsePositiveInt, 20)
+    .option("--all", "include test, generated, vendored and docs files")
+    .option("--config <path>", "path to a config file")
+    .action(async (dir: string, flags: RefactorFlags) => {
+      const options: RefactorOptions = {
+        dir,
+        all: flags.all === true,
+        since: flags.since,
+        top: flags.top,
+        ...(flags.price !== undefined ? { price: flags.price } : {}),
+        ...(flags.config !== undefined ? { config: flags.config } : {}),
+      };
+      await refactorRunner(options, io);
     });
 
   const commentsRunner = deps.commentsRunner ?? runComments;
