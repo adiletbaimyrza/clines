@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
-import { isInteractive } from "../util/tty.js";
+import { isInteractive, useColor } from "../util/tty.js";
 import type { IO } from "./io.js";
+import { decode, fitsOnScreen, view, type Screen } from "./viewer.js";
 
 export interface PagerCommand {
   command: string;
@@ -58,13 +59,7 @@ export interface FlushOptions {
   interactive?: boolean;
   env?: NodeJS.ProcessEnv;
   launch?: PagerLauncher;
-}
-
-export function fitsOnScreen(text: string, rows: number | undefined): boolean {
-  if (rows === undefined || rows === 0) {
-    return true;
-  }
-  return text.split("\n").length <= rows - 1;
+  screen?: Screen;
 }
 
 export async function flush(text: string, io: IO, options: FlushOptions = {}): Promise<void> {
@@ -73,11 +68,54 @@ export async function flush(text: string, io: IO, options: FlushOptions = {}): P
   }
   const interactive = options.interactive ?? isInteractive();
   const rows = options.rows ?? process.stdout.rows;
-  const wanted = options.paged !== false && interactive && !fitsOnScreen(text, rows);
-  const pager = wanted ? pagerCommand(options.env) : undefined;
+  if (options.paged === false || !interactive || fitsOnScreen(text, rows)) {
+    io.out(text);
+    return;
+  }
 
+  const env = options.env ?? process.env;
+  const chosen = env["CLINES_PAGER"] ?? env["PAGER"];
+  if (chosen === undefined) {
+    const screen = options.screen ?? ttyScreen();
+    if (screen !== undefined) {
+      await view(text.split("\n"), screen);
+      return;
+    }
+  }
+
+  const pager = pagerCommand(env);
   if (pager !== undefined && (await (options.launch ?? spawnPager)(pager, text))) {
     return;
   }
   io.out(text);
+}
+
+export function ttyScreen(
+  input: NodeJS.ReadStream = process.stdin,
+  output: NodeJS.WriteStream = process.stdout,
+): Screen | undefined {
+  if (input.isTTY !== true || typeof input.setRawMode !== "function") {
+    return undefined;
+  }
+  return {
+    colour: useColor(output),
+    write: (text) => void output.write(text),
+    size: () => ({ rows: output.rows ?? 24, columns: output.columns ?? 80 }),
+    keys: (onKey) => {
+      const listener = (chunk: string): void => {
+        for (const key of decode(chunk)) {
+          onKey(key);
+        }
+      };
+      input.setRawMode(true);
+      input.resume();
+      input.setEncoding("utf8");
+      input.on("data", listener);
+      return () => {
+        input.off("data", listener);
+        input.setRawMode(false);
+        input.pause();
+      };
+    },
+  };
 }

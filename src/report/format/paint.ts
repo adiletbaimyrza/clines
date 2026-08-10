@@ -31,3 +31,28 @@ const SGR = new RegExp(`${ESC}\\[[0-9;]*m`, "g");
 export function stripInk(text: string): string {
   return text.replace(SGR, "");
 }
+
+export function truncateInk(text: string, columns: number): string {
+  if (stripInk(text).length <= columns) {
+    return text;
+  }
+
+  let kept = "";
+  let visible = 0;
+  let inked = false;
+  let i = 0;
+  while (i < text.length && visible < columns) {
+    SGR.lastIndex = i;
+    const match = SGR.exec(text);
+    if (match !== null && match.index === i) {
+      kept += match[0];
+      inked = true;
+      i += match[0].length;
+      continue;
+    }
+    kept += text[i] as string;
+    visible += 1;
+    i += 1;
+  }
+  return inked ? `${kept}${RESET}` : kept;
+}

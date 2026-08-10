@@ -66,9 +66,18 @@ Output is coloured when it is going to a terminal: bold headings, dim table head
 through a pipe. Piped and redirected output is plain by default, so `clines … > file` is unchanged.
 
 Every listing is capped by `--top <n>`. Pass `--top all` (or `--top 0`) to list everything instead
-of ending on `… and 1,093 more files.` When output is longer than the terminal and stdout is a
-terminal, it is handed to your pager — `$CLINES_PAGER`, else `$PAGER`, else `less -R -F -X` —
-keeping the colour. `--no-pager`, `PAGER=cat` or `PAGER=` prints it straight through.
+of ending on `… and 1,093 more files.`
+
+When output is longer than the terminal, clines opens it in a built-in scroller:
+
+```text
+  1098–1120 of 1120   ↑↓ jk scroll · space page · g G ends · q quit
+```
+
+`↑`/`↓` or `j`/`k` move a line, space or `f` a page, `b` back a page, `g` and `G` jump to the ends,
+and `q`, `Esc` or `Ctrl-C` leave. It draws on the alternate screen, so your scrollback is untouched
+on exit. Set `$CLINES_PAGER` or `$PAGER` to use that instead, `--no-pager` to print straight
+through, and `PAGER=cat` to disable paging entirely. Piped output is never paged.
 
 Examples:
 

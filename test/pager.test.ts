@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
+import { EventEmitter } from "node:events";
 import {
   collect,
-  fitsOnScreen,
   flush,
   pagerCommand,
   spawnPager,
+  ttyScreen,
   type PagerCommand,
 } from "../src/cli/pager.js";
+import type { Key } from "../src/cli/viewer.js";
 import { captureIO } from "./helpers/tmp.js";
 
 describe("pagerCommand", () => {
@@ -51,18 +53,6 @@ describe("collect", () => {
     expect(out).toEqual([]);
     expect(err).toEqual(["progress"]);
     expect(collected.text()).toBe("first\nsecond");
-  });
-});
-
-describe("fitsOnScreen", () => {
-  it("assumes it fits when the height is unknown", () => {
-    expect(fitsOnScreen("a\nb\nc", undefined)).toBe(true);
-    expect(fitsOnScreen("a\nb\nc", 0)).toBe(true);
-  });
-
-  it("leaves a line for the prompt", () => {
-    expect(fitsOnScreen("a\nb", 3)).toBe(true);
-    expect(fitsOnScreen("a\nb\nc", 3)).toBe(false);
   });
 });
 
@@ -139,12 +129,81 @@ describe("flush", () => {
     expect(out).toEqual([LONG]);
   });
 
+  it("shows long output in the built-in viewer when no pager is configured", async () => {
+    const { io, out } = captureIO();
+    const keys: ((key: Key) => void)[] = [];
+    const written: string[] = [];
+    const screen = {
+      colour: false,
+      write: (text: string) => written.push(text),
+      size: () => ({ rows: 3, columns: 40 }),
+      keys: (onKey: (key: Key) => void) => {
+        keys.push(onKey);
+        return () => undefined;
+      },
+    };
+
+    const running = flush(LONG, io, { interactive: true, rows: 2, env: {}, screen });
+    keys[0]?.("quit");
+    await running;
+
+    expect(out).toEqual([]);
+    expect(written.some((chunk) => chunk.includes("of 4"))).toBe(true);
+  });
+
+  it("hands over to a configured pager instead of the viewer", async () => {
+    const { io } = captureIO();
+    const launch = vi.fn(async () => true);
+    const screen = {
+      write: () => undefined,
+      size: () => ({ rows: 3, columns: 40 }),
+      keys: () => () => undefined,
+    };
+
+    await flush(LONG, io, {
+      interactive: true,
+      rows: 2,
+      env: { PAGER: "less" },
+      launch,
+      screen,
+    });
+
+    expect(launch).toHaveBeenCalled();
+  });
+
+  it("falls back to the pager when there is no terminal to draw on", async () => {
+    const { io, out } = captureIO();
+
+    await flush(LONG, io, {
+      interactive: true,
+      rows: 2,
+      env: { PAGER: "cat" },
+      launch: async () => false,
+    });
+
+    expect(out).toEqual([LONG]);
+  });
+
   it("uses the real launcher when none is injected", async () => {
     const { io, out } = captureIO();
 
-    await flush(LONG, io, { interactive: true, rows: 2, env: { CLINES_PAGER: "true" } });
+    await flush(LONG, io, {
+      interactive: true,
+      rows: 2,
+      env: { CLINES_PAGER: "true" },
+    });
 
     expect(out).toEqual([]);
+  });
+
+  it("reads the environment when not given one", async () => {
+    const { io, out } = captureIO();
+    vi.stubEnv("CLINES_PAGER", "cat");
+
+    await flush(LONG, io, { interactive: true, rows: 2 });
+    vi.unstubAllEnvs();
+
+    expect(out).toEqual([LONG]);
   });
 
   it("reads the terminal height and TTY state when not told", async () => {
@@ -153,6 +212,92 @@ describe("flush", () => {
     await flush("short", io, { env: {}, launch: async () => true });
 
     expect(out).toEqual(["short"]);
+  });
+});
+
+function fakeTty() {
+  const stream = new EventEmitter() as unknown as NodeJS.ReadStream & {
+    raw: boolean[];
+    paused: boolean;
+    encoding: string | undefined;
+  };
+  const state = { raw: [] as boolean[], paused: false, encoding: undefined as string | undefined };
+  Object.assign(stream, state, {
+    isTTY: true,
+    setRawMode: (on: boolean) => {
+      state.raw.push(on);
+      return stream;
+    },
+    resume: () => stream,
+    pause: () => {
+      state.paused = true;
+      return stream;
+    },
+    setEncoding: (enc: string) => {
+      state.encoding = enc;
+      return stream;
+    },
+  });
+  return { stream, state };
+}
+
+const OUTPUT = {
+  rows: 30,
+  columns: 100,
+  isTTY: true,
+  write: () => true,
+} as unknown as NodeJS.WriteStream;
+
+describe("ttyScreen", () => {
+  it("declines when stdin is not a terminal", () => {
+    const notATty = new EventEmitter() as unknown as NodeJS.ReadStream;
+
+    expect(ttyScreen(notATty, OUTPUT)).toBeUndefined();
+  });
+
+  it("reports the terminal size, with a fallback", () => {
+    const { stream } = fakeTty();
+
+    expect(ttyScreen(stream, OUTPUT)?.size()).toEqual({ rows: 30, columns: 100 });
+    expect(
+      ttyScreen(stream, { write: () => true } as unknown as NodeJS.WriteStream)?.size(),
+    ).toEqual({ rows: 24, columns: 80 });
+  });
+
+  it("turns raw mode on while reading keys and off again afterwards", () => {
+    const { stream, state } = fakeTty();
+    const screen = ttyScreen(stream, OUTPUT);
+    const seen: Key[] = [];
+
+    const stop = screen?.keys((key) => seen.push(key));
+    expect(state.raw).toEqual([true]);
+    expect(state.encoding).toBe("utf8");
+
+    stream.emit("data", "jjq");
+    expect(seen).toEqual(["down", "down", "quit"]);
+
+    stop?.();
+    expect(state.raw).toEqual([true, false]);
+    expect(state.paused).toBe(true);
+
+    stream.emit("data", "j");
+    expect(seen).toHaveLength(3);
+  });
+
+  it("writes to the output stream", () => {
+    const written: string[] = [];
+    const output = {
+      rows: 10,
+      columns: 20,
+      write: (text: string) => {
+        written.push(text);
+        return true;
+      },
+    } as unknown as NodeJS.WriteStream;
+
+    ttyScreen(fakeTty().stream, output)?.write("hello");
+
+    expect(written).toEqual(["hello"]);
   });
 });
 
