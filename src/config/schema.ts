@@ -1,5 +1,5 @@
-import { z } from "zod";
 import type { RolePatterns } from "../core/files/roles.js";
+import { parseUserConfig, type UserConfig } from "./validate.js";
 
 export const DEFAULT_IGNORE_DIRS = [
   "node_modules",
@@ -52,45 +52,9 @@ export const DEFAULT_IGNORE_EXTENSIONS = [
   ".code-workspace",
 ];
 
-const patterns = z.array(z.string());
+export const userConfigSchema = { parse: parseUserConfig };
 
-const ignoreSection = z
-  .object({
-    dirs: patterns.default([]),
-    files: patterns.default([]),
-    extensions: patterns.default([]),
-    globs: patterns.default([]),
-  })
-  .strict();
-
-const unignoreSection = z
-  .object({
-    dirs: patterns.default([]),
-    files: patterns.default([]),
-    extensions: patterns.default([]),
-  })
-  .strict();
-
-const rolesSection = z
-  .object({
-    source: patterns.default([]),
-    test: patterns.default([]),
-    generated: patterns.default([]),
-    vendored: patterns.default([]),
-    docs: patterns.default([]),
-  })
-  .strict();
-
-export const userConfigSchema = z
-  .object({
-    ignore: ignoreSection.default({}),
-    unignore: unignoreSection.default({}),
-    roles: rolesSection.default({}),
-    respectGitignore: z.boolean().default(true),
-  })
-  .strict();
-
-export type UserConfig = z.infer<typeof userConfigSchema>;
+export type { UserConfig };
 
 export interface Config {
   ignoreDirs: string[];
@@ -125,7 +89,7 @@ export function resolveConfig(user: UserConfig): Config {
 }
 
 export function parseConfig(input: unknown): Config {
-  return resolveConfig(userConfigSchema.parse(input));
+  return resolveConfig(parseUserConfig(input));
 }
 
 export function defaultConfig(): Config {

@@ -10,6 +10,8 @@ export { buildReadmeSection } from "./report/format/table.js";
 export { injectReadme } from "./report/reporters/readme.js";
 export type { Reporter } from "./report/reporter.js";
 export { defaultConfig, parseConfig, resolveConfig, userConfigSchema } from "./config/schema.js";
+export { parseUserConfig, ConfigError } from "./config/validate.js";
+export type { ConfigIssue } from "./config/validate.js";
 export type { Config, UserConfig } from "./config/schema.js";
 export type {
   Report,

@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  defaultConfig,
-  parseConfig,
-  resolveConfig,
-  userConfigSchema,
-} from "../src/config/schema.js";
+import { defaultConfig, parseConfig, resolveConfig } from "../src/config/schema.js";
+import { parseUserConfig } from "../src/config/validate.js";
 
 describe("config schema", () => {
   it("provides working defaults with no config file", () => {
@@ -40,7 +36,7 @@ describe("config schema", () => {
   });
 
   it("resolveConfig applies add then remove", () => {
-    const user = userConfigSchema.parse({
+    const user = parseUserConfig({
       ignore: { dirs: ["keep"] },
       unignore: { dirs: ["keep"] },
     });

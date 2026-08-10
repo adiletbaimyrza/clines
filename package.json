@@ -1,6 +1,6 @@
 {
   "name": "clines",
-  "version": "5.6.0",
+  "version": "5.7.0",
   "description": "Count lines of code per language, find code duplication, rank files by code complexity, and estimate the token count of a repository for AI agents. A modern cloc alternative.",
   "type": "module",
   "homepage": "https://adiletbaimyrza.github.io/clines/",
@@ -69,8 +69,7 @@
     "provenance": true
   },
   "dependencies": {
-    "commander": "^13.1.0",
-    "zod": "^3.24.1"
+    "commander": "^13.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
