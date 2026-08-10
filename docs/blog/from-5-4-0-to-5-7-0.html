@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>From 5.4.0 to 5.7.0 — clines</title>
+    <meta
+      name="description"
+      content="clines 5.4.1 through 5.7.0: a refactor verdict per file from git history, a bug where clines measured its own reports, and dropping 95.7% of the install."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A8%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --bg: #0a0e17;
+        --bg-soft: #111726;
+        --panel: #141b2d;
+        --border: #223049;
+        --text: #e6ecf5;
+        --muted: #9aa8bf;
+        --accent: #5ed0ff;
+        --accent-2: #a78bfa;
+        --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        color: var(--text);
+        background:
+          radial-gradient(1200px 600px at 80% -10%, rgba(94, 208, 255, 0.12), transparent 60%),
+          var(--bg);
+        line-height: 1.65;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .wrap {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      nav .brand {
+        font-family: var(--mono);
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: var(--text);
+      }
+      nav .brand::before {
+        content: "✨ ";
+      }
+      nav .links a {
+        color: var(--muted);
+        margin-left: 20px;
+        font-size: 14px;
+      }
+      nav .links a:hover {
+        color: var(--text);
+        text-decoration: none;
+      }
+      article {
+        padding: 40px 0 64px;
+      }
+      h1 {
+        font-size: clamp(26px, 4vw, 34px);
+        margin: 0 0 8px;
+        line-height: 1.25;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0 0 32px;
+      }
+      h2 {
+        font-size: 21px;
+        margin: 40px 0 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+      h3 {
+        font-size: 17px;
+        margin: 28px 0 4px;
+      }
+      p,
+      li {
+        color: #cdd6e6;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.9em;
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 1px 5px;
+      }
+      pre {
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: #cdd6e6;
+      }
+      pre code {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: inherit;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin: 16px 0;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      td.v {
+        font-family: var(--mono);
+        color: var(--accent);
+        white-space: nowrap;
+      }
+      td.n {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      blockquote {
+        margin: 20px 0;
+        padding: 12px 16px;
+        border-left: 3px solid var(--accent-2);
+        background: var(--panel);
+        border-radius: 0 8px 8px 0;
+        color: var(--muted);
+      }
+      blockquote p {
+        margin: 0;
+        color: var(--muted);
+      }
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 24px 0 40px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <span class="brand">clines</span>
+        <span class="links">
+          <a href="../index.html">Home</a>
+          <a href="index.html">Blog</a>
+          <a href="https://github.com/adiletbaimyrza/clines">GitHub</a>
+        </span>
+      </nav>
+    </div>
+
+    <div class="wrap">
+      <article>
+        <h1>From 5.4.0 to 5.7.0</h1>
+        <p class="meta">10 August 2026 · covers 5.4.1 through 5.7.0</p>
+
+        <p>
+          Four releases. One adds the command that answers the question the other four commands only
+          gesture at. Two are bugs found by running clines on real repositories rather than by
+          reading its source — including one where clines was measuring its own output. The last
+          removes 95.7% of what <code>npm install clines</code> downloads.
+        </p>
+
+        <h2>5.4.1 — <code>clines -v</code></h2>
+        <p>
+          It printed <code>unknown option</code> and exited 1. Commander reserves
+          <code>-V</code> for the version and leaves <code>-v</code> free, but <code>-v</code> is
+          what node, npm and git accept, so it is what people type.
+        </p>
+        <p>
+          The fix rewrites <code>-v</code> only in the global position, so
+          <code>clines count --config -v</code> still treats <code>-v</code> as a path rather than a
+          request for the version. <code>-V</code> and <code>--version</code> are unchanged.
+        </p>
+
+        <h2>5.5.0 — clines was counting its own reports</h2>
+        <p>
+          <code>--html</code> defaults to writing into the working directory, which is where people
+          put it. That file is then part of the repository, so the next run measures it. On
+          <code>facebook/react</code>, a <code>dup.html</code> (1.2 MB) and a
+          <code>cx.html</code> left over from earlier runs added
+          <b>11,403 phantom code lines — 3.4% of the repo</b> — and took HTML from 19 files to 21.
+        </p>
+        <pre><code>HTML   21 files   12,260 code     &lt;- with two clines reports present
+HTML   19 files      857 code     &lt;- actual</code></pre>
+        <p>
+          Nothing about this was exotic: it is reachable by following the documented usage. Reports
+          now carry <code>&lt;meta name="generator" content="clines" /&gt;</code>, and the role
+          classifier treats that — or a clines report <code>&lt;title&gt;</code> — as
+          <code>generated</code>, which is excluded from headline figures by default.
+        </p>
+        <p>
+          Detection is deliberately narrow. A page that merely mentions clines, or whose title is
+          <i>clines usage guide</i>, stays <code>source</code>. Verified two ways: against the real
+          leftover artifacts in react, and by round-trip — writing all three report types into a
+          fixture leaves that fixture's count byte-identical.
+        </p>
+
+        <h2>5.6.0 — <code>clines refactor</code></h2>
+        <p>
+          Complexity is a poor priority list. It ranks a file you never open above one you edit
+          every week, because it is largely a proxy for size. Measured over two years of react's
+          history:
+        </p>
+        <ul>
+          <li>
+            <b>250 of the 1,113 files with any complexity did not change at all.</b> A complexity
+            ranking puts many of them near the top.
+          </li>
+          <li>
+            Ranking by complexity × changes overlaps ranking by complexity alone by only
+            <b>14 of 20</b> files on react, and <b>12 of 20</b> on bootstrap. The two lists are not
+            the same list.
+          </li>
+        </ul>
+        <p>
+          So <code>clines refactor</code> (alias <code>rf</code>) reads
+          <code>git log --name-only</code> once — one cheap call, no per-file blame — joins the
+          change count to complexity density and token cost, and returns a verdict per file.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <tr>
+              <th>verdict</th>
+              <th>meaning</th>
+            </tr>
+            <tr>
+              <td><code>refactor</code></td>
+              <td>complex and changed often — you pay for this repeatedly</td>
+            </tr>
+            <tr>
+              <td><code>split</code></td>
+              <td>expensive to read and changed often, though the logic is simple</td>
+            </tr>
+            <tr>
+              <td><code>watch</code></td>
+              <td>changed often but cheap to read</td>
+            </tr>
+            <tr>
+              <td><code>quiet</code></td>
+              <td>rarely touched</td>
+            </tr>
+            <tr>
+              <td><code>inert</code></td>
+              <td>untouched in this window — leave it alone</td>
+            </tr>
+          </table>
+        </div>
+        <p>
+          The ranking is by <b>tokens × changes</b>: what reading that file for every change to it
+          has already cost, and what it will keep costing. <code>--price 3</code> turns that into
+          dollars per million tokens.
+        </p>
+        <pre><code>$ clines refactor ../react --price 3
+
+Refactor: 1,113 files weighed against 2,367 commits since 2 years ago
+
+Judged against this repo: changed often means 3+ changes, dense means 16.7 cx per 100 lines, costly
+means 2,420 tokens.
+
+  refactor     122 files   complex and changed often — you pay for this repeatedly
+  split        162 files   expensive to read and changed often, though the logic is simple
+  watch        257 files   changed often but cheap to read
+  quiet        322 files   rarely touched
+  inert        250 files   untouched in this window — leave it alone
+
+Ranked by what re-reading them has cost, in tokens
+  File                                        Verdict   Changes   Cx/100   Tokens   Re-read     Cost
+  packages/react-…ackend/fiber/renderer.js   refactor       151     20.0      64k      9.6M   $28.83
+  packages/react-…src/ReactFlightServer.js   refactor       134     17.3      56k      7.5M   $22.41
+  packages/react-…t/ReactFiberConfigDOM.js   refactor       114     16.7      54k      6.1M   $18.39</code></pre>
+        <p>
+          The thresholds are quantiles of the repository being measured, not fixed numbers:
+          <code>dense</code> and <code>costly</code> are its 75th percentile of density and tokens,
+          and <code>changed often</code> is the median change count among files that changed,
+          floored at 2. Verdicts are therefore relative — every repository has a top quartile — and
+          the thresholds are printed so any verdict can be checked against them.
+        </p>
+        <p>
+          Two things were cut after measuring them. Temporal coupling — which files change together
+          — found 432 pairs on react and <b>zero</b> on bootstrap, too repository-dependent to put
+          in default output. And files with no decision points at all are excluded, because before
+          that react's <code>scripts/error-codes/codes.json</code> came back as <code>split</code>:
+          true in the arithmetic, useless as advice.
+        </p>
+
+        <h2>5.7.0 — 95.7% of the install was a validator</h2>
+        <p>
+          <code>zod</code> existed in clines to validate <code>clines.json</code>: thirteen fixed
+          fields, twelve <code>string[]</code> and one <code>boolean</code>. It used six of zod's
+          exports — <code>array</code>, <code>string</code>, <code>boolean</code>,
+          <code>object().strict()</code>, <code>.default()</code> and <code>ZodError</code>. No
+          refinements, transforms, unions, coercion or async.
+        </p>
+        <p>A clean <code>npm install --omit=dev</code>, before and after:</p>
+        <div class="table-wrap">
+          <table>
+            <tr>
+              <th></th>
+              <th class="n">install</th>
+              <th class="n">files</th>
+              <th class="n">config import</th>
+              <th class="n">heap</th>
+            </tr>
+            <tr>
+              <td>5.6.0</td>
+              <td class="n">5,368 KB</td>
+              <td class="n">611</td>
+              <td class="n">4.1 ms</td>
+              <td class="n">1,263 KB</td>
+            </tr>
+            <tr>
+              <td>5.7.0</td>
+              <td class="n">232 KB</td>
+              <td class="n">15</td>
+              <td class="n">1.1 ms</td>
+              <td class="n">204 KB</td>
+            </tr>
+          </table>
+        </div>
+        <p>
+          Part of that was drift nobody noticed: from 3.25, zod's v3 package began shipping the
+          entire v4 and v4-mini codebases plus TypeScript sources, taking it from 0.67 MB to 3.43 MB
+          packed, and a <code>^3.24.1</code> range floated onto it.
+        </p>
+        <p>
+          Pinning back to <code>~3.24.4</code> was the obvious cheap fix, and it was measured and
+          rejected. For a consumer already on zod 3.25 or 4.x, npm cannot dedupe a non-overlapping
+          range, so it installs both copies —
+          <b>5,968 KB across two zods, worse than doing nothing</b> — and 3.24.x has had no release
+          since May 2025, so a future advisory would land above the pinned range.
+        </p>
+        <p>
+          The replacement is 133 lines with no dependency. The interesting part is how it was
+          checked: a <b>59-case table generated from the zod build before zod was deleted</b> — 14
+          accepted configs compared field by field, 45 rejected ones compared against the exact
+          error string clines prints. Building it caught three divergences that would otherwise have
+          shipped:
+        </p>
+        <div class="table-wrap">
+          <table>
+            <tr>
+              <th>input</th>
+              <th>zod</th>
+              <th>first attempt</th>
+            </tr>
+            <tr>
+              <td><code>{"respectGitignore": null}</code></td>
+              <td>rejects</td>
+              <td>silently defaulted to <code>true</code></td>
+            </tr>
+            <tr>
+              <td><code>{ignore: {folders: […], dirs: "bad"}}</code></td>
+              <td>field error, then unknown key</td>
+              <td>unknown key first</td>
+            </tr>
+            <tr>
+              <td><code>Object.create({inherited: true})</code></td>
+              <td>flags the inherited key</td>
+              <td>did not see it</td>
+            </tr>
+          </table>
+        </div>
+        <p>
+          The first is the one that mattered: <code>??</code> treats <code>null</code> as absent,
+          while zod's <code>.default()</code> only fires on <code>undefined</code>. A config saying
+          <i>do not respect .gitignore</i> — written wrongly, but written deliberately — would have
+          been accepted and inverted. Every config error message clines prints is byte-identical to
+          what 5.6.0 printed, and the exit code is still 1.
+        </p>
+
+        <h2>Upgrading</h2>
+        <pre><code>npm install --save-dev clines@5.7.0</code></pre>
+        <p>
+          No breaking changes. Two things to expect: if you had left clines' own HTML reports inside
+          a repository you measure, your counts will drop to their correct values (5.5.0), and
+          <code>userConfigSchema</code> is still exported for anyone using clines as a library,
+          alongside the new <code>parseUserConfig</code> and <code>ConfigError</code>.
+        </p>
+        <p>
+          <code>clines refactor</code> needs a git repository. Everything else works without one.
+        </p>
+      </article>
+    </div>
+
+    <div class="wrap">
+      <footer>
+        <p>MIT License © Adilet Baimyrza Uulu · <a href="../index.html">clines</a></p>
+      </footer>
+    </div>
+  </body>
+</html>
