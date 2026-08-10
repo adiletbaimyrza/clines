@@ -26,7 +26,8 @@ const LANGUAGES: Record<string, LanguageSyntax> = {
   ".css": { blockCommentStart: "/*", blockCommentEnd: "*/" },
   ".scss": cStyle(),
   ".less": cStyle(),
-  ".py": hashStyle(),
+  ".py": pythonStyle(),
+  ".pyi": pythonStyle(),
   ".rb": hashStyle(),
   ".coffee": hashStyle(),
   ".sh": hashStyle(),
@@ -51,6 +52,16 @@ function cStyle(): LanguageSyntax {
 
 function hashStyle(): LanguageSyntax {
   return { singleComment: "#" };
+}
+
+function pythonStyle(): LanguageSyntax {
+  return {
+    singleComment: "#",
+    blocks: [
+      { start: '"""', end: '"""' },
+      { start: "'''", end: "'''" },
+    ],
+  };
 }
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -80,6 +91,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ".scss": "SCSS",
   ".less": "Less",
   ".py": "Python",
+  ".pyi": "Python",
   ".rb": "Ruby",
   ".coffee": "CoffeeScript",
   ".sh": "Bash",
@@ -133,6 +145,7 @@ const NONE: ComplexityChecks = { keywords: [], operators: [] };
 
 const COMPLEXITY: Record<string, ComplexityChecks> = {
   ".py": PYTHON,
+  ".pyi": PYTHON,
   ".rb": RUBY,
   ".json": NONE,
   ".yml": NONE,

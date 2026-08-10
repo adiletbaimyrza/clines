@@ -1,9 +1,15 @@
 import path from "node:path";
-import type { FileTokens, LanguageSyntax, LineKind } from "../model.js";
+import type { BlockComment, FileTokens, LanguageSyntax, LineKind } from "../model.js";
 import { getComplexityChecks, getLanguageSyntax, type ComplexityChecks } from "./languages.js";
 
 interface ScanState {
-  inBlock: boolean;
+  openBlock: BlockComment | undefined;
+}
+
+export function blockComments(syntax: LanguageSyntax): BlockComment[] {
+  const { blockCommentStart: start, blockCommentEnd: end } = syntax;
+  const pair = start !== undefined && end !== undefined ? [{ start, end }] : [];
+  return [...pair, ...(syntax.blocks ?? [])];
 }
 
 interface LineScan {
@@ -16,8 +22,8 @@ function scanLine(rawLine: string, syntax: LanguageSyntax, state: ScanState): Li
     return { kind: "blank", code: "" };
   }
 
-  const { singleComment, blockCommentStart, blockCommentEnd } = syntax;
-  const hasBlock = Boolean(blockCommentStart) && Boolean(blockCommentEnd);
+  const { singleComment } = syntax;
+  const blocks = blockComments(syntax);
 
   let hasCode = false;
   let inString = false;
@@ -28,11 +34,11 @@ function scanLine(rawLine: string, syntax: LanguageSyntax, state: ScanState): Li
   while (i < rawLine.length) {
     const char = rawLine[i] as string;
 
-    if (state.inBlock) {
-      const end = blockCommentEnd as string;
-      if (rawLine.startsWith(end, i)) {
-        state.inBlock = false;
-        i += end.length;
+    const open = state.openBlock;
+    if (open !== undefined) {
+      if (rawLine.startsWith(open.end, i)) {
+        state.openBlock = undefined;
+        i += open.end.length;
       } else {
         i += 1;
       }
@@ -53,9 +59,10 @@ function scanLine(rawLine: string, syntax: LanguageSyntax, state: ScanState): Li
       continue;
     }
 
-    if (hasBlock && rawLine.startsWith(blockCommentStart as string, i)) {
-      state.inBlock = true;
-      i += (blockCommentStart as string).length;
+    const starting = blocks.find((block) => rawLine.startsWith(block.start, i));
+    if (starting !== undefined) {
+      state.openBlock = starting;
+      i += starting.start.length;
       continue;
     }
 
@@ -95,12 +102,12 @@ export function splitLines(content: string): string[] {
 }
 
 export function classifyContent(content: string, syntax: LanguageSyntax): LineKind[] {
-  const state: ScanState = { inBlock: false };
+  const state: ScanState = { openBlock: undefined };
   return splitLines(content).map((line) => scanLine(line, syntax, state).kind);
 }
 
 export function sanitizeCode(content: string, syntax: LanguageSyntax): string {
-  const state: ScanState = { inBlock: false };
+  const state: ScanState = { openBlock: undefined };
   return splitLines(content)
     .map((line) => scanLine(line, syntax, state).code)
     .join("\n");

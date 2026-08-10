@@ -5,6 +5,7 @@ import {
   getLanguageSyntax,
 } from "../src/core/tokenizer/languages.js";
 import {
+  blockComments,
   classifyContent,
   countComplexity,
   measureComplexity,
@@ -63,6 +64,97 @@ describe("classifyContent", () => {
 
   it("counts every non-empty line as code for languages without comment markers", () => {
     expect(classifyContent('{\n  "a": 1\n}', json)).toEqual(["code", "code", "code"]);
+  });
+});
+
+describe("python docstrings", () => {
+  const D = String.fromCharCode(34, 34, 34);
+  const S = String.fromCharCode(39, 39, 39);
+
+  it("counts a one-line docstring as a comment", () => {
+    expect(classifyContent(`${D}Doc.${D}\n`, py)).toEqual(["comment"]);
+    expect(classifyContent(`${S}Doc.${S}\n`, py)).toEqual(["comment"]);
+  });
+
+  it("counts a multi-line docstring as comments and keeps blanks blank", () => {
+    const src = `def f():\n    ${D}Doc.\n\n    More.\n    ${D}\n    return 1\n`;
+
+    expect(classifyContent(src, py)).toEqual([
+      "code",
+      "comment",
+      "blank",
+      "comment",
+      "comment",
+      "code",
+    ]);
+  });
+
+  it("treats a line that opens a docstring after code as code", () => {
+    const src = `x = ${D}\nbody\n${D}\n`;
+
+    expect(classifyContent(src, py)).toEqual(["code", "comment", "comment"]);
+  });
+
+  it("does not let one triple quote close the other", () => {
+    const src = `${D}open\n${S}not the end\nstill inside\n${D}\n`;
+
+    expect(classifyContent(src, py)).toEqual(["comment", "comment", "comment", "comment"]);
+  });
+
+  it("keeps an unterminated docstring as comments to the end", () => {
+    expect(classifyContent(`${D}open\nand never closed\n`, py)).toEqual(["comment", "comment"]);
+  });
+
+  it("ignores triple quotes inside an ordinary string", () => {
+    expect(classifyContent(`x = "${S}"\ny = 1\n`, py)).toEqual(["code", "code"]);
+    expect(classifyContent(`x = '${D}'\ny = 1\n`, py)).toEqual(["code", "code"]);
+  });
+
+  it("ignores a hash inside a docstring", () => {
+    expect(classifyContent(`${D}\n# not a separate comment\n${D}\n`, py)).toEqual([
+      "comment",
+      "comment",
+      "comment",
+    ]);
+  });
+
+  it("keeps docstring text out of the complexity count", () => {
+    const src = `${D}mentions if and or for while${D}\nif a and b:\n    pass\n`;
+
+    expect(countComplexity(sanitizeCode(src, py), getComplexityChecks(".py"))).toBe(2);
+  });
+
+  it("treats .pyi as Python", () => {
+    expect(getLanguageName(".pyi")).toBe("Python");
+    expect(getComplexityChecks(".pyi")).toEqual(getComplexityChecks(".py"));
+    expect(classifyContent(`${D}Stub.${D}\n`, getLanguageSyntax(".pyi"))).toEqual(["comment"]);
+  });
+});
+
+describe("blockComments", () => {
+  it("reads the single legacy pair", () => {
+    expect(blockComments({ blockCommentStart: "/*", blockCommentEnd: "*/" })).toEqual([
+      { start: "/*", end: "*/" },
+    ]);
+  });
+
+  it("returns nothing when a language has no block comment", () => {
+    expect(blockComments({ singleComment: "#" })).toEqual([]);
+    expect(blockComments({ blockCommentStart: "/*" })).toEqual([]);
+    expect(blockComments({ blockCommentEnd: "*/" })).toEqual([]);
+  });
+
+  it("combines the legacy pair with extra pairs", () => {
+    expect(
+      blockComments({
+        blockCommentStart: "/*",
+        blockCommentEnd: "*/",
+        blocks: [{ start: "<!--", end: "-->" }],
+      }),
+    ).toEqual([
+      { start: "/*", end: "*/" },
+      { start: "<!--", end: "-->" },
+    ]);
   });
 });
 
