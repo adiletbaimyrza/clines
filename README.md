@@ -21,7 +21,7 @@ It has six commands:
 | `comments` | Comment blocks the code has drifted away from.                         |
 | `refactor` | A verdict per file, from how complex it is and how often it changes.   |
 
-Runtime dependencies are `commander` and `zod`. Test coverage is 100%.
+`commander` is the only runtime dependency. Test coverage is 100%.
 
 **[📖 Website & docs](https://adiletbaimyrza.github.io/clines/)** · **[clines vs cloc](https://adiletbaimyrza.github.io/clines/compare/cloc.html)**
 

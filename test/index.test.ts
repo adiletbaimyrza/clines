@@ -21,5 +21,7 @@ describe("public API", () => {
     expect(typeof api.resolveConfig).toBe("function");
     expect(api.linesAnalyzer.name).toBe("lines");
     expect(api.userConfigSchema).toBeDefined();
+    expect(api.parseUserConfig).toBeDefined();
+    expect(api.ConfigError).toBeDefined();
   });
 });
