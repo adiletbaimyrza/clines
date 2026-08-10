@@ -294,11 +294,15 @@ export function buildProgram(io: IO, deps: ProgramDeps = {}): Command {
 
 export async function runCli(argv: string[], io: IO, deps: ProgramDeps = {}): Promise<void> {
   const version = deps.version ?? "0.0.0";
-  if (argv.slice(2).length === 0) {
+  const args = argv.slice(2);
+  if (args.length === 0) {
     io.out(renderBanner(version));
     return;
   }
   const program = buildProgram(io, deps);
   program.exitOverride();
-  await program.parseAsync(argv);
+  // -v is what people type; commander reserves -V. Only the global position is rewritten,
+  // so a literal "-v" passed as an option value is untouched.
+  const normalized = args[0] === "-v" ? [...argv.slice(0, 2), "--version", ...args.slice(1)] : argv;
+  await program.parseAsync(normalized);
 }

@@ -57,7 +57,7 @@ Running `clines` on its own prints a banner with the version and available comma
 | `--config <path>` | Use a specific config file instead of `clines.json`.       |
 | `--help`          | Show help.                                                 |
 
-Global: `clines --version`, `clines --help`.
+Global: `clines -v` (or `-V`, `--version`), `clines --help`.
 
 Examples:
 
