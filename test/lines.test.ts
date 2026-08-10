@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { linesAnalyzer } from "../src/core/analyzers/lines.js";
+import { concentrationOf, linesAnalyzer, quantile } from "../src/core/analyzers/lines.js";
 import type { FileTokens } from "../src/core/model.js";
 
 const files: FileTokens[] = [
@@ -25,6 +25,9 @@ describe("linesAnalyzer", () => {
       blank: 1,
       total: 5,
       complexity: 5,
+      medianCode: 2,
+      p90Code: 2,
+      maxCode: 2,
     });
 
     const py = report.languages.find((l) => l.language === "Python");
@@ -36,6 +39,9 @@ describe("linesAnalyzer", () => {
       blank: 0,
       total: 2,
       complexity: 0,
+      medianCode: 0,
+      p90Code: 0,
+      maxCode: 0,
     });
 
     expect(report.totalComplexity).toBe(5);
@@ -50,6 +56,8 @@ describe("linesAnalyzer", () => {
       totalFiles: 0,
       totalComplexity: 0,
       languages: [],
+      concentration: { largestFiles: 0, share: 0, medianCode: 0, p90Code: 0 },
+      largestFiles: [],
       roles: [],
     });
   });
@@ -58,5 +66,62 @@ describe("linesAnalyzer", () => {
     const report = linesAnalyzer.analyze(files);
     expect(report.totalComment).toBe(3);
     expect(report.totalBlank).toBe(1);
+  });
+});
+
+describe("largest files", () => {
+  it("ranks by code lines, breaking ties on path", () => {
+    const report = linesAnalyzer.analyze([
+      { path: "small.ts", ext: ".ts", lineKinds: ["code"], complexity: 0 },
+      { path: "b.ts", ext: ".ts", lineKinds: ["code", "code"], complexity: 3 },
+      { path: "a.ts", ext: ".ts", lineKinds: ["code", "code"], complexity: 1 },
+    ]);
+
+    expect(report.largestFiles.map((f) => f.path)).toEqual(["a.ts", "b.ts", "small.ts"]);
+    expect(report.largestFiles[0]).toEqual({
+      path: "a.ts",
+      code: 2,
+      comment: 0,
+      complexity: 1,
+    });
+  });
+});
+
+describe("quantile", () => {
+  it("returns zero for an empty set", () => {
+    expect(quantile([], 0.5)).toBe(0);
+  });
+
+  it("picks a value at the requested position", () => {
+    expect(quantile([1, 2, 3, 4], 0.5)).toBe(3);
+    expect(quantile([1, 2, 3, 4], 0.9)).toBe(4);
+  });
+});
+
+describe("concentrationOf", () => {
+  it("reports nothing for an empty codebase", () => {
+    expect(concentrationOf([])).toEqual({
+      largestFiles: 0,
+      share: 0,
+      medianCode: 0,
+      p90Code: 0,
+    });
+  });
+
+  it("reports zero share when every file is empty", () => {
+    expect(concentrationOf([0, 0, 0])).toMatchObject({ share: 0, largestFiles: 1 });
+  });
+
+  it("measures how much code the largest 5% of files hold", () => {
+    const sizes = [
+      ...Array.from({ length: 95 }, () => 10),
+      ...Array.from({ length: 5 }, () => 190),
+    ];
+
+    const result = concentrationOf(sizes);
+
+    expect(result.largestFiles).toBe(5);
+    expect(Math.round(result.share)).toBe(50);
+    expect(result.medianCode).toBe(10);
   });
 });
