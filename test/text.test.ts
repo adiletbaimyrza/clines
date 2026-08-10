@@ -105,8 +105,9 @@ describe("table", () => {
     );
 
     expect(lines[0]).toBe("  File     N");
-    expect(lines[1]).toBe("  a.ts     1");
-    expect(lines[2]).toBe("  bb.ts   22");
+    expect(lines[1]).toBe(`  ${"─".repeat(10)}`);
+    expect(lines[2]).toBe("  a.ts     1");
+    expect(lines[3]).toBe("  bb.ts   22");
   });
 
   it("shrinks the first column to fit the width", () => {
@@ -116,14 +117,14 @@ describe("table", () => {
     for (const line of lines) {
       expect([...line].length).toBeLessThanOrEqual(40);
     }
-    expect(lines[1]).toContain("…");
+    expect(lines[2]).toContain("…");
   });
 
   it("never shrinks the first column below a readable floor", () => {
     const long = "a".repeat(200);
     const lines = table(["File", "Tokens"], [[long, "1"]], { width: 20 });
 
-    expect((lines[1] as string).trim().split(/\s+/)[0]).toHaveLength(12);
+    expect((lines[2] as string).trim().split(/\s+/)[0]).toHaveLength(12);
   });
 });
 

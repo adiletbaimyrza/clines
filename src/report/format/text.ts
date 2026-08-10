@@ -87,7 +87,9 @@ export function table(headers: string[], rows: string[][], options: TableOptions
         return paint(padded, header ? "dim" : ink?.(cell, column));
       })
       .join("   ")}`;
-  return [line(headers, true), ...rows.map((row) => line(row, false))];
+  const span = widths.reduce((sum, w) => sum + w, 0) + 3 * (widths.length - 1);
+  const rule = paint(`  ${"─".repeat(span)}`, "dim");
+  return [line(headers, true), rule, ...rows.map((row) => line(row, false))];
 }
 
 export function pushHint(

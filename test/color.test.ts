@@ -100,7 +100,7 @@ describe("escape sequences stay out of the width maths", () => {
   });
 
   it("pads inside the escape sequence rather than outside it", () => {
-    const [, row] = table(["File", "Count"], [["a.ts", "1"]], {
+    const [, , row] = table(["File", "Count"], [["a.ts", "1"]], {
       width: 40,
       paint: painter(true),
       ink: (_cell, column) => (column === 1 ? "red" : undefined),
@@ -111,10 +111,9 @@ describe("escape sequences stay out of the width maths", () => {
 
   it("keeps every count column aligned", () => {
     const lines = coloured(() => table(HEADERS, ROWS, { width: 60 })).map(stripInk);
-    const at = lines.map((line) => line.indexOf("1,000") + line.indexOf("Count"));
-
     expect(new Set(lines.map((line) => line.length)).size).toBe(1);
-    expect(at.length).toBe(3);
+    expect(lines).toHaveLength(4);
+    expect(lines[1]).toMatch(/^ {2}─+$/);
   });
 });
 
