@@ -47,6 +47,22 @@ describe("detectDuplication", () => {
       percentage: 0,
       clones: [],
       perFile: [],
+      shape: {
+        groups: 0,
+        removable: 0,
+        medianLines: 0,
+        maxLines: 0,
+        underTen: 0,
+        byLocation: {
+          "within-file": 0,
+          "same-directory": 0,
+          "same-package": 0,
+          "cross-package": 0,
+        },
+        topTenShare: 0,
+      },
+      ranked: [],
+      renamedGroups: 0,
       excluded: { files: 0, roles: [] },
     });
   });

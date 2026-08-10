@@ -113,10 +113,43 @@ duplication figure of 43.5% was mostly test code.
 npx clines dup                          # terminal summary
 npx clines dup --min-lines 8            # only flag larger clones
 npx clines dup --min-copies 3           # only blocks duplicated 3+ times
-npx clines dup --top 25                 # list more files in the terminal
+npx clines dup --cross-file             # ignore duplication inside a single file
+npx clines dup --renamed                # also count clones that differ only in names
+npx clines dup --churn                  # show when each clone was last touched
+npx clines dup --top 25                 # list more groups and files
 npx clines dup --html dup-report.html   # + an HTML report
-npx clines dup --html d.html --open     # write it and open it in a browser
 ```
+
+Every run opens with the shape of the duplication and the groups worth refactoring:
+
+```text
+Duplication shape
+  5,397 clone groups   ·   91,157 lines removable if each were deduped once
+  Size       81% under 10 lines   ·   median 6   ·   largest 350
+  Location   60% within one file   ·   20% across packages   ·   14% same directory
+  Spread     top 10 groups hold 5% of what is removable — duplication is diffuse
+
+Biggest refactor opportunities
+  Where                                                          Lines   Copies   Removable
+  compiler/crates/react_compiler_ast/src/visitor.rs  +82             5      147         730
+  packages/react-server-dom-esm/src/ReactFlightESMNodeLoader.js  +2  350        3         700
+```
+
+A single percentage implies a fixable problem. On react the top ten groups account for 5% of what
+could be removed, so no small set of refactors moves the number — that is worth knowing before
+anyone is asked to act on 28.4%. Equally, 60% of the clones sit inside one file, which is repeated
+branches rather than a missing module. `--cross-file` drops those.
+
+The ranking is by **removable lines** (`lines × (copies − 1)`), which is the actionable unit. It
+separates two very different findings that a file-based ranking blurs together: a 5-line pattern
+repeated 147 times across 83 files is a missing abstraction, while a 350-line block copied three
+times is a missing module.
+
+`--renamed` runs a second pass with identifiers masked, catching clones that differ only in naming
+(type-2). `--churn` uses `git blame` to show when each clone was last touched — research finds
+clones are [not universally harmful](https://link.springer.com/article/10.1007/s10664-008-9076-6)
+and that under 15% of defects relate to cloned code; the ones that cost you are those whose copies
+keep being edited together.
 
 ```text
 Duplication: 4.2%   1,240 duplicated lines   ·   12 clones
