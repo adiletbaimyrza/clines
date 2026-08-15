@@ -50,18 +50,30 @@ function cleanPath(path: string): string {
   return path.replace(/\/{2,}/g, "/").replace(/^\//, "");
 }
 
+const ARROW = " => ";
+
 // git writes a rename three ways: `a => b`, `dir/{a => b}`, and `{dir => other}/f`.
+// Scanned rather than matched: a regex for the braced form backtracks polynomially
+// on a crafted filename, and these paths come from whatever repository we are given.
 export function renamePair(field: string): { from: string; to: string } {
-  if (!field.includes(" => ")) {
+  const arrow = field.indexOf(ARROW);
+  if (arrow === -1) {
     return { from: field, to: field };
   }
-  const braced = /^(.*)\{(.*) => (.*)\}(.*)$/.exec(field);
-  if (braced === null) {
-    const [from = "", to = ""] = field.split(" => ");
-    return { from: cleanPath(from), to: cleanPath(to) };
+  const open = field.lastIndexOf("{", arrow);
+  const close = field.indexOf("}", arrow);
+  if (open === -1 || close === -1) {
+    return {
+      from: cleanPath(field.slice(0, arrow)),
+      to: cleanPath(field.slice(arrow + ARROW.length)),
+    };
   }
-  const [, prefix = "", from = "", to = "", suffix = ""] = braced;
-  return { from: cleanPath(prefix + from + suffix), to: cleanPath(prefix + to + suffix) };
+  const prefix = field.slice(0, open);
+  const suffix = field.slice(close + 1);
+  return {
+    from: cleanPath(prefix + field.slice(open + 1, arrow) + suffix),
+    to: cleanPath(prefix + field.slice(arrow + ARROW.length, close) + suffix),
+  };
 }
 
 function follow(aliases: Map<string, string>, path: string): string {

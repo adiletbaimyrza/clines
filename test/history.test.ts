@@ -50,6 +50,21 @@ describe("renamePair", () => {
   it("reads a move out of the root without leaving a stray slash", () => {
     expect(renamePair("{ => sub}/f.ts")).toEqual({ from: "f.ts", to: "sub/f.ts" });
   });
+
+  it("falls back to the plain form when the braces are unbalanced", () => {
+    expect(renamePair("a{.ts => b.ts")).toEqual({ from: "a{.ts", to: "b.ts" });
+  });
+
+  // a filename is whatever the repository we were pointed at contains
+  it("does not blow up on a pathological filename", () => {
+    const nasty = `{{${"{a".repeat(6000)} => ${"a}".repeat(6000)}`;
+    const started = process.hrtime.bigint();
+
+    renamePair(nasty);
+
+    const ms = Number(process.hrtime.bigint() - started) / 1e6;
+    expect(ms).toBeLessThan(200);
+  });
 });
 
 describe("parseHistory", () => {
