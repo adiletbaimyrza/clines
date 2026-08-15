@@ -6,7 +6,7 @@
     <title>clines — measure your codebase</title>
     <meta
       name="description"
-      content="clines is a command-line tool that measures a codebase: lines per language, duplicate code, complexity ranking, estimated token cost, comment drift, and a refactor verdict per file."
+      content="clines is a command-line tool that measures a codebase: lines per language, duplicate code, complexity ranking, estimated token cost, comment drift, change coupling, a refactor verdict per file, and what is safe to hand to an AI agent."
     />
     <link
       rel="icon"
@@ -376,8 +376,9 @@
         <h1 class="tagline">clines — measure your codebase from the terminal</h1>
         <p class="subtag">
           A CLI that counts code, comments and blanks per language, finds duplicate code, ranks
-          files by complexity, estimates token cost, decides what is worth refactoring, and finds
-          comments the code has moved away from.
+          files by complexity, estimates token cost, finds comments the code has moved away from and
+          files that keep changing together, and decides what is worth refactoring — and what is
+          safe to hand to an AI agent.
         </p>
         <div class="cta">
           <a class="btn primary" href="#usage">Get started</a>
@@ -442,7 +443,8 @@ Project size: <span class="size">Solar System ☀️</span></pre>
             <h3>.gitignore aware</h3>
             <p>
               Respects <code>.gitignore</code>. Lockfiles, source maps and build output are skipped
-              by default.
+              by default. A shallow clone is detected and reported rather than quietly skewing the
+              git-based analyses.
             </p>
           </div>
           <div class="card">
@@ -487,7 +489,7 @@ Project size: <span class="size">Solar System ☀️</span></pre>
             <h3>Token cost</h3>
             <p>
               <span class="cmd">clines ctx</span> estimates the token cost of the tree, compares it
-              against a context window, and exits non-zero above a
+              against a context window, and exits <code>2</code> above a
               <span class="cmd">--max</span> budget.
             </p>
           </div>
@@ -506,7 +508,63 @@ Project size: <span class="size">Solar System ☀️</span></pre>
             <p>
               <span class="cmd">clines refactor</span> joins complexity to how often each file
               changes in git, and ranks by tokens &times; changes — what re-reading it keeps
-              costing.
+              costing. Bot commits are excluded, renames are followed, and recent changes weigh more
+              than old ones.
+            </p>
+          </div>
+          <div class="card">
+            <div class="ico">🔗</div>
+            <h3>Change coupling</h3>
+            <p>
+              <span class="cmd">clines coupling</span> mines git history for files that keep
+              changing together — the logical dependencies static analysis cannot see. It explains
+              why a hotspot is expensive rather than merely busy.
+            </p>
+          </div>
+          <div class="card">
+            <div class="ico">🛡️</div>
+            <h3>Agent risk</h3>
+            <p>
+              <span class="cmd">clines agent</span> rates each file safe, review or human for an AI
+              coding agent to modify unattended, from density, size, duplication and how spread out
+              the complexity is.
+            </p>
+          </div>
+          <div class="card">
+            <div class="ico">🧾</div>
+            <h3>JSON on every command</h3>
+            <p>
+              <span class="cmd">--json</span> writes one stable, deterministic document to stdout,
+              under a versioned <code>schema</code> field. Progress goes to stderr, so
+              <span class="cmd">clines ctx --json | jq</span> just works.
+            </p>
+          </div>
+          <div class="card">
+            <div class="ico">🚦</div>
+            <h3>CI gates</h3>
+            <p>
+              <span class="cmd">--max</span>, <span class="cmd">--max-duplication</span>,
+              <span class="cmd">--max-density</span>, <span class="cmd">--max-drift</span> and
+              <span class="cmd">--max-reread</span> exit <code>2</code> on a breach — distinct from
+              <code>1</code> for a real error, so a pipeline can tell them apart.
+            </p>
+          </div>
+          <div class="card">
+            <div class="ico">🔀</div>
+            <h3>Pull-request scope</h3>
+            <p>
+              <span class="cmd">--diff main</span> narrows any command to what a branch changed.
+              <span class="cmd">dup</span> still detects across the whole tree, then reports only
+              the clone groups a changed file takes part in.
+            </p>
+          </div>
+          <div class="card">
+            <div class="ico">🔌</div>
+            <h3>MCP server</h3>
+            <p>
+              <span class="cmd">clines mcp</span> serves all eight analyses to a coding agent over
+              the Model Context Protocol, with compact capped responses. Hand-rolled JSON-RPC, so it
+              still adds no dependency.
             </p>
           </div>
           <div class="card">
@@ -579,8 +637,32 @@ $ npx clines refactor --price 3
 <span style="color: var(--muted)"># list every file, scrolling instead of truncating</span>
 $ npx clines cx --top all
 
+<span style="color: var(--muted)"># machine-readable output, from any command</span>
+$ npx clines ctx --json | jq '.result.totalTokens'
+
+<span style="color: var(--muted)"># fail the build above 5% duplication (exit 2)</span>
+$ npx clines dup --max-duplication 5
+
+<span style="color: var(--muted)"># only the files this branch changed</span>
+$ npx clines ctx --diff main --max 50k
+
+<span style="color: var(--muted)"># find files that keep changing together</span>
+$ npx clines coupling
+
+<span style="color: var(--muted)"># what is safe to hand to a coding agent?</span>
+$ npx clines agent
+
+<span style="color: var(--muted)"># serve the analyses to a coding agent</span>
+$ npx clines mcp
+
 <span style="color: var(--muted)"># the bare command prints a banner + version</span>
 $ npx clines</pre>
+        <div class="note">
+          <b>Exit codes.</b> A breached threshold exits <code>2</code>; a real error — a bad flag, a
+          missing directory — exits <code>1</code>. A pipeline can therefore tell a finding from a
+          failure. Every command accepts <span class="cmd">--json</span> and
+          <span class="cmd">--diff &lt;ref&gt;</span>.
+        </div>
         <div class="note">
           <b>README markers.</b> Place the <code>clines · code metrics</code> and
           <code>clines · end</code> marker comments anywhere in the README, and the section between

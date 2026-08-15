@@ -1,7 +1,7 @@
 {
   "name": "clines",
-  "version": "5.12.3",
-  "description": "Count lines of code per language, find duplicate code, rank files by code complexity, estimate the token count of a repository for AI agents, find stale comments, and decide which files are worth refactoring. A modern cloc alternative.",
+  "version": "7.0.0",
+  "description": "Count lines of code per language, find duplicate code, rank files by code complexity, estimate the token count of a repository for AI agents, find stale comments, and decide which files are worth refactoring. Change coupling, agent-risk ratings, JSON output, CI exit codes, PR diff mode and an MCP server. A modern cloc alternative.",
   "type": "module",
   "homepage": "https://adiletbaimyrza.github.io/clines/",
   "repository": {
@@ -71,7 +71,21 @@
     "code-churn",
     "technical-debt",
     "codebase-metrics",
-    "hotspots"
+    "hotspots",
+    "change-coupling",
+    "temporal-coupling",
+    "code-churn-analysis",
+    "behavioral-code-analysis",
+    "agent-safety",
+    "json",
+    "json-output",
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "ci",
+    "exit-code",
+    "quality-gate",
+    "pull-request"
   ],
   "license": "MIT",
   "author": "Adilet Baimyrza Uulu",

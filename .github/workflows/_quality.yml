@@ -16,6 +16,10 @@ jobs:
         node: [20, 22]
     steps:
       - uses: actions/checkout@v4
+        with:
+          # clines reads git history; a depth-1 checkout makes refactor and
+          # comments silently wrong, and its own diff mode unusable.
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -63,3 +67,21 @@ jobs:
           echo "$OUT"
           echo "$OUT" | grep -q "Total"
           rm -rf "$TMP"
+
+      - name: MCP handshake
+        run: |
+          set -euo pipefail
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
+            | node dist/cli/index.js mcp \
+            | grep -q '"serverInfo"'
+
+      - name: Measure ourselves
+        run: |
+          set -euo pipefail
+          node dist/cli/index.js ctx --json --no-pager | node -e 'process.stdin.once("data", (d) => JSON.parse(d))'
+          node dist/cli/index.js ctx --max 200k --no-pager
+          node dist/cli/index.js dup --max-duplication 10 --no-pager
+          # --min-lines keeps a 20-line file with two branches from tripping the gate
+          node dist/cli/index.js cx --max-density 30 --min-lines 30 --no-pager
+          node dist/cli/index.js coupling --no-pager
+          node dist/cli/index.js agent --no-pager

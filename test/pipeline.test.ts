@@ -9,6 +9,7 @@ import {
   analyzeRefactor,
   collectRoledFiles,
 } from "../src/core/pipeline.js";
+import { fakeLog } from "./helpers/history.js";
 import { TempProject } from "./helpers/tmp.js";
 
 let project: TempProject;
@@ -51,12 +52,35 @@ describe("analyzeComplexity", () => {
   });
 });
 
+describe("bot filtering", () => {
+  it("ignores bot commits unless asked to count them", async () => {
+    project.file("hot.ts", "if (a) { b(); }\n");
+    const log = `${fakeLog({ files: ["hot.ts"] })}${fakeLog({
+      files: ["hot.ts"],
+      name: "dependabot[bot]",
+      email: "dependabot[bot]@users.noreply.github.com",
+    })}`;
+
+    const humans = await analyzeRefactor(project.root, defaultConfig(), [], {
+      reader: async () => log,
+    });
+    const all = await analyzeRefactor(project.root, defaultConfig(), [], {
+      reader: async () => log,
+      includeBots: true,
+    });
+
+    expect(humans!.candidates[0]!.changes).toBe(1);
+    expect(all!.candidates[0]!.changes).toBe(2);
+    expect(humans!.commits).toBe(1);
+  });
+});
+
 describe("analyzeRefactor", () => {
   it("joins complexity and tokens to the change log, extensionless files included", async () => {
     project.file("hot.ts", "if (a) { b(); }\nif (c) { d(); }\n");
     project.file("Makefile", "if a\n");
     project.file("empty.ts", "");
-    const log = ["a".repeat(40), "hot.ts", "", "b".repeat(40), "hot.ts", "Makefile"].join("\n");
+    const log = fakeLog({ files: ["hot.ts"] }, { files: ["hot.ts", "Makefile"] });
 
     const report = await analyzeRefactor(project.root, defaultConfig(), [], {
       reader: async (_root, since) => (since === "2 years ago" ? log : undefined),

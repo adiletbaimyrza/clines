@@ -7,11 +7,15 @@ export interface RefactorInput {
   density: number;
   tokens: number;
   changes: number;
+  churn: number;
+  momentum: number;
+  lastChange: number;
 }
 
 export interface RefactorCandidate extends RefactorInput {
   verdict: Verdict;
   recurringTokens: number;
+  churnRatio: number;
 }
 
 export interface Limits {
@@ -27,6 +31,7 @@ export interface RefactorReport {
   inert: number;
   measured: number;
   limits: Limits;
+  verdicts: Record<Verdict, number>;
 }
 
 const MIN_BUSY = 2;
@@ -49,12 +54,9 @@ function quantile(sorted: number[], fraction: number): number {
 export function judge(all: RefactorInput[], since: string, commits: number): RefactorReport {
   const files = all.filter((file) => file.complexity > 0);
   const changed = files.filter((file) => file.changes > 0);
-  const busy = Math.max(
-    MIN_BUSY,
-    quantile(
-      changed.map((f) => f.changes).sort((a, b) => a - b),
-      0.5,
-    ),
+  const busy = quantile(
+    changed.map((f) => f.momentum).sort((a, b) => a - b),
+    0.5,
   );
   const dense = quantile(
     files.map((f) => f.density).sort((a, b) => a - b),
@@ -70,6 +72,7 @@ export function judge(all: RefactorInput[], since: string, commits: number): Ref
     .map((file) => ({
       ...file,
       recurringTokens: file.tokens * file.changes,
+      churnRatio: file.code === 0 ? 0 : (file.churn / file.code) * 100,
       verdict: verdictFor(file, limits),
     }))
     .sort((a, b) => b.recurringTokens - a.recurringTokens || a.path.localeCompare(b.path));
@@ -81,14 +84,29 @@ export function judge(all: RefactorInput[], since: string, commits: number): Ref
     inert: files.length - changed.length,
     measured: files.length,
     limits,
+    verdicts: countVerdicts(candidates),
   };
+}
+
+function countVerdicts(candidates: RefactorCandidate[]): Record<Verdict, number> {
+  const counts: Record<Verdict, number> = {
+    refactor: 0,
+    split: 0,
+    watch: 0,
+    quiet: 0,
+    inert: 0,
+  };
+  for (const candidate of candidates) {
+    counts[candidate.verdict] += 1;
+  }
+  return counts;
 }
 
 function verdictFor(file: RefactorInput, limits: Limits): Verdict {
   if (file.changes === 0) {
     return "inert";
   }
-  const hot = file.changes >= limits.busy;
+  const hot = file.momentum >= limits.busy && file.changes >= MIN_BUSY;
   if (!hot) {
     return "quiet";
   }

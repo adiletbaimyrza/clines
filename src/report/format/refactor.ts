@@ -22,10 +22,34 @@ function verdictInk(cell: string): Ink | undefined {
   return VERDICT_INK[cell as Verdict];
 }
 
+export type RefactorSort = "cost" | "churn" | "recent";
+
 export interface RefactorOptions {
   top?: number;
   price?: number;
+  explain?: boolean;
+  sort?: RefactorSort;
 }
+
+export function rankRefactor(
+  candidates: RefactorCandidate[],
+  sort: RefactorSort,
+): RefactorCandidate[] {
+  const active = candidates.filter((file) => file.changes > 0);
+  if (sort === "churn") {
+    return [...active].sort((a, b) => b.churn - a.churn || a.path.localeCompare(b.path));
+  }
+  if (sort === "recent") {
+    return [...active].sort((a, b) => b.momentum - a.momentum || a.path.localeCompare(b.path));
+  }
+  return active;
+}
+
+const RANKING: Record<RefactorSort, string> = {
+  cost: "Ranked by what re-reading them has cost, in tokens",
+  churn: "Ranked by how many lines have changed",
+  recent: "Ranked by how recently the changes arrived",
+};
 
 export function renderRefactor(
   report: RefactorReport | undefined,
@@ -53,21 +77,24 @@ export function renderRefactor(
   out.push(
     "",
     ...wrap(
-      `Judged against this repo: changed often means ${formatNumber(busy)}+ changes, dense means ${dense.toFixed(1)} cx per 100 lines, costly means ${formatNumber(costly)} tokens.`,
+      `Judged against this repo: changed often means a recency-weighted ${busy.toFixed(1)}+ changes, dense means ${dense.toFixed(1)} cx per 100 lines, costly means ${formatNumber(costly)} tokens.`,
       "",
     ),
     "",
-    ...verdictLines(report.candidates, paint),
+    ...verdictLines(report.verdicts, paint),
   );
 
-  const active = report.candidates.filter((file) => file.changes > 0);
+  const sort = options.sort ?? "cost";
+  const active = rankRefactor(report.candidates, sort);
   if (active.length === 0) {
     out.push("", `Nothing changed since ${report.since}.`);
     return out.join("\n");
   }
 
+  const explain = options.explain === true;
   const shown = active.slice(0, top);
   const headers = ["File", "Verdict", "Changes", "Cx/100", "Tokens", "Re-read"];
+  const extra = explain ? ["Churn", "Churn%", "Recent"] : [];
   const rows = shown.map((file) => [
     file.path,
     file.verdict,
@@ -75,13 +102,17 @@ export function renderRefactor(
     file.density.toFixed(1),
     compact(file.tokens),
     compact(file.recurringTokens),
+    ...(explain
+      ? [compact(file.churn), `${Math.round(file.churnRatio)}%`, file.momentum.toFixed(1)]
+      : []),
     ...(options.price === undefined ? [] : [money(file.recurringTokens, options.price)]),
   ]);
 
+  const columns = [...headers, ...extra, ...(options.price === undefined ? [] : ["Cost"])];
   out.push(
     "",
-    heading("Ranked by what re-reading them has cost, in tokens", paint),
-    ...table(options.price === undefined ? headers : [...headers, "Cost"], rows, {
+    heading(RANKING[sort], paint),
+    ...table(columns, rows, {
       paint,
       ink: (cell, column) => (column === 1 ? verdictInk(cell) : undefined),
     }),
@@ -101,14 +132,19 @@ export function renderRefactor(
     );
   }
 
-  pushHint(out, "Run with `--price <usd>` to price the re-reads per million tokens.");
+  pushHint(
+    out,
+    options.explain === true
+      ? "Churn is lines changed; Recent weights each change by how long ago it landed."
+      : "Run with `--explain` for churn and recency, or `--price <usd>` to cost the re-reads.",
+  );
   return out.join("\n");
 }
 
-function verdictLines(candidates: RefactorCandidate[], paint: Painter): string[] {
+function verdictLines(verdicts: Record<Verdict, number>, paint: Painter): string[] {
   const width = Math.max(...VERDICT_ORDER.map((verdict) => verdict.length));
   return VERDICT_ORDER.map((verdict) => {
-    const count = candidates.filter((file) => file.verdict === verdict).length;
+    const count = verdicts[verdict];
     return count === 0
       ? undefined
       : `  ${paint(verdict.padEnd(width), VERDICT_INK[verdict])}   ${formatNumber(count).padStart(5)} files   ${paint(VERDICT_REASON[verdict], "dim")}`;

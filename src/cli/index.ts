@@ -9,7 +9,7 @@ const pkg = require("../../package.json") as { version: string };
 
 async function main(): Promise<void> {
   try {
-    await runCli(process.argv, consoleIO, { version: pkg.version });
+    process.exitCode = await runCli(process.argv, consoleIO, { version: pkg.version });
   } catch (error) {
     if (error instanceof ClinesError) {
       consoleIO.err(error.message);

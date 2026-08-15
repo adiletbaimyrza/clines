@@ -198,6 +198,23 @@
         <h1>Blog</h1>
         <p class="meta">Release notes and write-ups.</p>
 
+        <h2><a href="clines-7-0.html">clines 7.0 — measuring change, not commits</a></h2>
+        <p class="meta">15 August 2026 · covers 7.0.0</p>
+        <p>
+          Bots are behind 73.9% of hotspot commits, so the change signal was mostly measuring CI.
+          Dropping them, following renames, weighting recent changes higher — plus two new commands:
+          change coupling, and a rating for what is safe to hand to an AI agent.
+        </p>
+
+        <h2><a href="clines-6-0.html">clines 6.0 — the machine-readable release</a></h2>
+        <p class="meta">15 August 2026 · covers 6.0.0</p>
+        <p>
+          <code>--json</code> on every command, threshold flags that exit <code>2</code> so a
+          pipeline can tell a finding from a failure, a <code>--diff</code> mode that scopes any
+          analysis to a pull request, an MCP server that adds no dependency — and the discovery that
+          a shallow CI checkout had been making two commands quietly wrong.
+        </p>
+
         <h2><a href="from-5-4-0-to-5-7-0.html">From 5.4.0 to 5.7.0</a></h2>
         <p class="meta">10 August 2026 · covers 5.4.1 through 5.7.0</p>
         <p>

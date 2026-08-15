@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>clines 6.0 — the machine-readable release — clines</title>
+    <meta
+      name="description"
+      content="clines 6.0 adds --json to every command, CI gates that exit 2, a --diff mode that scopes any analysis to a pull request, and an MCP server that adds no dependency."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A8%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --bg: #0a0e17;
+        --bg-soft: #111726;
+        --panel: #141b2d;
+        --border: #223049;
+        --text: #e6ecf5;
+        --muted: #9aa8bf;
+        --accent: #5ed0ff;
+        --accent-2: #a78bfa;
+        --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        color: var(--text);
+        background:
+          radial-gradient(1200px 600px at 80% -10%, rgba(94, 208, 255, 0.12), transparent 60%),
+          var(--bg);
+        line-height: 1.65;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .wrap {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      nav .brand {
+        font-family: var(--mono);
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: var(--text);
+      }
+      nav .brand::before {
+        content: "✨ ";
+      }
+      nav .links a {
+        color: var(--muted);
+        margin-left: 20px;
+        font-size: 14px;
+      }
+      nav .links a:hover {
+        color: var(--text);
+        text-decoration: none;
+      }
+      article {
+        padding: 40px 0 64px;
+      }
+      h1 {
+        font-size: clamp(26px, 4vw, 34px);
+        margin: 0 0 8px;
+        line-height: 1.25;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0 0 32px;
+      }
+      h2 {
+        font-size: 21px;
+        margin: 40px 0 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+      h3 {
+        font-size: 17px;
+        margin: 28px 0 4px;
+      }
+      p,
+      li {
+        color: #cdd6e6;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.9em;
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 1px 5px;
+      }
+      pre {
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: #cdd6e6;
+      }
+      pre code {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: inherit;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin: 16px 0;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      td.v {
+        font-family: var(--mono);
+        color: var(--accent);
+        white-space: nowrap;
+      }
+      td.n {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      blockquote {
+        margin: 20px 0;
+        padding: 12px 16px;
+        border-left: 3px solid var(--accent-2);
+        background: var(--panel);
+        border-radius: 0 8px 8px 0;
+        color: var(--muted);
+      }
+      blockquote p {
+        margin: 0;
+        color: var(--muted);
+      }
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 24px 0 40px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+    <link rel="canonical" href="https://adiletbaimyrza.github.io/clines/blog/clines-6-0.html" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="clines" />
+    <meta
+      property="og:url"
+      content="https://adiletbaimyrza.github.io/clines/blog/clines-6-0.html"
+    />
+    <meta property="og:title" content="clines 6.0 — the machine-readable release — clines" />
+    <meta
+      property="og:description"
+      content="clines 6.0 adds --json to every command, CI gates that exit 2, a --diff mode that scopes any analysis to a pull request, and an MCP server that adds no dependency."
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="clines 6.0 — the machine-readable release — clines" />
+    <meta
+      name="twitter:description"
+      content="clines 6.0 adds --json to every command, CI gates that exit 2, a --diff mode that scopes any analysis to a pull request, and an MCP server that adds no dependency."
+    />
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <span class="brand">clines</span>
+        <span class="links">
+          <a href="../index.html">Home</a>
+          <a href="index.html">Blog</a>
+          <a href="https://github.com/adiletbaimyrza/clines">GitHub</a>
+        </span>
+      </nav>
+    </div>
+
+    <div class="wrap">
+      <article>
+        <h1>clines 6.0 — the machine-readable release</h1>
+        <p class="meta">15 August 2026 · covers 6.0.0</p>
+
+        <p>
+          Until this release clines could only talk to a person. There was no
+          <code>--json</code>, no <code>--csv</code>, nothing but formatted tables, three HTML files
+          and a markdown block written into a README. Exactly one flag could fail a build (<code
+            >ctx --max</code
+          >), and nothing could compare a run against a git ref.
+        </p>
+        <p>
+          That is a strange shape for a tool whose most distinctive analysis measures what a
+          codebase costs a language model to read. The consumers of that number are pipelines and
+          coding agents, and neither can read a table. 6.0 fixes that.
+        </p>
+
+        <h2><code>--json</code> on every command</h2>
+        <p>
+          Every command now takes <code>--json</code> and writes one document to stdout under a
+          shared envelope, so a consumer parses first and dispatches second.
+        </p>
+        <pre class="code">
+$ clines ctx --json | jq '.result.totalTokens'
+3303084</pre>
+        <p>
+          Three decisions are worth naming. The output carries <b>no timestamp</b>, so two runs of
+          the same tree diff cleanly and a CI baseline stays stable. <code>--json</code> implies
+          <code>--no-pager</code> and every progress line already went to stderr, so stdout is only
+          ever JSON. And <code>--top</code> is ignored — a person wants the top 20, a program wants
+          all of it.
+        </p>
+        <p>
+          One exception, made deliberately: <code>dup --json</code> carries every clone group and
+          every fragment location, but not the snippet text. Including it would make the document
+          scale with the size of the duplication rather than its shape, and the text is reproducible
+          from the files. <code>--html</code> still has the snippets.
+        </p>
+
+        <h2>Exit 2 means "found something"</h2>
+        <p>
+          Before, everything failed with <code>1</code>: a bad flag, a missing directory, a breached
+          budget. A pipeline could not tell a finding from a failure. Now a breached threshold exits
+          <code>2</code> and errors keep exiting <code>1</code>.
+        </p>
+        <pre class="code">
+$ clines dup --max-duplication 5
+Duplication exceeded: 5.5% &gt; 5.0% (--max-duplication)
+$ echo $?
+2</pre>
+        <p>
+          <code>dup</code>, <code>cx</code>, <code>comments</code> and <code>refactor</code> gained
+          threshold flags to go with <code>ctx --max</code>. This is the breaking change behind the
+          major version: <code>ctx --max</code> used to exit 1.
+        </p>
+        <p>
+          <code>refactor</code> deliberately did <em>not</em> get a gate on verdict counts. Its
+          thresholds are quantiles of the repository computed per run, so every repository always
+          has a top quartile — "fail if more than 50 files say refactor" would measure nothing
+          across runs. <code>--max-reread</code> gates an absolute number instead.
+        </p>
+
+        <h2><code>--diff main</code></h2>
+        <p>
+          A budget on a whole repository is close to unactionable: it is either already breached or
+          it is noise. What a team will actually keep is a check on the change. Any command now
+          takes <code>--diff &lt;ref&gt;</code> and reports only what a branch touched.
+        </p>
+        <pre class="code">$ clines ctx --diff main --max 50k</pre>
+        <p>
+          <code>dup</code> needs different treatment, and gets it. Filtering its input would destroy
+          detection — a clone needs its other copies to exist. So detection still runs over the
+          whole tree, and only then does the result narrow to the groups a changed file takes part
+          in, naming the other copies. The headline percentage is recomputed over the changed files,
+          so the gate measures the branch rather than the repository.
+        </p>
+
+        <h2>The shallow clone bug</h2>
+        <p>
+          Building <code>--diff</code> surfaced something worse than a missing feature.
+          <code>git blame</code> and <code>git log --since</code> both answer a depth-1 clone
+          without complaint and return truncated history. <code>actions/checkout</code> defaults to
+          <code>fetch-depth: 1</code>. So <code>refactor</code> and <code>comments</code> have been
+          quietly reporting near-zero change counts in CI, confidently, with no way to tell.
+        </p>
+        <pre class="code">
+Shallow clone: git history is truncated here, so these numbers are too
+low. Fetch the full history (actions/checkout with `fetch-depth: 0`) for
+a real answer.</pre>
+        <p>
+          The same pass gave git failures distinguishable causes. Every git call used to collapse
+          into <code>undefined</code>, so a 64 MB buffer overflow on a large
+          <code>git log</code> was reported to the user as "no git history is available".
+        </p>
+
+        <h2><code>clines mcp</code></h2>
+        <p>
+          <code>clines mcp</code> runs a Model Context Protocol server on stdio, so an agent can ask
+          what a repository costs to read without shelling out and parsing a table. All six analyses
+          are exposed as tools.
+        </p>
+        <pre class="code">$ claude mcp add clines -- npx clines mcp</pre>
+        <p>
+          It adds <b>no dependency</b>. The JSON-RPC is hand-rolled — about 120 lines, in a codebase
+          that already hand-rolls a glob engine, a config validator and a TTY pager — so
+          <code>commander</code> remains the only runtime dependency.
+        </p>
+        <p>
+          Its responses are compact and capped at 20 rows by default, which is the opposite of what
+          <code>--json</code> does on purpose. An agent pays for every token it reads back; a
+          6,915-file dump would defeat the point of asking.
+        </p>
+
+        <h2>And the obvious embarrassment</h2>
+        <p>
+          clines did not run clines in its own CI. The flagship CI feature was unused by the only
+          repository guaranteed to have it installed. It now gates itself on token budget,
+          duplication and complexity density, and checks out full history to do it.
+        </p>
+
+        <h2>Also in 6.0</h2>
+        <ul>
+          <li>
+            The library API now exports all six analyses. <code>analyzeComments</code> and
+            <code>analyzeRefactor</code> were missing entirely, and two of the exported analyses had
+            unexported return types.
+          </li>
+          <li>
+            <code>loadConfig</code>, <code>loadGitignoreGlobs</code> and
+            <code>loadGitAttributes</code> are exported, so a library caller can reproduce exactly
+            what the CLI does with <code>clines.json</code>, <code>.gitignore</code> and
+            <code>.gitattributes</code> instead of reimplementing it.
+          </li>
+          <li>Test coverage is still 100%, on 562 tests.</li>
+        </ul>
+
+        <p class="meta">
+          <a href="index.html">← All posts</a>
+        </p>
+      </article>
+    </div>
+  </body>
+</html>

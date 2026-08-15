@@ -145,6 +145,7 @@ const REFACTOR: RefactorReport = {
   inert: 3,
   measured: 5,
   limits: { busy: 3, dense: 12.5, costly: 2400 },
+  verdicts: { refactor: 1, split: 0, watch: 0, quiet: 1, inert: 0 },
 };
 
 const REPORT: Report = {

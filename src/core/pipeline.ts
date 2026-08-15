@@ -1,24 +1,26 @@
 import path from "node:path";
 import type { Config } from "../config/schema.js";
 import { readText } from "../util/fs.js";
-import {
-  blameFile,
-  changeLog,
-  countCommits,
-  parseChangeLog,
-  type Blamer,
-  type ChangeReader,
-} from "../util/git.js";
+import { blameFile, changeLog, type Blamer, type ChangeReader } from "../util/git.js";
+import { commitsOf, fileChanges, parseHistory } from "./history.js";
 import {
   measureDrift,
   summarizeDrift,
   type CommentOutcome,
   type FileDrift,
 } from "./analyzers/comments.js";
+import {
+  analyzeCoupling as couple,
+  type CouplingLimits,
+  type CouplingResult,
+} from "./analyzers/coupling.js";
+import { judgeAgentRisk, type AgentReport } from "./analyzers/agent.js";
 import { linesAnalyzer } from "./analyzers/lines.js";
 import { judge, type RefactorReport } from "./analyzers/refactor.js";
 import {
+  clonesTouching,
   detectDuplication,
+  focusDuplication,
   normalizeRenamed,
   toDupFile,
   type DuplicationResult,
@@ -58,6 +60,7 @@ export interface AnalyzeOptions {
   includeAll?: boolean;
   crossFileOnly?: boolean;
   renamed?: boolean;
+  only?: Set<string>;
 }
 
 export interface CommentOptions {
@@ -112,15 +115,21 @@ export function summarizeRoles(files: RoledFile[]): RoleSummary[] {
   }).filter((summary) => summary.files > 0);
 }
 
+export function scopeTo(files: RoledFile[], only?: Set<string>): RoledFile[] {
+  return only === undefined ? files : files.filter((file) => only.has(file.path));
+}
+
 export function partition(
   files: RoledFile[],
   includeAll: boolean,
+  only?: Set<string>,
 ): { included: RoledFile[]; excluded: Exclusions } {
+  const scoped = scopeTo(files, only);
   if (includeAll) {
-    return { included: files, excluded: { files: 0, roles: [] } };
+    return { included: scoped, excluded: { files: 0, roles: [] } };
   }
-  const included = files.filter((file) => file.role === "source");
-  const rest = files.filter((file) => file.role !== "source");
+  const included = scoped.filter((file) => file.role === "source");
+  const rest = scoped.filter((file) => file.role !== "source");
   return { included, excluded: { files: rest.length, roles: summarizeRoles(rest) } };
 }
 
@@ -131,9 +140,9 @@ export async function analyze(
   options: AnalyzeOptions = {},
 ): Promise<Report> {
   const files = await collectRoledFiles(rootDir, config, extraGlobs, options);
-  const { included } = partition(files, options.includeAll === true);
+  const { included } = partition(files, options.includeAll === true, options.only);
   const tokens = included.map((file) => tokenize(file.path, file.content, file.kinds));
-  return { ...linesAnalyzer.analyze(tokens), roles: summarizeRoles(files) };
+  return { ...linesAnalyzer.analyze(tokens), roles: summarizeRoles(scopeTo(files, options.only)) };
 }
 
 export async function analyzeComplexity(
@@ -143,7 +152,7 @@ export async function analyzeComplexity(
   options: AnalyzeOptions = {},
 ): Promise<ComplexityResult> {
   const files = await collectRoledFiles(rootDir, config, extraGlobs, options);
-  const { included, excluded } = partition(files, options.includeAll === true);
+  const { included, excluded } = partition(files, options.includeAll === true, options.only);
 
   const result = included.map((file) => {
     const ext = path.extname(file.path) || "no_ext";
@@ -245,7 +254,7 @@ export async function analyzeContext(
   options: AnalyzeOptions = {},
 ): Promise<ContextResult> {
   const collected = await collectRoledFiles(rootDir, config, extraGlobs, options);
-  const { included, excluded } = partition(collected, options.includeAll === true);
+  const { included, excluded } = partition(collected, options.includeAll === true, options.only);
 
   const files = included.map(measureContext);
   files.sort((a, b) => b.tokens - a.tokens || a.path.localeCompare(b.path));
@@ -315,6 +324,7 @@ export async function analyzeComments(
 export interface RefactorOptions extends AnalyzeOptions {
   since?: string;
   reader?: ChangeReader;
+  includeBots?: boolean;
 }
 
 export async function analyzeRefactor(
@@ -330,8 +340,11 @@ export async function analyzeRefactor(
   }
 
   const collected = await collectRoledFiles(rootDir, config, extraGlobs, options);
-  const { included } = partition(collected, options.includeAll === true);
-  const counts = parseChangeLog(log);
+  const { included } = partition(collected, options.includeAll === true, options.only);
+  const commits = commitsOf(parseHistory(log), {
+    ...(options.includeBots === true ? { includeBots: true } : {}),
+  });
+  const counts = fileChanges(commits);
 
   const files = included.map((file) => {
     const ext = path.extname(file.path) || "no_ext";
@@ -339,17 +352,77 @@ export async function analyzeRefactor(
       sanitizeCode(file.content, getLanguageSyntax(ext)),
       getComplexityChecks(ext),
     );
+    const changes = counts.get(file.path);
     return {
       path: file.path,
       complexity: detail.total,
       code: file.code,
       density: file.code === 0 ? 0 : (detail.total / file.code) * 100,
       tokens: measureContext(file).tokens,
-      changes: counts.get(file.path) ?? 0,
+      changes: changes?.commits ?? 0,
+      churn: changes?.churn ?? 0,
+      momentum: changes?.momentum ?? 0,
+      lastChange: changes?.lastChange ?? 0,
     };
   });
 
-  return judge(files, since, countCommits(log));
+  return judge(files, since, commits.length);
+}
+
+export async function analyzeAgent(
+  rootDir: string,
+  config: Config,
+  extraGlobs: string[] = [],
+  options: AnalyzeOptions = {},
+  minLines = 5,
+): Promise<AgentReport> {
+  const collected = await collectRoledFiles(rootDir, config, extraGlobs, options);
+  const { included } = partition(collected, options.includeAll === true, options.only);
+
+  const dupFiles = included.map((file) => toDupFile(file.path, file.content, file.kinds));
+  const duplication = new Map(
+    detectDuplication(dupFiles, minLines, 2).perFile.map((file) => [file.path, file.percentage]),
+  );
+
+  const inputs = included.map((file) => {
+    const ext = path.extname(file.path) || "no_ext";
+    const detail = measureComplexity(
+      sanitizeCode(file.content, getLanguageSyntax(ext)),
+      getComplexityChecks(ext),
+    );
+    return {
+      path: file.path,
+      code: file.code,
+      density: file.code === 0 ? 0 : (detail.total / file.code) * 100,
+      concentration: detail.total === 0 ? 0 : (detail.densest / detail.total) * 100,
+      tokens: measureContext(file).tokens,
+      duplication: duplication.get(file.path) ?? 0,
+    };
+  });
+
+  return judgeAgentRisk(inputs);
+}
+
+export interface CouplingOptions {
+  since?: string;
+  reader?: ChangeReader;
+  includeBots?: boolean;
+  limits?: Partial<CouplingLimits>;
+}
+
+export async function analyzeCoupling(
+  rootDir: string,
+  options: CouplingOptions = {},
+): Promise<CouplingResult | undefined> {
+  const since = options.since ?? "2 years ago";
+  const log = await (options.reader ?? changeLog)(rootDir, since);
+  if (log === undefined) {
+    return undefined;
+  }
+  const commits = commitsOf(parseHistory(log), {
+    ...(options.includeBots === true ? { includeBots: true } : {}),
+  });
+  return couple(commits, options.limits ?? {});
 }
 
 export async function analyzeDuplication(
@@ -361,6 +434,7 @@ export async function analyzeDuplication(
   options: AnalyzeOptions = {},
 ): Promise<DuplicationResult> {
   const collected = await collectRoledFiles(rootDir, config, extraGlobs, options);
+  // A clone needs its other copies, so detection runs over the whole corpus.
   const { included, excluded } = partition(collected, options.includeAll === true);
   const dupFiles = included.map((file) => toDupFile(file.path, file.content, file.kinds));
   const exact = detectDuplication(dupFiles, minLines, minCopies, {
@@ -372,8 +446,16 @@ export async function analyzeDuplication(
       ? detectDuplication(dupFiles, minLines, minCopies, {
           normalizer: normalizeRenamed,
           ...(options.crossFileOnly === true ? { crossFileOnly: true } : {}),
-        }).clones.length
-      : 0;
+        }).clones
+      : [];
 
-  return { ...exact, renamedGroups: Math.max(0, renamed - exact.clones.length), excluded };
+  const focused =
+    options.only === undefined
+      ? { ...exact, excluded }
+      : focusDuplication({ ...exact, excluded }, dupFiles, options.only);
+
+  const renamedCount =
+    options.only === undefined ? renamed.length : clonesTouching(renamed, options.only).length;
+
+  return { ...focused, renamedGroups: Math.max(0, renamedCount - focused.clones.length) };
 }

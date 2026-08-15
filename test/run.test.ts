@@ -10,6 +10,7 @@ import {
 } from "../src/cli/run.js";
 import { ClinesError } from "../src/util/errors.js";
 import { pathExists } from "../src/util/fs.js";
+import { fakeLog } from "./helpers/history.js";
 import { captureIO, TempProject } from "./helpers/tmp.js";
 
 let project: TempProject;
@@ -195,17 +196,18 @@ describe("runContext", () => {
     expect(code).toBe(0);
   });
 
-  it("throws once the total exceeds --max", async () => {
+  it("exits 2 once the total exceeds --max", async () => {
     project.file("a.ts", "const a = 1;\n");
-    const { io, out } = captureIO();
+    const { io, out, err } = captureIO();
 
-    await expect(
-      runContext(
-        { dir: project.root, window: 200000, top: 100, open: false, max: 1 },
-        io,
-        () => {},
-      ),
-    ).rejects.toThrow(/Context budget exceeded/);
+    const code = await runContext(
+      { dir: project.root, window: 200000, top: 100, open: false, max: 1 },
+      io,
+      () => {},
+    );
+
+    expect(code).toBe(2);
+    expect(err.join("\n")).toMatch(/Context budget exceeded: .+ > 1 \(--max\)/);
     expect(out.join("\n")).toContain("Context:");
   });
 
@@ -278,7 +280,7 @@ describe("runRefactor", () => {
     const { io, out, err } = captureIO();
 
     const code = await runRefactor({ ...options, dir: project.root, price: 3 }, io, async () =>
-      ["a".repeat(40), "hot.ts", "", "b".repeat(40), "hot.ts"].join("\n"),
+      fakeLog({ files: ["hot.ts"] }, { files: ["hot.ts"] }),
     );
 
     expect(code).toBe(0);
