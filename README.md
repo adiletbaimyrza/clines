@@ -7,10 +7,11 @@
 
 `clines` counts lines of code, comments and blanks per language, finds duplicate code, ranks files
 by complexity, estimates the token count a language model reads for the whole repository, finds
-comments the code has drifted away from, and says which files are worth refactoring. It is a `cloc`
-alternative with five additional analyses built in.
+comments the code has drifted away from, finds files that keep changing together, and says which
+files are worth refactoring — and which are safe to hand to an AI agent. It is a `cloc` alternative
+with seven additional analyses built in.
 
-It has six commands:
+It has eight commands:
 
 | Command    | Output                                                                 |
 | ---------- | ---------------------------------------------------------------------- |
@@ -20,6 +21,12 @@ It has six commands:
 | `ctx`      | Estimated token cost, with an optional budget check for CI.            |
 | `comments` | Comment blocks the code has drifted away from.                         |
 | `refactor` | A verdict per file, from how complex it is and how often it changes.   |
+| `coupling` | Files that keep changing together, and the dependency that implies.    |
+| `agent`    | How safe each file is to hand to an AI coding agent.                   |
+
+Every command takes `--json` for machine-readable output, `--diff <ref>` to report only what a
+branch changed, and a threshold flag that exits `2` to fail CI. `clines mcp` serves the same
+analyses to a coding agent over the Model Context Protocol.
 
 `commander` is the only runtime dependency. Test coverage is 100%.
 
@@ -60,6 +67,10 @@ Running `clines` on its own prints a banner with the version and available comma
 | `--help`          | Show help.                                                 |
 
 Global: `clines -v` (or `-V`, `--version`), `clines --help`.
+
+Every command also takes `--json` (machine-readable output), `--diff <ref>` (only the files a
+branch changed) and `--all`. See [JSON output](#json-output), [Failing a build](#failing-a-build)
+and [Measuring a pull request](#measuring-a-pull-request).
 
 Output is coloured when it is going to a terminal: bold headings, dim table headers, and
 `refactor` verdicts by severity. Set `NO_COLOR` to turn it off, or `FORCE_COLOR` to keep colour
@@ -364,9 +375,110 @@ all in two years — a complexity ranking puts many of them near the top, and th
 the bottom where they belong.
 
 The thresholds are quantiles of the repository itself, not fixed numbers: `dense` and `costly` are
-the 75th percentile of density and tokens, and `changed often` is the median change count among
-files that changed, floored at 2. Verdicts are therefore relative — every repository has a top
+the 75th percentile of density and tokens, and `changed often` is the median among files that
+changed, floored at two changes. Verdicts are therefore relative — every repository has a top
 quartile. Requires a git repository.
+
+**What counts as a change.** Three things make the change count mean what it says:
+
+- **Bots are excluded.** A [study of 91 repositories](https://arxiv.org/html/2602.13170) found
+  automation behind **73.9%** of hotspot-related commits, with version bumps alone at 26% and
+  formatting churn at 9%. An unfiltered count largely measures your CI. `--include-bots` restores
+  the old behaviour.
+- **Renames are followed.** `-M` keeps a moved file's history attached to it. Without this a
+  renamed file starts from zero and reads as `inert`.
+- **Recent changes count for more.** "Changed often" is judged on a recency-weighted count with a
+  half-life of a quarter of the window, so thirty changes that stopped a year ago no longer read
+  the same as thirty still arriving. The `Re-read` column stays a plain `tokens × changes`, because
+  it is a factual claim about what has already been spent.
+
+```sh
+npx clines refactor --explain            # + churn, churn share and recency columns
+npx clines refactor --sort churn         # rank by lines changed instead of cost
+npx clines refactor --sort recent        # rank by where the activity is now
+npx clines refactor --include-bots       # count automation too
+```
+
+### Finding what changes together
+
+`clines coupling` (alias `co`) mines git history for files that keep being committed together.
+This is the question `refactor` raises but cannot answer: **why** is this file expensive? A busy
+file that always changes alone is merely busy. One that always changes alongside three others is a
+missing abstraction or a wrong module boundary — a different problem with a different fix.
+
+```sh
+npx clines coupling                                # terminal summary
+npx clines coupling --min-revisions 3 --min-shared 3   # loosen for a young repo
+npx clines coupling --since '6 months ago'         # a shorter window
+npx clines coupling --json
+```
+
+```text
+Change coupling: 20 coupled pairs across 88 commits
+  Skipped 1 commits touching more than 30 files (--max-commit-size)
+
+Files that keep changing together
+  File                            Changes with   Shared   Strength
+  ────────────────────────────────────────────────────────────────
+  src/cli/program.ts      test/program.test.ts       20        95%
+  src/cli/program.ts            src/cli/run.ts       17        85%
+  src/cli/run.ts          src/core/pipeline.ts       13        84%
+```
+
+Strength is shared commits against the **average revision count** of the pair, so it cannot exceed
+100%. The defaults follow the thresholds CodeScene documents — 10+ revisions each, 10+ shared
+commits, 50%+ strength — which are deliberately strict, because below them a co-change is as likely
+to be coincidence as design. Small or young repositories should lower them; clines says so rather
+than printing an empty table.
+
+Two things are deliberately filtered. Commits touching more than `--max-commit-size` files (30 by
+default) are skipped entirely: a sweep across 53 files mints 1,378 pairs that mean nothing. And bot
+commits are excluded, like everywhere else that reads history.
+
+High coupling between a file and its test is expected and healthy. High coupling **across module
+boundaries** is the finding.
+
+### Deciding what an agent can touch
+
+`clines agent` (alias `ai`) rates each file for how safe it is to hand to a coding agent
+unattended, from four signals it already computes.
+
+```sh
+npx clines agent
+npx clines agent --diff main    # just what this branch touches
+npx clines agent --json
+```
+
+```text
+Agent risk: 59 files rated
+
+  human        1 files   several risk signals — decide the design yourself first
+  review      20 files   one risk signal — let an agent try, then read the diff
+  safe        38 files   no risk signals — reasonable to hand over unattended
+
+Read the diff carefully on these
+  File                                Verdict   Cx/100   Tokens   Dup                 Why
+  ───────────────────────────────────────────────────────────────────────────────────────
+  src/report/format/context.ts          human      3.4       3k   27%   large, duplicated
+  src/util/tty.ts                      review     30.8      123    0%               dense
+```
+
+| Signal       | Why it raises risk                                           |
+| ------------ | ------------------------------------------------------------ |
+| `dense`      | branchy logic is where an edit changes behaviour by accident |
+| `large`      | the file may not fit a focused edit                          |
+| `duplicated` | an agent fixes one copy and silently leaves the others       |
+| `diffuse`    | complexity is everywhere, so there is no safe local edit     |
+
+Thresholds combine a repository quantile with an absolute floor (10 cx per 100 lines, 2,000
+tokens). Quantiles alone would flag a quarter of any repository, so a one-line file would come out
+risky in a tidy tree.
+
+**This is a heuristic, not a measured success rate.** It is built from properties that
+[correlate with unreliable AI edits](https://arxiv.org/abs/2601.02200) — a one-standard-deviation
+improvement in code health raised the odds of a non-breaking AI refactoring by 20–40% in that study
+— but that work used 5,000 competitive-programming Python files, which is a weak proxy for
+production code. Treat the output as a reading order, not a permission system.
 
 ## Example output
 
@@ -438,6 +550,125 @@ When README updating is enabled, the section between the placeholders is refresh
 
 Place the `clines · code metrics` and `clines · end` marker comments anywhere in `README.md`, and `clines count --readme` updates the content between them. If the markers are absent, the section is appended to the end of the file.
 
+## JSON output
+
+Every command takes `--json` and writes one document to stdout. The envelope is the same
+everywhere, so a consumer can parse first and dispatch second:
+
+```sh
+npx clines ctx --json | jq '.result.totalTokens'
+npx clines cx --json | jq -r '.result.files[] | select(.density > 20) | .path'
+```
+
+```json
+{
+  "schema": 1,
+  "tool": "clines",
+  "version": "6.0.0",
+  "command": "ctx",
+  "root": "/repo",
+  "result": { "totalTokens": 3303084, "files": [] }
+}
+```
+
+- `schema` is the number to pin against. It changes only when the payload shape breaks.
+- Output is **deterministic** — no timestamps — so two runs of the same tree diff cleanly.
+- `--json` implies `--no-pager`, and progress lines go to stderr, so stdout is only ever JSON.
+- `--top` is ignored: the document always holds the full list. `--min-lines` and `--sort` still
+  apply to `cx`, because they choose what is being reported rather than how much of it to show.
+- Commands that need git set `"result": null` with `"unavailable": "no-git"` rather than failing.
+- `dup --json` carries every clone group and its fragment locations, but not the snippet text —
+  that would make the document scale with the size of the duplication. Use `--html` for snippets.
+
+## Failing a build
+
+Each analysis can gate CI. **A breached threshold exits `2`**; an actual error — a bad flag, a
+missing directory — still exits `1`, so a pipeline can tell a finding from a failure.
+
+| Flag                      | Command    | Fails when                                          |
+| ------------------------- | ---------- | --------------------------------------------------- |
+| `--max <tokens>`          | `ctx`      | the tree costs more than this to read               |
+| `--max-duplication <pct>` | `dup`      | duplication is above this percentage                |
+| `--max-density <n>`       | `cx`       | any file exceeds this complexity per 100 lines      |
+| `--max-drift <pct>`       | `comments` | more than this share of comment blocks have drifted |
+| `--max-reread <tokens>`   | `refactor` | any file has cost more than this to re-read         |
+
+```sh
+npx clines ctx --max 200k                       # fail above a token budget
+npx clines dup --max-duplication 5              # fail above 5% duplication
+npx clines cx --max-density 25 --min-lines 30   # ignore small files
+```
+
+`refactor` deliberately has no gate on verdict counts. Its thresholds are quantiles of the
+repository computed per run, so every repository always has a top quartile and such a gate would
+mean nothing across runs. `--max-reread` gates an absolute number instead.
+
+## Measuring a pull request
+
+`--diff <ref>` narrows any command to the files changed since a git ref, using the merge-base
+diff (`<ref>...HEAD`). "This repository is over budget" is not actionable on an existing codebase;
+"this branch adds a 20k-token file" is a check a team will keep.
+
+```sh
+npx clines ctx --diff main --max 50k     # fail if this branch adds too much to read
+npx clines dup --diff main               # what did this branch duplicate?
+npx clines cx --diff main --json
+```
+
+Each command scopes it the way that command needs:
+
+- `count`, `cx`, `ctx`, `refactor` report only the changed files.
+- `comments` blames only the changed files, which also makes it much faster.
+- `dup` still detects across the **whole tree** — a clone needs its other copies to exist — then
+  reports only the groups that a changed file takes part in, naming the other copies. The headline
+  percentage is recomputed over the changed files, so the gate measures the branch.
+
+`--diff` cannot be combined with `count --readme`: the README block is a project-wide summary, and
+writing a branch-scoped count into it would leave the repository claiming to be the size of one
+pull request. clines refuses rather than writing it.
+
+Reading history needs history. clines now detects a shallow clone and says so rather than
+reporting confidently wrong numbers:
+
+```text
+Shallow clone: git history is truncated here, so these numbers are too low. Fetch the full
+history (actions/checkout with `fetch-depth: 0`) for a real answer.
+```
+
+## Serving an agent over MCP
+
+`clines mcp` runs a Model Context Protocol server on stdio, so a coding agent can ask what a
+repository costs to read without shelling out and parsing a table. It adds **no dependency** —
+the JSON-RPC is hand-rolled, and `commander` is still the only runtime dependency.
+
+```sh
+claude mcp add clines -- npx clines mcp
+```
+
+It serves `clines_count`, `clines_ctx`, `clines_cx`, `clines_dup`, `clines_refactor`,
+`clines_comments`, `clines_coupling` and `clines_agent`, each taking `dir`, `all`, `top` and
+`diff`. Responses are compact and capped at
+20 rows by default: an agent pays for every token it reads back, so a 6,915-file dump would defeat
+the point of asking.
+
+## Library API
+
+The package ships types and an ESM entry point, so the analyses are callable without the CLI.
+
+```ts
+import { analyzeContext, loadConfig, loadGitignoreGlobs } from "clines";
+
+const config = await loadConfig(process.cwd());
+const globs = await loadGitignoreGlobs(process.cwd(), config.respectGitignore);
+const { totalTokens, files } = await analyzeContext(process.cwd(), config, globs);
+```
+
+`loadConfig`, `loadGitignoreGlobs` and `loadGitAttributes` are exported so a caller can reproduce
+exactly what the CLI does with `clines.json`, `.gitignore` and `.gitattributes`. All eight analyses
+(`analyze`, `analyzeComplexity`, `analyzeContext`, `analyzeDuplication`, `analyzeComments`,
+`analyzeRefactor`, `analyzeCoupling`, `analyzeAgent`), their result types, and the JSON renderers
+are exported too.
+
 ## Configuration
 
 Configuration is optional and `clines` never writes a config file to the repo. By default it:
@@ -502,6 +733,14 @@ npm run lint        # eslint
 npm run typecheck   # tsc --noEmit
 npm run build       # compile to dist/
 ```
+
+## Exit codes
+
+| Code | Meaning                                                  |
+| ---- | -------------------------------------------------------- |
+| `0`  | Ran, nothing breached.                                   |
+| `1`  | Error — bad flag, missing directory, unreadable config.  |
+| `2`  | A threshold was breached. The report is still on stdout. |
 
 ## Releasing
 

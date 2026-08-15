@@ -21,6 +21,8 @@ describe("runCli", () => {
 
     const options = runner.mock.calls[0]![0] as RunOptions;
     expect(options).toEqual({
+      json: false,
+      version: "0.0.0",
       dir: project.root,
       readme: false,
       all: false,
@@ -111,6 +113,8 @@ describe("runCli", () => {
     await runCli(["node", "clines", "dup", project.root], io, { dupRunner });
 
     expect(dupRunner.mock.calls[0]![0]).toEqual({
+      json: false,
+      version: "0.0.0",
       dir: project.root,
       all: false,
       top: 10,
@@ -145,6 +149,8 @@ describe("runCli", () => {
     );
 
     expect(dupRunner.mock.calls[0]![0]).toEqual({
+      json: false,
+      version: "0.0.0",
       dir: project.root,
       all: false,
       top: 10,
@@ -167,6 +173,8 @@ describe("runCli", () => {
     });
 
     expect(dupRunner.mock.calls[0]![0]).toEqual({
+      json: false,
+      version: "0.0.0",
       dir: project.root,
       all: false,
       top: 10,
@@ -219,6 +227,8 @@ describe("runCli", () => {
     await runCli(["node", "clines", "cx", project.root], io, { complexityRunner });
 
     expect(complexityRunner.mock.calls[0]![0]).toEqual({
+      json: false,
+      version: "0.0.0",
       dir: project.root,
       all: false,
       sort: "raw",
@@ -251,6 +261,8 @@ describe("runCli", () => {
     );
 
     expect(complexityRunner.mock.calls[0]![0]).toEqual({
+      json: false,
+      version: "0.0.0",
       dir: project.root,
       all: false,
       sort: "raw",
@@ -279,6 +291,8 @@ describe("runCli", () => {
     await runCli(["node", "clines", "ctx", project.root], io, { contextRunner });
 
     expect(contextRunner.mock.calls[0]![0]).toEqual({
+      json: false,
+      version: "0.0.0",
       dir: project.root,
       all: false,
       window: 200000,
@@ -314,6 +328,8 @@ describe("runCli", () => {
     );
 
     expect(contextRunner.mock.calls[0]![0]).toEqual({
+      json: false,
+      version: "0.0.0",
       dir: project.root,
       all: false,
       window: 1000000,
@@ -393,9 +409,14 @@ describe("runCli", () => {
     await runCli(["node", "clines", "rf", project.root], io, { refactorRunner });
 
     expect(refactorRunner.mock.calls[0]![0]).toEqual({
+      json: false,
+      version: "0.0.0",
       dir: project.root,
       all: false,
       since: "2 years ago",
+      sort: "cost",
+      explain: false,
+      includeBots: false,
       top: 20,
     });
   });
@@ -425,9 +446,14 @@ describe("runCli", () => {
     );
 
     expect(refactorRunner.mock.calls[0]![0]).toEqual({
+      json: false,
+      version: "0.0.0",
       dir: project.root,
       all: true,
       since: "6 months ago",
+      sort: "cost",
+      explain: false,
+      includeBots: false,
       price: 0.25,
       top: 5,
       config: "c.json",
@@ -453,6 +479,8 @@ describe("runCli", () => {
     await runCli(["node", "clines", "cm", project.root], io, { commentsRunner });
 
     expect(commentsRunner.mock.calls[0]![0]).toEqual({
+      json: false,
+      version: "0.0.0",
       dir: project.root,
       all: false,
       years: 3,
@@ -484,6 +512,8 @@ describe("runCli", () => {
     );
 
     expect(commentsRunner.mock.calls[0]![0]).toEqual({
+      json: false,
+      version: "0.0.0",
       dir: project.root,
       all: true,
       years: 1,

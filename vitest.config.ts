@@ -6,7 +6,13 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],
-      exclude: ["src/**/*.d.ts", "src/cli/index.ts", "src/cli/io.ts", "src/util/open.ts"],
+      exclude: [
+        "src/**/*.d.ts",
+        "src/cli/index.ts",
+        "src/cli/io.ts",
+        "src/util/open.ts",
+        "src/mcp/stdio.ts",
+      ],
       reporter: ["text", "html"],
       thresholds: {
         lines: 100,

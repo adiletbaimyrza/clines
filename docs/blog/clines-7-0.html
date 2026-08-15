@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>clines 7.0 — measuring change, not commits — clines</title>
+    <meta
+      name="description"
+      content="clines 7.0 drops bot commits from the change signal, follows renames, weights recent changes higher, and adds two commands: change coupling and agent risk."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A8%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --bg: #0a0e17;
+        --bg-soft: #111726;
+        --panel: #141b2d;
+        --border: #223049;
+        --text: #e6ecf5;
+        --muted: #9aa8bf;
+        --accent: #5ed0ff;
+        --accent-2: #a78bfa;
+        --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        color: var(--text);
+        background:
+          radial-gradient(1200px 600px at 80% -10%, rgba(94, 208, 255, 0.12), transparent 60%),
+          var(--bg);
+        line-height: 1.65;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .wrap {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      nav .brand {
+        font-family: var(--mono);
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: var(--text);
+      }
+      nav .brand::before {
+        content: "✨ ";
+      }
+      nav .links a {
+        color: var(--muted);
+        margin-left: 20px;
+        font-size: 14px;
+      }
+      nav .links a:hover {
+        color: var(--text);
+        text-decoration: none;
+      }
+      article {
+        padding: 40px 0 64px;
+      }
+      h1 {
+        font-size: clamp(26px, 4vw, 34px);
+        margin: 0 0 8px;
+        line-height: 1.25;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0 0 32px;
+      }
+      h2 {
+        font-size: 21px;
+        margin: 40px 0 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+      h3 {
+        font-size: 17px;
+        margin: 28px 0 4px;
+      }
+      p,
+      li {
+        color: #cdd6e6;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.9em;
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 1px 5px;
+      }
+      pre {
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: #cdd6e6;
+      }
+      pre code {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: inherit;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin: 16px 0;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      td.v {
+        font-family: var(--mono);
+        color: var(--accent);
+        white-space: nowrap;
+      }
+      td.n {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      blockquote {
+        margin: 20px 0;
+        padding: 12px 16px;
+        border-left: 3px solid var(--accent-2);
+        background: var(--panel);
+        border-radius: 0 8px 8px 0;
+        color: var(--muted);
+      }
+      blockquote p {
+        margin: 0;
+        color: var(--muted);
+      }
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 24px 0 40px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+    <link rel="canonical" href="https://adiletbaimyrza.github.io/clines/blog/clines-7-0.html" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="clines" />
+    <meta
+      property="og:url"
+      content="https://adiletbaimyrza.github.io/clines/blog/clines-7-0.html"
+    />
+    <meta property="og:title" content="clines 7.0 — measuring change, not commits — clines" />
+    <meta
+      property="og:description"
+      content="clines 7.0 drops bot commits from the change signal, follows renames, weights recent changes higher, and adds two commands: change coupling and agent risk."
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="clines 7.0 — measuring change, not commits — clines" />
+    <meta
+      name="twitter:description"
+      content="clines 7.0 drops bot commits from the change signal, follows renames, weights recent changes higher, and adds two commands: change coupling and agent risk."
+    />
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <span class="brand">clines</span>
+        <span class="links">
+          <a href="../index.html">Home</a>
+          <a href="index.html">Blog</a>
+          <a href="https://github.com/adiletbaimyrza/clines">GitHub</a>
+        </span>
+      </nav>
+    </div>
+
+    <div class="wrap">
+      <article>
+        <h1>clines 7.0 — measuring change, not commits</h1>
+        <p class="meta">15 August 2026 · covers 7.0.0</p>
+
+        <p>
+          <code>clines refactor</code> has always rested on a well-supported idea: complexity alone
+          ranks a file you never open above one you edit weekly, so weigh it by how often the file
+          actually changes. The research backs that —
+          <a href="https://dl.acm.org/doi/10.1145/1062455.1062514">Nagappan and Ball</a>
+          discriminated fault-prone binaries at 89% accuracy from churn measures alone.
+        </p>
+        <p>
+          The problem was the counting. <code>git log --name-only</code>, one tally per path, every
+          commit worth the same. This release fixes four things about that number and adds the
+          analysis it was missing.
+        </p>
+
+        <h2>Most hotspot commits are not people</h2>
+        <p>
+          A <a href="https://arxiv.org/html/2602.13170">study of 91 GitHub repositories</a> found
+          that <b>automated bots account for 73.9% of hotspot-related commits</b>. Administrative
+          changes were 53.6% of all hotspots; version bumps alone 26%, formatting churn 9%. Their
+          recommendation is blunt: filter bot commits to surface the human-driven changes.
+        </p>
+        <p>
+          So clines does, by default. Dependabot, Renovate, github-actions and the rest are dropped
+          before anything is counted, and <code>--include-bots</code> brings them back. In a
+          repository with an active dependency bot this changes the ranking outright.
+        </p>
+
+        <h2>Three more corrections to the same number</h2>
+        <ul>
+          <li>
+            <b>Renames are followed.</b> <code>-M</code>, plus an alias chain walked newest-first,
+            keeps a moved file's history attached to it. Before, a renamed file restarted from zero
+            and was reported as <code>inert</code> — advice to leave alone the file you had just
+            reorganised.
+          </li>
+          <li>
+            <b>Change size is recorded.</b> <code>--numstat</code> gives lines added and deleted, so
+            a one-line typo fix no longer counts the same as a 400-line rewrite.
+            <code>--sort churn</code> ranks by it.
+          </li>
+          <li>
+            <b>Recent changes weigh more.</b> "Changed often" is now judged on a recency-weighted
+            count with a half-life of a quarter of the window. Thirty changes that stopped a year
+            ago should not read like thirty still arriving.
+          </li>
+        </ul>
+        <p>
+          The <code>Re-read</code> column is deliberately <em>not</em> weighted. It is a factual
+          claim about tokens already spent, and decaying it would make it a different, vaguer thing.
+        </p>
+
+        <h2><code>clines coupling</code></h2>
+        <p>
+          <code>refactor</code> tells you a file is expensive. It has never been able to tell you
+          why. Change coupling can: a busy file that always changes alone is merely busy, while one
+          that always changes alongside three others is a missing abstraction or a wrong module
+          boundary.
+        </p>
+        <pre class="code">
+Files that keep changing together
+  File                            Changes with   Shared   Strength
+  ────────────────────────────────────────────────────────────────
+  src/cli/program.ts      test/program.test.ts       20        95%
+  src/cli/run.ts          src/core/pipeline.ts       13        84%</pre>
+        <p>
+          Strength is shared commits over the pair's average revision count, so it cannot exceed
+          100%. The thresholds follow CodeScene's documented defaults — 10+ revisions each, 10+
+          shared commits, 50%+ strength — which are strict on purpose. Below them a co-change is as
+          likely to be coincidence as design. On a young repository they return nothing, so clines
+          says which flags to lower instead of printing an empty table.
+        </p>
+        <p>
+          One guard matters more than it sounds: commits touching more than 30 files are skipped
+          entirely. A sweep across 53 files mints 1,378 pairs, all of them meaningless. Coupling
+          analysis without that filter mostly rediscovers your last big refactor.
+        </p>
+        <p>
+          A file coupled to its own test is expected and healthy. Coupling
+          <em>across module boundaries</em> is the finding.
+        </p>
+
+        <h2><code>clines agent</code></h2>
+        <p>
+          Which files are safe to hand to a coding agent unattended? Recent work found that a
+          one-standard-deviation improvement in code health
+          <a href="https://arxiv.org/abs/2601.02200"
+            >raised the odds of a non-breaking AI refactoring by 20–40%</a
+          >, with 15–30% lower break rates in healthy code. Separately, a
+          <a href="https://arxiv.org/html/2601.20160">study of five agents across 86 projects</a>
+          found their refactorings are overwhelmingly cosmetic — over 91% annotation-related for one
+          agent — and mostly do not improve design, with one agent measurably increasing smells.
+        </p>
+        <p>
+          So clines rates each file <code>safe</code>, <code>review</code> or <code>human</code>
+          from four signals it already had: branchy logic, size in tokens, duplication (an agent
+          fixes one copy and leaves the rest), and whether the complexity is concentrated anywhere
+          you could safely edit.
+        </p>
+        <p>
+          Thresholds pair a repository quantile with an absolute floor, which was not the original
+          design. Quantiles alone flag a quarter of any repository by construction — a one-line file
+          in a tidy tree came out "risky" because something has to sit at the 75th percentile. The
+          floors are 10 cx per 100 lines and 2,000 tokens.
+        </p>
+        <p>
+          It is worth being straight about the evidence: the supporting study used 5,000
+          competitive-programming Python files, which is a weak stand-in for production code, and
+          both it and the code-health work come from the vendor that sells the metric. The output
+          says so. It is a reading order, not a permission system.
+        </p>
+
+        <h2>Also in 7.0</h2>
+        <ul>
+          <li>
+            <code>refactor --explain</code> adds churn, churn share and recency;
+            <code>--sort cost|churn|recent</code> chooses the ranking.
+          </li>
+          <li>
+            Both new analyses ship with <code>--json</code>, MCP tools
+            (<code>clines_coupling</code>, <code>clines_agent</code>) and library exports.
+          </li>
+          <li>
+            The log buffer went from 64 MB to 256 MB, because <code>--numstat</code> roughly triples
+            a log and overflowing it used to be reported as "no git history is available".
+          </li>
+          <li>645 tests, still 100% coverage.</li>
+        </ul>
+
+        <p class="meta"><a href="index.html">← All posts</a></p>
+      </article>
+    </div>
+  </body>
+</html>

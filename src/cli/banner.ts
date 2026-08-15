@@ -21,6 +21,9 @@ const COMMANDS: [string, string][] = [
   ["ctx", "estimated token cost to read the repo"],
   ["comments", "comments the code has drifted away from"],
   ["refactor", "which files are worth refactoring"],
+  ["coupling", "files that keep changing together"],
+  ["agent", "what is safe to hand to a coding agent"],
+  ["mcp", "serve the analyses over MCP"],
 ];
 
 const ESC = String.fromCharCode(27);
